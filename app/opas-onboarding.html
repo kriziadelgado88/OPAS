@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="opas-runtime" content="http://localhost:8001">
+<title>OPAS — Onboarding</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --brand: #1a3a5c;
+    --brand-hover: #254f7a;
+    --brand-light: #e8f0f8;
+    --accent: #c8a951;
+    --bg: #f8fafc;
+    --card-bg: #fff;
+    --border: #dde3ea;
+    --border-strong: #c5cdd6;
+    --text: #1c2b3a;
+    --muted: #64748b;
+    --error-bg: #fef2f2;
+    --error-fg: #b42318;
+    --error-border: #fecaca;
+    --radius: 12px;
+    --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+
+  body {
+    font-family: var(--font);
+    color: var(--text);
+    background: linear-gradient(180deg, #f8fafc 0%, #eef3f9 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── TOP BAR ─────────────────────────────────────────────── */
+  #topbar {
+    background: var(--brand);
+    color: #fff;
+    padding: 0 20px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  #topbar .logo { font-weight: 700; font-size: 15px; letter-spacing: 0.04em; opacity: 0.95; }
+  #topbar .accent-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent); opacity: 0.85;
+  }
+  #topbar .label { font-size: 13px; opacity: 0.65; margin-left: 4px; }
+  #topbar .spacer { flex: 1; }
+  #topbar .skip-all {
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.78);
+    background: none;
+    border: none;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-style: dotted;
+    cursor: pointer;
+    font-family: var(--font);
+    padding: 4px 6px;
+    border-radius: 6px;
+  }
+  #topbar .skip-all:hover { color: #fff; background: rgba(255,255,255,0.12); }
+
+  /* ── PAGE LAYOUT ─────────────────────────────────────────── */
+  main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 28px 18px 40px;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 560px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: 0 8px 28px rgba(26, 58, 92, 0.08);
+    padding: 30px 32px 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  /* progress dots */
+  .stepper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 4px;
+  }
+  .stepper .dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--border-strong);
+    transition: background 0.2s, transform 0.2s;
+  }
+  .stepper .dot.done   { background: var(--brand); }
+  .stepper .dot.active { background: var(--brand); transform: scale(1.3); }
+  .stepper .label {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-left: 8px;
+  }
+
+  .step-title {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    text-align: center;
+  }
+  .step-sub {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.55;
+    text-align: center;
+    margin: -8px 0 4px;
+  }
+
+  .step { display: none; flex-direction: column; gap: 16px; }
+  .step.active { display: flex; }
+
+  /* ── BUTTONS ─────────────────────────────────────────────── */
+  .btn {
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 11px 18px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    border: 1px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    line-height: 1.2;
+  }
+  .btn-primary {
+    background: var(--brand);
+    color: #fff;
+    border-color: var(--brand);
+  }
+  .btn-primary:hover:not(:disabled) { background: var(--brand-hover); border-color: var(--brand-hover); }
+  .btn-secondary {
+    background: #fff;
+    color: var(--brand);
+    border-color: var(--border-strong);
+  }
+  .btn-secondary:hover:not(:disabled) { background: var(--brand-light); border-color: var(--brand); }
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+    border-color: transparent;
+    padding: 11px 14px;
+  }
+  .btn-ghost:hover:not(:disabled) { color: var(--brand); background: var(--brand-light); }
+  .btn:disabled { opacity: 0.55; cursor: default; }
+
+  .actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 6px;
+  }
+  .actions .spacer { flex: 1; }
+
+  /* ── STEP 1: language radios ─────────────────────────────── */
+  .lang-options { display: flex; flex-direction: column; gap: 8px; }
+  .lang-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 11px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    font-size: 14px;
+  }
+  .lang-option:hover { background: var(--bg); }
+  .lang-option input[type="radio"] {
+    margin-top: 2px;
+    accent-color: var(--brand);
+  }
+  .lang-option.selected { border-color: var(--brand); background: var(--brand-light); }
+  .lang-option .lang-native {
+    color: var(--muted);
+    font-size: 12px;
+    margin-left: 6px;
+  }
+  #lang-other-input {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-family: var(--font);
+    font-size: 14px;
+    margin-top: 6px;
+    outline: none;
+    transition: border-color 0.15s;
+    display: none;
+  }
+  #lang-other-input.show { display: block; }
+  #lang-other-input:focus { border-color: var(--brand); }
+
+  /* ── STEP 2: interests chips ─────────────────────────────── */
+  .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+  .chip {
+    font-family: var(--font);
+    font-size: 13.5px;
+    font-weight: 500;
+    background: #fff;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 8px 14px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    line-height: 1.2;
+  }
+  .chip:hover { border-color: var(--brand); }
+  .chip.active {
+    background: var(--brand);
+    color: #fff;
+    border-color: var(--brand);
+  }
+  .chip.add {
+    border-style: dashed;
+    color: var(--brand);
+  }
+  .chip.add:hover { background: var(--brand-light); }
+  .add-row {
+    display: none;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  .add-row.show { display: flex; }
+  .add-row input {
+    flex: 1;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-family: var(--font);
+    font-size: 13.5px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .add-row input:focus { border-color: var(--brand); }
+  .interest-count {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* ── STEP 3: bandwidth slider + timezone ─────────────────── */
+  .slider-wrap { padding: 6px 4px 0; }
+  .slider-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .slider-labels .end-active { color: var(--brand); }
+
+  /* Custom-styled range input */
+  input[type="range"].bw-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 32px;
+    background: transparent;
+    cursor: pointer;
+  }
+  input[type="range"].bw-slider:focus { outline: none; }
+  input[type="range"].bw-slider::-webkit-slider-runnable-track {
+    width: 100%; height: 6px;
+    background: linear-gradient(90deg, var(--brand-light) 0%, var(--brand) 100%);
+    border-radius: 999px;
+  }
+  input[type="range"].bw-slider::-moz-range-track {
+    width: 100%; height: 6px;
+    background: linear-gradient(90deg, var(--brand-light) 0%, var(--brand) 100%);
+    border-radius: 999px;
+  }
+  input[type="range"].bw-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid var(--brand);
+    margin-top: -8px;
+    box-shadow: 0 2px 6px rgba(26,58,92,0.18);
+    cursor: pointer;
+  }
+  input[type="range"].bw-slider::-moz-range-thumb {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid var(--brand);
+    box-shadow: 0 2px 6px rgba(26,58,92,0.18);
+    cursor: pointer;
+  }
+  .bw-readout {
+    margin-top: 6px;
+    font-size: 13px;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.4;
+  }
+  .bw-readout strong { color: var(--text); }
+
+  .tz-row { margin-top: 8px; }
+  .tz-row label {
+    display: block;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .tz-row input {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-family: var(--font);
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .tz-row input:focus { border-color: var(--brand); }
+  .tz-row .tz-hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* ── ERRORS / DONE STATE ─────────────────────────────────── */
+  .error-banner {
+    background: var(--error-bg);
+    color: var(--error-fg);
+    border: 1px solid var(--error-border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    display: none;
+  }
+  .error-banner.show { display: block; }
+
+  .done-icon {
+    width: 56px; height: 56px;
+    margin: 4px auto 0;
+    border-radius: 50%;
+    background: #ecfdf3;
+    color: #067647;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 56px;
+    text-align: center;
+  }
+
+  /* ── RESPONSIVE ──────────────────────────────────────────── */
+  @media (max-width: 480px) {
+    .card { padding: 24px 20px 22px; }
+    .step-title { font-size: 19px; }
+    main { padding: 18px 12px 30px; }
+  }
+</style>
+</head>
+<body>
+
+<header id="topbar">
+  <span class="logo">OPAS</span>
+  <span class="accent-dot"></span>
+  <span class="label">Welcome</span>
+  <span class="spacer"></span>
+  <button type="button" class="skip-all" id="skip-all-btn" title="Skip onboarding entirely with default preferences">Skip onboarding</button>
+</header>
+
+<main>
+  <section class="card" aria-live="polite">
+
+    <!-- progress dots -->
+    <div class="stepper" role="progressbar" aria-valuemin="1" aria-valuemax="3" aria-valuenow="1" id="stepper">
+      <span class="dot active" data-step="1"></span>
+      <span class="dot"        data-step="2"></span>
+      <span class="dot"        data-step="3"></span>
+      <span class="label" id="step-label">Step 1 of 3</span>
+    </div>
+
+    <!-- ── Step 1: language ───────────────────────────────── -->
+    <div class="step active" data-step="1">
+      <div class="step-title">What language do you prefer?</div>
+      <p class="step-sub">Your tutor will speak this language back to you. You can change it later.</p>
+
+      <div class="lang-options" id="lang-options">
+        <label class="lang-option">
+          <input type="radio" name="language" value="en">
+          <span><strong>English</strong> <span class="lang-native">English</span></span>
+        </label>
+        <label class="lang-option">
+          <input type="radio" name="language" value="es">
+          <span><strong>Spanish</strong> <span class="lang-native">Español</span></span>
+        </label>
+        <label class="lang-option">
+          <input type="radio" name="language" value="uk">
+          <span><strong>Ukrainian</strong> <span class="lang-native">Українська</span></span>
+        </label>
+        <label class="lang-option">
+          <input type="radio" name="language" value="other">
+          <span><strong>Other</strong> <span class="lang-native">tell us which</span></span>
+        </label>
+      </div>
+      <input type="text" id="lang-other-input" placeholder="e.g. fr, de, pt&hellip; (or the name of the language)" autocomplete="off">
+
+      <div class="actions">
+        <button type="button" class="btn btn-ghost" data-action="skip">Skip for now</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn btn-primary" data-action="next">Continue &rarr;</button>
+      </div>
+    </div>
+
+    <!-- ── Step 2: interests ──────────────────────────────── -->
+    <div class="step" data-step="2">
+      <div class="step-title">What are you into?</div>
+      <p class="step-sub">Pick a few. Your tutor uses these to ground analogies and examples in things you actually care about.</p>
+
+      <div class="chip-row" id="interest-chips">
+        <button type="button" class="chip" data-interest="sports">sports</button>
+        <button type="button" class="chip" data-interest="music">music</button>
+        <button type="button" class="chip" data-interest="gaming">gaming</button>
+        <button type="button" class="chip" data-interest="history">history</button>
+        <button type="button" class="chip" data-interest="science">science</button>
+        <button type="button" class="chip" data-interest="business">business</button>
+        <button type="button" class="chip" data-interest="art">art</button>
+        <button type="button" class="chip" data-interest="cooking">cooking</button>
+        <button type="button" class="chip" data-interest="travel">travel</button>
+        <button type="button" class="chip" data-interest="technology">technology</button>
+        <button type="button" class="chip" data-interest="literature">literature</button>
+        <button type="button" class="chip" data-interest="languages">languages</button>
+        <button type="button" class="chip add" id="add-interest-btn">+ Add</button>
+      </div>
+      <div class="add-row" id="add-interest-row">
+        <input type="text" id="add-interest-input" placeholder="e.g. astronomy, jazz, hiking&hellip;" maxlength="40" autocomplete="off">
+        <button type="button" class="btn btn-secondary" id="add-interest-confirm">Add</button>
+      </div>
+      <div class="interest-count" id="interest-count">No interests selected yet.</div>
+
+      <div class="actions">
+        <button type="button" class="btn btn-ghost" data-action="skip">Skip for now</button>
+        <button type="button" class="btn btn-secondary" data-action="back">&larr; Back</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn btn-primary" data-action="next">Continue &rarr;</button>
+      </div>
+    </div>
+
+    <!-- ── Step 3: bandwidth + timezone ──────────────────── -->
+    <div class="step" data-step="3">
+      <div class="step-title">How do you like your answers?</div>
+      <p class="step-sub">Slide left if you prefer concise answers, right if you want richer detail. We&rsquo;ll also confirm your timezone for time-bounded sessions.</p>
+
+      <div class="slider-wrap">
+        <div class="slider-labels">
+          <span id="bw-label-low">Concise</span>
+          <span id="bw-label-high" class="end-active">Rich detail</span>
+        </div>
+        <input type="range" class="bw-slider" id="bw-slider" min="0" max="1" step="1" value="1">
+        <div class="bw-readout" id="bw-readout">Your tutor will give <strong>rich, expansive</strong> answers.</div>
+      </div>
+
+      <div class="tz-row">
+        <label for="tz-input">Timezone</label>
+        <input type="text" id="tz-input" autocomplete="off">
+        <div class="tz-hint" id="tz-hint">Auto-detected from your browser. Edit if it&rsquo;s wrong.</div>
+      </div>
+
+      <div class="error-banner" id="finish-error"></div>
+
+      <div class="actions">
+        <button type="button" class="btn btn-ghost" data-action="skip">Skip for now</button>
+        <button type="button" class="btn btn-secondary" data-action="back">&larr; Back</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn btn-primary" data-action="finish">Save and continue</button>
+      </div>
+    </div>
+
+    <!-- ── Done state (briefly shown before redirect) ──── -->
+    <div class="step" data-step="done">
+      <div class="done-icon">&#10003;</div>
+      <div class="step-title">All set!</div>
+      <p class="step-sub" id="done-sub">Taking you to your agents&hellip;</p>
+    </div>
+
+  </section>
+</main>
+
+<script>
+(function () {
+  const RUNTIME = document.querySelector('meta[name="opas-runtime"]').content;
+
+  // ── Auth gate ────────────────────────────────────────────────
+  const TOKEN = localStorage.getItem('opas_learner_token');
+  if (!TOKEN) {
+    window.location.replace('opas-signup.html');
+    return;
+  }
+  const authHeaders = (extra = {}) => ({ 'Authorization': 'Bearer ' + TOKEN, ...extra });
+
+  // ── Return-target resolution ─────────────────────────────────
+  // ?return=<page>  → safe whitelist of in-app pages we can bounce back to.
+  // Falling back to opas-skills.html if missing or unsafe.
+  const ALLOWED_RETURNS = new Set([
+    'opas-skills.html',
+    'opas-student.html',
+    'opas-group.html',
+  ]);
+  const params = new URLSearchParams(location.search);
+  let returnTarget = 'opas-skills.html';
+  const rawReturn = params.get('return');
+  if (rawReturn) {
+    // allow "page.html" or "page.html?x=y" but never absolute URLs / .. paths
+    const head = rawReturn.split('?')[0].split('#')[0];
+    if (ALLOWED_RETURNS.has(head) && !rawReturn.includes('..') && !/^https?:/i.test(rawReturn)) {
+      returnTarget = rawReturn;
+    }
+  }
+
+  // ── State ────────────────────────────────────────────────────
+  // null fields are filled with defaults at finish time:
+  //   language=en, interests=[], bandwidth=high, timezone=browser TZ
+  const state = {
+    language:  null,
+    interests: [],
+    bandwidth: 'high',
+    timezone:  null,
+  };
+  // Browser-detected timezone — applied as default if user doesn't override.
+  const browserTZ = (function () {
+    try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; }
+    catch { return 'UTC'; }
+  })();
+  state.timezone = browserTZ;
+
+  let currentStep = 1;     // 1 | 2 | 3 | 'done'
+
+  // ── DOM refs ─────────────────────────────────────────────────
+  const stepLabel        = document.getElementById('step-label');
+  const langOptions      = document.getElementById('lang-options');
+  const langOtherInput   = document.getElementById('lang-other-input');
+  const interestChips    = document.getElementById('interest-chips');
+  const addInterestBtn   = document.getElementById('add-interest-btn');
+  const addInterestRow   = document.getElementById('add-interest-row');
+  const addInterestInput = document.getElementById('add-interest-input');
+  const addInterestOK    = document.getElementById('add-interest-confirm');
+  const interestCount    = document.getElementById('interest-count');
+  const bwSlider         = document.getElementById('bw-slider');
+  const bwReadout        = document.getElementById('bw-readout');
+  const bwLabelLow       = document.getElementById('bw-label-low');
+  const bwLabelHigh      = document.getElementById('bw-label-high');
+  const tzInput          = document.getElementById('tz-input');
+  const tzHint           = document.getElementById('tz-hint');
+  const finishError      = document.getElementById('finish-error');
+  const doneSub          = document.getElementById('done-sub');
+  const skipAllBtn       = document.getElementById('skip-all-btn');
+
+  // Pre-fill timezone field
+  tzInput.value = browserTZ;
+
+  // ── Step navigation ──────────────────────────────────────────
+  function showStep(n) {
+    currentStep = n;
+    document.querySelectorAll('.step').forEach((s) => {
+      s.classList.toggle('active', s.dataset.step === String(n));
+    });
+    document.querySelectorAll('.stepper .dot').forEach((d) => {
+      const i = Number(d.dataset.step);
+      d.classList.remove('active', 'done');
+      if (typeof n === 'number') {
+        if (i < n)      d.classList.add('done');
+        else if (i === n) d.classList.add('active');
+      } else {
+        d.classList.add('done'); // 'done' state — all dots filled
+      }
+    });
+    if (typeof n === 'number') {
+      stepLabel.textContent = 'Step ' + n + ' of 3';
+      document.getElementById('stepper').setAttribute('aria-valuenow', String(n));
+    } else {
+      stepLabel.textContent = 'Done';
+    }
+  }
+
+  // ── Step 1: language ─────────────────────────────────────────
+  langOptions.addEventListener('change', () => {
+    const checked = langOptions.querySelector('input[name="language"]:checked');
+    document.querySelectorAll('.lang-option').forEach((el) => el.classList.remove('selected'));
+    if (!checked) return;
+    checked.closest('.lang-option').classList.add('selected');
+    if (checked.value === 'other') {
+      langOtherInput.classList.add('show');
+      setTimeout(() => langOtherInput.focus(), 50);
+    } else {
+      langOtherInput.classList.remove('show');
+      state.language = checked.value;
+    }
+  });
+  langOtherInput.addEventListener('input', () => {
+    state.language = langOtherInput.value.trim() || null;
+  });
+
+  // ── Step 2: interests ────────────────────────────────────────
+  function refreshInterestCount() {
+    const n = state.interests.length;
+    interestCount.textContent = n === 0
+      ? 'No interests selected yet.'
+      : n + ' interest' + (n === 1 ? '' : 's') + ' selected.';
+  }
+
+  interestChips.addEventListener('click', (e) => {
+    const chip = e.target.closest('.chip');
+    if (!chip || chip.id === 'add-interest-btn') return;
+    const tag = chip.dataset.interest;
+    if (!tag) return;
+    const idx = state.interests.indexOf(tag);
+    if (idx >= 0) {
+      state.interests.splice(idx, 1);
+      chip.classList.remove('active');
+    } else {
+      state.interests.push(tag);
+      chip.classList.add('active');
+    }
+    refreshInterestCount();
+  });
+
+  addInterestBtn.addEventListener('click', () => {
+    addInterestRow.classList.toggle('show');
+    if (addInterestRow.classList.contains('show')) {
+      setTimeout(() => addInterestInput.focus(), 50);
+    }
+  });
+
+  function commitCustomInterest() {
+    const raw = addInterestInput.value.trim().toLowerCase();
+    if (!raw) return;
+    if (raw.length > 40) return;
+    if (state.interests.includes(raw)) {
+      addInterestInput.value = '';
+      return;
+    }
+    // If a stock chip already exists for this label, just toggle it on.
+    const existing = interestChips.querySelector('.chip[data-interest="' + cssEscape(raw) + '"]');
+    if (existing) {
+      if (!existing.classList.contains('active')) existing.click();
+    } else {
+      const newChip = document.createElement('button');
+      newChip.type = 'button';
+      newChip.className = 'chip active';
+      newChip.dataset.interest = raw;
+      newChip.textContent = raw;
+      interestChips.insertBefore(newChip, addInterestBtn);
+      state.interests.push(raw);
+    }
+    addInterestInput.value = '';
+    refreshInterestCount();
+  }
+  addInterestOK.addEventListener('click', commitCustomInterest);
+  addInterestInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); commitCustomInterest(); }
+  });
+
+  function cssEscape(s) {
+    return (window.CSS && CSS.escape) ? CSS.escape(s) : s.replace(/(["\\])/g, '\\$1');
+  }
+
+  // ── Step 3: bandwidth + timezone ─────────────────────────────
+  function updateBwReadout() {
+    const isHigh = bwSlider.value === '1';
+    state.bandwidth = isHigh ? 'high' : 'low';
+    if (isHigh) {
+      bwReadout.innerHTML = 'Your tutor will give <strong>rich, expansive</strong> answers.';
+      bwLabelLow.classList.remove('end-active');
+      bwLabelHigh.classList.add('end-active');
+    } else {
+      bwReadout.innerHTML = 'Your tutor will keep things <strong>tight and concise</strong>.';
+      bwLabelLow.classList.add('end-active');
+      bwLabelHigh.classList.remove('end-active');
+    }
+  }
+  bwSlider.addEventListener('input', updateBwReadout);
+  updateBwReadout();
+
+  tzInput.addEventListener('input', () => {
+    const v = tzInput.value.trim();
+    state.timezone = v || browserTZ;
+    if (v && v !== browserTZ) {
+      tzHint.textContent = 'Custom timezone set.';
+    } else {
+      tzHint.textContent = 'Auto-detected from your browser. Edit if it\u2019s wrong.';
+    }
+  });
+
+  // ── Action wiring (next / back / skip / finish) ──────────────
+  document.querySelectorAll('button[data-action]').forEach((btn) => {
+    btn.addEventListener('click', () => handleAction(btn.dataset.action));
+  });
+
+  function handleAction(action) {
+    if (action === 'back')  { if (currentStep > 1) showStep(currentStep - 1); return; }
+    if (action === 'skip') {
+      // Skipping a step preserves whatever's already in state for that field.
+      // Defaults will be filled in at finish time for any field still unset.
+      if (currentStep < 3) showStep(currentStep + 1);
+      else                 finish();
+      return;
+    }
+    if (action === 'next') {
+      if (currentStep < 3) showStep(currentStep + 1);
+      return;
+    }
+    if (action === 'finish') {
+      finish();
+    }
+  }
+
+  // "Skip onboarding" in the topbar — fills all defaults and PUTs immediately.
+  skipAllBtn.addEventListener('click', () => {
+    if (!confirm('Skip onboarding? We\u2019ll apply default preferences (English, no interests, rich detail, browser timezone). You can change them later.')) return;
+    finish({ skipAll: true });
+  });
+
+  // ── Finish: PUT /me/profile_prefs and redirect ───────────────
+  async function finish(opts = {}) {
+    finishError.classList.remove('show');
+    finishError.textContent = '';
+
+    // Apply defaults for any field still null/empty
+    const payload = {
+      language:  (state.language && state.language.length) ? state.language : 'en',
+      interests: Array.isArray(state.interests) ? state.interests : [],
+      bandwidth: state.bandwidth || 'high',
+      timezone:  (state.timezone && state.timezone.length) ? state.timezone : browserTZ,
+    };
+
+    const finishBtns = document.querySelectorAll('button[data-action="finish"]');
+    finishBtns.forEach((b) => { b.disabled = true; b.textContent = 'Saving\u2026'; });
+    skipAllBtn.disabled = true;
+
+    try {
+      const res = await fetch(RUNTIME + '/me/profile_prefs', {
+        method: 'PUT',
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(payload),
+      });
+      if (res.status === 401) {
+        localStorage.removeItem('opas_learner_token');
+        localStorage.removeItem('opas_learner_id');
+        localStorage.removeItem('opas_learner_name');
+        window.location.replace('opas-signup.html');
+        return;
+      }
+      if (!res.ok) {
+        let detail = 'HTTP ' + res.status;
+        try { const j = await res.json(); if (j && j.detail) detail = j.detail; } catch {}
+        throw new Error(detail);
+      }
+      // Success: brief confirmation, then redirect.
+      showStep('done');
+      doneSub.textContent = opts.skipAll
+        ? 'Defaults applied. Taking you to ' + friendlyTarget(returnTarget) + '\u2026'
+        : 'Preferences saved. Taking you to ' + friendlyTarget(returnTarget) + '\u2026';
+      setTimeout(() => { window.location.replace(returnTarget); }, 700);
+    } catch (err) {
+      finishError.textContent = 'Couldn\u2019t save preferences: ' + (err.message || String(err));
+      finishError.classList.add('show');
+      finishBtns.forEach((b) => { b.disabled = false; b.textContent = 'Save and continue'; });
+      skipAllBtn.disabled = false;
+    }
+  }
+
+  function friendlyTarget(t) {
+    const head = t.split('?')[0];
+    if (head === 'opas-student.html') return 'your session';
+    if (head === 'opas-group.html')   return 'your group';
+    return 'your agents';
+  }
+
+  // ── Pre-fill from existing prefs (so "Edit profile" round-trip
+  // shows what the user already chose). Best-effort; failure is non-fatal.
+  // ────────────────────────────────────────────────────────────
+  (async function preloadFromMe() {
+    try {
+      const res = await fetch(RUNTIME + '/me', { headers: authHeaders() });
+      if (!res.ok) return;
+      const me = await res.json();
+      const prefs = me.profile_prefs || {};
+
+      // language
+      if (prefs.language) {
+        const stockCodes = ['en', 'es', 'uk'];
+        if (stockCodes.includes(prefs.language)) {
+          const radio = langOptions.querySelector('input[value="' + prefs.language + '"]');
+          if (radio) {
+            radio.checked = true;
+            radio.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        } else {
+          const otherRadio = langOptions.querySelector('input[value="other"]');
+          if (otherRadio) {
+            otherRadio.checked = true;
+            otherRadio.dispatchEvent(new Event('change', { bubbles: true }));
+            langOtherInput.value = prefs.language;
+            state.language = prefs.language;
+          }
+        }
+      }
+
+      // interests
+      if (Array.isArray(prefs.interests) && prefs.interests.length) {
+        prefs.interests.forEach((tag) => {
+          const t = String(tag).toLowerCase();
+          const existing = interestChips.querySelector('.chip[data-interest="' + cssEscape(t) + '"]');
+          if (existing) {
+            existing.classList.add('active');
+          } else {
+            const c = document.createElement('button');
+            c.type = 'button';
+            c.className = 'chip active';
+            c.dataset.interest = t;
+            c.textContent = t;
+            interestChips.insertBefore(c, addInterestBtn);
+          }
+          if (!state.interests.includes(t)) state.interests.push(t);
+        });
+        refreshInterestCount();
+      }
+
+      // bandwidth
+      if (prefs.bandwidth === 'low' || prefs.bandwidth === 'high') {
+        bwSlider.value = prefs.bandwidth === 'high' ? '1' : '0';
+        updateBwReadout();
+      }
+
+      // timezone
+      if (prefs.timezone && typeof prefs.timezone === 'string') {
+        tzInput.value = prefs.timezone;
+        state.timezone = prefs.timezone;
+        if (prefs.timezone !== browserTZ) tzHint.textContent = 'Custom timezone set.';
+      }
+    } catch (_) { /* best-effort */ }
+  })();
+})();
+</script>
+</body>
+</html>

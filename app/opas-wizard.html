@@ -1,0 +1,908 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="opas-runtime" content="http://localhost:8001"/>
+<title>OPAS Teacher Studio — Project Minerva</title>
+
+<!-- Tailwind -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- YAML encoder -->
+<script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+<!-- Supabase client (v2) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Prism for YAML syntax highlighting -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-yaml.min.js"></script>
+
+<style>
+  html,body { height:100%; }
+  body { font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+  .yaml-pane pre { margin:0; padding:1rem; font-size:12.5px; line-height:1.55; height:100%; overflow:auto; border-radius:0; }
+  .yaml-pane code { white-space: pre; }
+  .step-hidden { display:none; }
+  .chip { @apply inline-block text-xs font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-600 mr-1; }
+  textarea { font-family: ui-sans-serif, system-ui, sans-serif; }
+  details > summary { list-style: none; cursor: pointer; }
+  details > summary::-webkit-details-marker { display: none; }
+  .flash-highlight { animation: flash 0.9s ease-out; }
+  @keyframes flash { 0% { background:#fef9c3; } 100% { background:transparent; } }
+</style>
+</head>
+
+<body class="bg-slate-50 text-slate-800">
+
+<!-- ================================================================== -->
+<!-- DEMO MODE BANNER (only when ?demo=1)                                 -->
+<!-- ================================================================== -->
+<div id="demo-banner" class="hidden bg-amber-50 border-b border-amber-300 px-6 py-2 flex items-center gap-3 text-sm text-amber-900">
+  <span class="text-base">⚡</span>
+  <span class="flex-1">
+    <strong>Demo mode</strong> — every keystroke updates the OPAS YAML on the right.
+    This is the protocol: editable, portable, and runs on any LLM.
+  </span>
+  <button id="demo-dismiss" class="text-amber-700 hover:text-amber-900 text-xs font-medium underline">dismiss</button>
+</div>
+
+<!-- ================================================================== -->
+<!-- TOP BAR                                                              -->
+<!-- ================================================================== -->
+<header class="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between sticky top-0 z-10">
+  <div class="flex items-center gap-3">
+    <div class="w-8 h-8 rounded bg-gradient-to-br from-indigo-500 to-fuchsia-500 flex items-center justify-center text-white font-bold">O</div>
+    <div>
+      <div class="font-semibold text-slate-900">OPAS Teacher Studio</div>
+      <div class="text-xs text-slate-500">Author a skill. Runs on any agent.</div>
+    </div>
+  </div>
+  <div id="auth-state" class="text-sm text-slate-600 flex items-center gap-3"></div>
+</header>
+
+<!-- ================================================================== -->
+<!-- MAIN SPLIT LAYOUT                                                    -->
+<!-- ================================================================== -->
+<main class="flex" style="height: calc(100vh - 57px);">
+
+  <!-- LEFT: WIZARD ------------------------------------------------------ -->
+  <section class="w-1/2 border-r border-slate-200 overflow-y-auto">
+    <div class="max-w-2xl mx-auto p-6">
+
+      <!-- Progress bar -->
+      <div class="flex items-center gap-1 mb-6 text-xs text-slate-500">
+        <span id="progress-label">Step 1 of 6</span>
+        <div class="flex-1 h-1.5 bg-slate-200 rounded overflow-hidden ml-3">
+          <div id="progress-bar" class="h-full bg-indigo-500 transition-all" style="width:16.6%"></div>
+        </div>
+      </div>
+
+      <!-- ============ STEP 1: Identity ============ -->
+      <div class="wizard-step" data-step="1">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-xl font-semibold">Name this skill</h2>
+          <button id="btn-sample-data" type="button"
+                  class="text-xs font-medium px-3 py-1.5 rounded border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100">
+            Load API-318 Unit 1 example
+          </button>
+        </div>
+        <p class="text-sm text-slate-500 mb-5">What subject is the agent tutoring? This ID is how runtimes find the skill.</p>
+
+        <label class="block text-sm font-medium mb-1">Skill name</label>
+        <input id="f-name" type="text" placeholder="e.g. Thinking Probabilistically"
+               class="w-full border border-slate-300 rounded px-3 py-2 mb-4 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 outline-none"/>
+
+        <label class="block text-sm font-medium mb-1">Short description</label>
+        <input id="f-description" type="text" placeholder="e.g. Unit 1 of API-318 — uncertainty, probability, Bayesian updating"
+               class="w-full border border-slate-300 rounded px-3 py-2 mb-4"/>
+
+        <label class="block text-sm font-medium mb-1">Skill ID <span class="text-slate-400 font-normal">— convention: <code class="font-mono">institution.course.unit.slug</code></span></label>
+        <input id="f-id" type="text" placeholder="hks.api318.unit1.thinking-probabilistically"
+               class="w-full border border-slate-300 rounded px-3 py-2 mb-1 font-mono text-sm"/>
+        <p class="text-xs text-slate-500 mb-4">Unique, lowercase, dot-separated. Dima's agent loader keys off this.</p>
+
+        <label class="block text-sm font-medium mb-1">Version</label>
+        <input id="f-version" type="text" value="0.1.0"
+               class="w-full border border-slate-300 rounded px-3 py-2 font-mono text-sm mb-4"/>
+
+        <label class="block text-sm font-medium mb-1">
+          Constitution
+          <span class="text-slate-400 font-normal">— named, versioned ethical guard-rails attached to the agent</span>
+        </label>
+        <select id="f-constitution" class="w-full border border-slate-300 rounded px-3 py-2 font-mono text-sm">
+          <option value="minerva.soul.v1">minerva.soul.v1 — Project Minerva default</option>
+          <option value="">(none — Phase 3 will allow custom uploads)</option>
+        </select>
+        <p class="text-xs text-slate-500 mt-1">Phase 3 will let you upload and version your own. For this demo, attach the Minerva soul.</p>
+      </div>
+
+      <!-- ============ STEP 2: Audience ============ -->
+      <div class="wizard-step step-hidden" data-step="2">
+        <h2 class="text-xl font-semibold mb-1">Who is this for?</h2>
+        <p class="text-sm text-slate-500 mb-5">Level, subject framing, and expected time commitment.</p>
+
+        <label class="block text-sm font-medium mb-1">Level</label>
+        <select id="f-level" class="w-full border border-slate-300 rounded px-3 py-2 mb-4">
+          <option value="graduate">Graduate</option>
+          <option value="undergraduate">Undergraduate</option>
+          <option value="professional">Professional / Executive</option>
+          <option value="k12_hs">K-12 (High School)</option>
+          <option value="k12_ms">K-12 (Middle School)</option>
+          <option value="corporate">Corporate / L&amp;D</option>
+        </select>
+
+        <label class="block text-sm font-medium mb-1">Subject framing</label>
+        <input id="f-subject" type="text" placeholder="e.g. Analytical thinking under uncertainty"
+               class="w-full border border-slate-300 rounded px-3 py-2 mb-4"/>
+
+        <label class="block text-sm font-medium mb-1">Target duration per unit</label>
+        <div class="flex gap-2 mb-4">
+          <input id="f-duration-hours" type="number" value="6" min="1" max="200"
+                 class="w-24 border border-slate-300 rounded px-3 py-2"/>
+          <select id="f-duration-unit" class="border border-slate-300 rounded px-3 py-2">
+            <option value="hours">hours</option>
+            <option value="weeks">weeks</option>
+            <option value="sessions">sessions</option>
+          </select>
+        </div>
+
+        <label class="block text-sm font-medium mb-1">Primary language</label>
+        <select id="f-language" class="w-full border border-slate-300 rounded px-3 py-2">
+          <option value="en">English</option>
+          <option value="uk">Ukrainian</option>
+          <option value="es">Spanish</option>
+        </select>
+      </div>
+
+      <!-- ============ STEP 3: Learning objectives ============ -->
+      <div class="wizard-step step-hidden" data-step="3">
+        <h2 class="text-xl font-semibold mb-1">Learning objectives</h2>
+        <p class="text-sm text-slate-500 mb-5">One per line. Start with a verb (explain, apply, defend, compute…). We'll auto-number as SLO-1, SLO-2…</p>
+
+        <textarea id="f-objectives" rows="8"
+                  placeholder="Explain why subjective probabilities are legitimate when frequencies aren't available.&#10;Apply the Publisher-in-China rubric to assign a probability.&#10;Update a prior using new evidence via Bayes' rule."
+                  class="w-full border border-slate-300 rounded px-3 py-2 text-sm font-mono"></textarea>
+      </div>
+
+      <!-- ============ STEP 4: Pedagogy ============ -->
+      <div class="wizard-step step-hidden" data-step="4">
+        <h2 class="text-xl font-semibold mb-1">Pick a pedagogy</h2>
+        <p class="text-sm text-slate-500 mb-5">The instructional model the agent will follow. Templates come with their own <em>forbidden moves</em> and techniques — we don't ask you to reinvent pedagogy.</p>
+
+        <div class="grid grid-cols-1 gap-3" id="pedagogy-grid">
+          <!-- populated by JS -->
+        </div>
+
+        <details class="mt-6 border border-slate-200 rounded px-4 py-3 bg-white">
+          <summary class="text-sm font-medium text-slate-700 flex items-center gap-2">
+            <span>Advanced · add topic-specific forbidden moves</span>
+            <span class="text-xs text-slate-400">(optional)</span>
+          </summary>
+          <p class="text-xs text-slate-500 mt-2 mb-2">Things the agent must never do in <em>your</em> topic. One per line.</p>
+          <textarea id="f-extra-forbidden" rows="3"
+                    placeholder="Stating Bayes' formula before the learner has offered a prior.&#10;Accepting 'it depends' without pressing for a number."
+                    class="w-full border border-slate-300 rounded px-3 py-2 text-sm"></textarea>
+        </details>
+      </div>
+
+      <!-- ============ STEP 5: Phases ============ -->
+      <div class="wizard-step step-hidden" data-step="5">
+        <h2 class="text-xl font-semibold mb-1">Learning phases</h2>
+        <p class="text-sm text-slate-500 mb-5">The progression that works. Each phase is a node in the agent's state machine.</p>
+
+        <div id="phases-list" class="space-y-3"></div>
+
+        <button id="btn-add-phase" type="button"
+                class="mt-3 text-sm text-indigo-600 hover:text-indigo-700 font-medium">+ Add phase</button>
+      </div>
+
+      <!-- ============ STEP 6: Corpus ============ -->
+      <div class="wizard-step step-hidden" data-step="6">
+        <h2 class="text-xl font-semibold mb-1">Corpus</h2>
+        <p class="text-sm text-slate-500 mb-5">Your course materials. The agent will ground every response in these. Paste Drive links, URLs, or file IDs.</p>
+
+        <div id="corpus-list" class="space-y-2"></div>
+        <button id="btn-add-corpus" type="button"
+                class="mt-3 text-sm text-indigo-600 hover:text-indigo-700 font-medium">+ Add source</button>
+
+        <p class="mt-6 text-xs text-slate-400">
+          v0.1 stores references only. Chunking + embedding runs server-side before students connect.
+        </p>
+      </div>
+
+      <!-- Wizard nav -->
+      <div class="flex justify-between items-center mt-8 pt-4 border-t border-slate-200">
+        <button id="btn-back" type="button"
+                class="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900">← Back</button>
+        <div class="flex items-center gap-3">
+          <span id="save-indicator" class="text-xs text-slate-400"></span>
+          <button id="btn-next" type="button"
+                  class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded">Next →</button>
+          <button id="btn-save-draft" type="button"
+                  class="hidden px-4 py-2 border border-slate-300 hover:bg-slate-100 text-slate-700 text-sm font-medium rounded">Save as draft</button>
+          <button id="btn-publish" type="button"
+                  class="hidden px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded">Publish</button>
+        </div>
+      </div>
+
+      <!-- Emit status -->
+      <div id="emit-status" class="mt-4"></div>
+    </div>
+  </section>
+
+  <!-- RIGHT: YAML PREVIEW ---------------------------------------------- -->
+  <section class="w-1/2 yaml-pane flex flex-col bg-[#2d2d2d]">
+    <div class="px-5 py-2.5 border-b border-slate-700 flex items-center justify-between bg-[#1e1e1e]">
+      <div class="flex items-center gap-2 text-slate-200">
+        <span class="text-xs font-mono bg-indigo-900 text-indigo-200 px-2 py-0.5 rounded">.opas.yaml</span>
+        <span class="text-sm">live preview</span>
+      </div>
+      <div class="text-xs text-slate-400">
+        <span id="yaml-stat">—</span>
+      </div>
+    </div>
+    <pre class="flex-1"><code id="yaml-output" class="language-yaml">Answer the wizard questions…</code></pre>
+  </section>
+
+</main>
+
+<!-- ================================================================== -->
+<!-- AUTH MODAL                                                           -->
+<!-- ================================================================== -->
+<div id="auth-modal" class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-20">
+  <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-sm">
+    <h3 class="font-semibold text-lg mb-1">Sign in to Teacher Studio</h3>
+    <p class="text-sm text-slate-500 mb-4">Skills are saved under your account so Supabase RLS can enforce authorship.</p>
+    <label class="block text-sm font-medium mb-1">Email</label>
+    <input id="auth-email" type="email" class="w-full border border-slate-300 rounded px-3 py-2 mb-3"/>
+    <label class="block text-sm font-medium mb-1">Password</label>
+    <input id="auth-password" type="password" class="w-full border border-slate-300 rounded px-3 py-2 mb-4"/>
+    <div id="auth-error" class="text-sm text-red-600 mb-3 hidden"></div>
+    <div class="flex justify-between items-center">
+      <button id="auth-cancel" class="text-sm text-slate-500">Cancel</button>
+      <button id="auth-submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded">Sign in</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================== -->
+<!-- JS                                                                   -->
+<!-- ================================================================== -->
+<script>
+// -------------------- CONFIG ----------------------------------------------
+// Anon (publishable) key — safe for browser. RLS enforces access.
+const SUPABASE_URL = 'https://bhpfpespvjiolsglymbk.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_XE5zv_34IPmQ5lq57uX44w_aiR8mCAm';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// OPAS runtime — used for /pedagogies fetch and (intended) /skills/generate.
+const OPAS_RUNTIME = document.querySelector('meta[name="opas-runtime"]').content;
+// Demo bearer fallback (also stored under opas_teacher_token by the dashboard auth gate).
+const TEACHER_BEARER = localStorage.getItem('opas_teacher_token') || 'dev-token-change-me';
+
+// Live API pedagogy catalogue (fetched from /pedagogies). Falls back to local
+// PEDAGOGY_TEMPLATES if the runtime is unreachable.
+let API_PEDAGOGIES = [];
+let pedagogyMap = {};
+
+// -------------------- PEDAGOGY TEMPLATES ----------------------------------
+// "What OPAS provides for free" — teacher picks one, doesn't write it.
+const PEDAGOGY_TEMPLATES = {
+  socratic_bayesian: {
+    label: 'Socratic-Bayesian',
+    summary: 'Agent asks first, elicits a prior, feeds evidence piece by piece, learner updates.',
+    recommended_for: 'Analytical reasoning, decision-making, forecasting',
+    available: true,
+    spec: {
+      theoretical_basis: [
+        'Constructivism: learner builds knowledge actively; agent never lectures first.',
+        'Desirable difficulty (Bjork): productive struggle before scaffolding.',
+        'Retrieval practice > re-reading: probe for recall before presenting.',
+        'Metacognition: every phase ends with a learning journal entry.',
+        'Calibration science (Tetlock): accuracy requires feedback and many forecasts.'
+      ],
+      instructional_model: {
+        primary: 'socratic_bayesian',
+        description: 'Agent asks the question FIRST, elicits the learner\'s prior, feeds new evidence piece-by-piece, asks the learner to update and justify.',
+        secondary_models_allowed: ['case_method', 'worked_example'],
+        forbidden_moves: [
+          'Stating the answer before the learner has offered a prior.',
+          'Filling silence with mini-lectures longer than 3 sentences.',
+          'Praising vague hedging (\'it depends\') without asking for a number.'
+        ]
+      },
+      techniques: {
+        always_use: [
+          { id: 'T-ask-first',    description: 'Every new concept starts with a question the learner must attempt before any explanation.' },
+          { id: 'T-elicit-prior', description: 'Before showing new evidence, ask for a numerical prior (%).' },
+          { id: 'T-name-the-bias', description: 'When the learner over- or under-updates, name the bias.' }
+        ],
+        often_use: [
+          { id: 'T-fermi',        description: 'Break hard forecasts into Fermi-estimable sub-questions.' },
+          { id: 'T-extreme-case', description: 'When stuck, go to an extreme case.' }
+        ],
+        avoid: [
+          { id: 'T-gamify', description: 'No streaks, badges, or leaderboards.' }
+        ]
+      }
+    },
+    persona_defaults: {
+      voice:         'Warm, curious, intellectually honest. Asks more than tells.',
+      register:      'Graduate-level; comfortable with math but leads with intuition.',
+      opening_style: 'Greet; surface one question from the handout; go.',
+      closing_style: 'Summarise what the learner concluded (not what the agent taught); invite the journal entry.',
+      disallowed_phrases: ['That\'s a great question!', 'As an AI language model...', 'Let me explain...']
+    }
+  },
+
+  case_method: {
+    label: 'Case Method (HBS-style)',
+    summary: 'Immersion in a real case; discussion-led; no single right answer; decision-forcing.',
+    recommended_for: 'Leadership, strategy, policy',
+    available: false
+  },
+  worked_example: {
+    label: 'Worked Example',
+    summary: 'Step-by-step demonstration, then faded scaffolding as the learner takes over.',
+    recommended_for: 'Mathematics, programming, technical procedures',
+    available: false
+  },
+  constructivist_free: {
+    label: 'Constructivist / Free Exploration',
+    summary: 'Open-ended, student-led; agent acts as resource not director.',
+    recommended_for: 'Arts, humanities, research training',
+    available: false
+  }
+};
+
+// -------------------- STATE ----------------------------------------------
+let currentStep = 1;
+const TOTAL_STEPS = 6;
+let session = null; // Supabase auth session
+
+const skillData = {
+  id: '',
+  name: '',
+  version: '0.1.0',
+  description: '',
+  level: 'graduate',
+  subject: '',
+  duration: { value: 6, unit: 'hours' },
+  language: 'en',
+  objectives: [],
+  pedagogy_key: 'socratic_bayesian',
+  constitution_ref: 'minerva.soul.v1',
+  extra_forbidden: [],
+  phases: [
+    { name: 'Phase 1', duration_min: 60, objective_ref: 'SLO-1', mastery: 'Learner can explain the concept in their own words.' }
+  ],
+  corpus: []
+};
+
+// -------------------- DOM WIRING ------------------------------------------
+const $ = id => document.getElementById(id);
+
+function slugify(s) {
+  return s.toLowerCase()
+    .replace(/[^a-z0-9\s.-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-');
+}
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Resolve the spec used by buildOpasObject(). Prefers a rich local template
+// when the selected pedagogy id matches a local key; otherwise builds a minimal
+// spec from the API entry. Returns the same shape regardless of source.
+function getPedagogySpec(pedKey) {
+  const local = PEDAGOGY_TEMPLATES[pedKey];
+  if (local?.spec) {
+    return {
+      theoretical_basis:    local.spec.theoretical_basis    || [],
+      instructional_model:  local.spec.instructional_model  || {},
+      techniques:           local.spec.techniques           || {},
+      persona_defaults:     local.persona_defaults          || {}
+    };
+  }
+  const api = pedagogyMap[pedKey];
+  if (api) {
+    return {
+      theoretical_basis: [],
+      instructional_model: {
+        primary: api.id,
+        description: api.description || '',
+        forbidden_moves: []
+      },
+      techniques: {
+        always_use: (api.techniques || []).map((t, i) => ({ id: `T-${i+1}`, description: t }))
+      },
+      persona_defaults: {}
+    };
+  }
+  return { theoretical_basis: [], instructional_model: {}, techniques: {}, persona_defaults: {} };
+}
+
+function renderPedagogyCards() {
+  const grid = $('pedagogy-grid');
+  grid.innerHTML = '';
+  // Source: live API catalogue if loaded; otherwise fall back to the local
+  // PEDAGOGY_TEMPLATES dict (only the available=true entries).
+  const source = API_PEDAGOGIES.length
+    ? API_PEDAGOGIES
+    : Object.entries(PEDAGOGY_TEMPLATES)
+        .filter(([_, t]) => t.available)
+        .map(([id, t]) => ({ id, name: t.label, description: t.summary, techniques: [] }));
+
+  source.forEach(p => {
+    const selected = skillData.pedagogy_key === p.id;
+    const card = document.createElement('button');
+    card.type = 'button';
+    // Tooltip: show techniques on hover (id + name + description tooltip per brief)
+    card.title = (p.techniques || []).join(' · ') || p.description || '';
+    card.className = [
+      'text-left p-4 rounded border transition',
+      selected ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 bg-white hover:border-slate-300'
+    ].join(' ');
+    card.innerHTML = `
+      <div class="flex items-start justify-between">
+        <div>
+          <div class="font-medium text-slate-900">${escapeHtml(p.name)}</div>
+          <div class="text-xs font-mono text-slate-400 mt-0.5">${escapeHtml(p.id)}</div>
+          <div class="text-sm text-slate-600 mt-1">${escapeHtml(p.description || '')}</div>
+        </div>
+        <div class="text-xs ${selected ? 'text-indigo-600 font-medium' : 'text-slate-400'}">
+          ${selected ? '✓ selected' : ''}
+        </div>
+      </div>`;
+    card.onclick = () => {
+      skillData.pedagogy_key = p.id;
+      renderPedagogyCards();
+      renderYaml();
+    };
+    grid.appendChild(card);
+  });
+}
+
+async function fetchPedagogies() {
+  try {
+    const res = await fetch(`${OPAS_RUNTIME}/pedagogies`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const list = await res.json();
+    if (!Array.isArray(list) || !list.length) throw new Error('empty list');
+    API_PEDAGOGIES = list;
+    pedagogyMap = Object.fromEntries(list.map(p => [p.id, p]));
+    if (!pedagogyMap[skillData.pedagogy_key]) {
+      // Default selection follows the live catalogue.
+      skillData.pedagogy_key = list[0].id;
+    }
+  } catch (e) {
+    console.warn('GET /pedagogies failed; using built-in fallback:', e.message);
+  }
+  renderPedagogyCards();
+  renderYaml();
+}
+
+function renderPhasesList() {
+  const list = $('phases-list');
+  list.innerHTML = '';
+  skillData.phases.forEach((p, i) => {
+    const row = document.createElement('div');
+    row.className = 'border border-slate-200 rounded p-3 bg-white';
+    row.innerHTML = `
+      <div class="flex items-center justify-between mb-2">
+        <div class="text-xs font-medium text-slate-500 uppercase tracking-wide">Phase ${i+1}</div>
+        <button type="button" class="text-xs text-red-500" data-del="${i}">remove</button>
+      </div>
+      <input type="text" placeholder="Phase name" value="${p.name || ''}"
+             class="w-full border border-slate-300 rounded px-2 py-1 text-sm mb-2" data-f="name" data-i="${i}"/>
+      <div class="flex gap-2 mb-2">
+        <input type="number" placeholder="min" value="${p.duration_min}" min="1"
+               class="w-20 border border-slate-300 rounded px-2 py-1 text-sm" data-f="duration_min" data-i="${i}"/>
+        <input type="text" placeholder="Objective (e.g. SLO-1)" value="${p.objective_ref}"
+               class="flex-1 border border-slate-300 rounded px-2 py-1 text-sm font-mono" data-f="objective_ref" data-i="${i}"/>
+      </div>
+      <textarea rows="2" placeholder="How do you know they got it? e.g. Can explain the rubric in own words AND correctly answer 2 of 3 probes."
+                class="w-full border border-slate-300 rounded px-2 py-1 text-sm" data-f="mastery" data-i="${i}">${p.mastery || ''}</textarea>
+    `;
+    list.appendChild(row);
+  });
+  // bind inputs
+  list.querySelectorAll('[data-i]').forEach(el => {
+    el.oninput = e => {
+      const i = +el.dataset.i, f = el.dataset.f;
+      const v = el.type === 'number' ? +el.value : el.value;
+      skillData.phases[i][f] = v;
+      renderYamlDebounced();
+    };
+  });
+  list.querySelectorAll('[data-del]').forEach(el => {
+    el.onclick = () => {
+      skillData.phases.splice(+el.dataset.del, 1);
+      renderPhasesList(); renderYaml();
+    };
+  });
+}
+
+function renderCorpusList() {
+  const list = $('corpus-list');
+  list.innerHTML = '';
+  skillData.corpus.forEach((c, i) => {
+    const row = document.createElement('div');
+    row.className = 'border border-slate-200 rounded p-3 bg-white flex gap-2 items-start';
+    row.innerHTML = `
+      <div class="flex-1 space-y-2">
+        <input type="text" placeholder="Title" value="${c.title || ''}"
+               class="w-full border border-slate-300 rounded px-2 py-1 text-sm" data-f="title" data-i="${i}"/>
+        <input type="text" placeholder="URL or Drive file ID" value="${c.ref || ''}"
+               class="w-full border border-slate-300 rounded px-2 py-1 text-sm font-mono" data-f="ref" data-i="${i}"/>
+      </div>
+      <button type="button" class="text-xs text-red-500" data-del="${i}">×</button>
+    `;
+    list.appendChild(row);
+  });
+  list.querySelectorAll('[data-i]').forEach(el => {
+    el.oninput = e => {
+      skillData.corpus[+el.dataset.i][el.dataset.f] = el.value;
+      renderYamlDebounced();
+    };
+  });
+  list.querySelectorAll('[data-del]').forEach(el => {
+    el.onclick = () => { skillData.corpus.splice(+el.dataset.del, 1); renderCorpusList(); renderYaml(); };
+  });
+}
+
+// -------------------- YAML BUILDER ---------------------------------------
+function buildOpasObject() {
+  // Capture the live form values into skillData
+  skillData.name = $('f-name').value.trim();
+  skillData.description = $('f-description').value.trim();
+  skillData.id = $('f-id').value.trim();
+  skillData.version = $('f-version').value.trim() || '0.1.0';
+  skillData.level = $('f-level').value;
+  skillData.subject = $('f-subject').value.trim();
+  skillData.duration = { value: +$('f-duration-hours').value, unit: $('f-duration-unit').value };
+  skillData.language = $('f-language').value;
+  skillData.objectives = $('f-objectives').value.split('\n').map(s => s.trim()).filter(Boolean);
+  skillData.extra_forbidden = $('f-extra-forbidden').value.split('\n').map(s => s.trim()).filter(Boolean);
+  skillData.constitution_ref = ($('f-constitution')?.value || '').trim();
+
+  const tpl = getPedagogySpec(skillData.pedagogy_key);
+  const today = new Date().toISOString().slice(0, 10);
+
+  const obj = {
+    opas_version: '0.2',
+    skill: {
+      id: skillData.id,
+      name: skillData.name || '(untitled)',
+      version: skillData.version,
+      description: skillData.description,
+      level: skillData.level,
+      subject: skillData.subject,
+      language: skillData.language,
+      duration: skillData.duration,
+      license: 'CC BY-NC-SA 4.0',
+      authored_with: 'OPAS Teacher Studio v0.1'
+    },
+    ...(skillData.constitution_ref ? { constitution: { ref: skillData.constitution_ref } } : {}),
+    learning_objectives: skillData.objectives.map((o, i) => ({ id: `SLO-${i+1}`, statement: o })),
+    pedagogy: {
+      theoretical_basis: tpl.theoretical_basis,
+      instructional_model: {
+        ...(tpl.instructional_model || {}),
+        forbidden_moves: [
+          ...((tpl.instructional_model && tpl.instructional_model.forbidden_moves) || []),
+          ...skillData.extra_forbidden
+        ]
+      },
+      techniques: tpl.techniques
+    },
+    persona: tpl.persona_defaults,
+    phases: skillData.phases.map((p, i) => ({
+      id: `p${i+1}-${slugify(p.name || `phase-${i+1}`)}`,
+      name: p.name || `Phase ${i+1}`,
+      duration_target_min: p.duration_min,
+      objectives: [p.objective_ref],
+      mastery: { criterion: p.mastery }
+    })),
+    corpus: {
+      primary_sources: skillData.corpus.map((c, i) => ({
+        id: `src-${i+1}`, title: c.title, ref: c.ref, role: 'phase_primary'
+      })),
+      grounding_policy: {
+        require_citation: true,
+        min_similarity: 0.72,
+        refuse_if_ungrounded: true
+      }
+    },
+    runtime_hints: {
+      default_model: 'claude-sonnet-4-6',
+      fallback_models: ['gpt-5', 'gemini-2.5-pro'],
+      max_response_tokens: 400,
+      rag_top_k: 4,
+      temperature: 0.4
+    },
+    changelog: [
+      { version: skillData.version, date: today, author: session?.user?.email || '(unknown)', notes: 'Authored via OPAS Teacher Studio wizard.' }
+    ]
+  };
+  return obj;
+}
+
+function renderYaml() {
+  const obj = buildOpasObject();
+  const yaml = jsyaml.dump(obj, { lineWidth: 120, noRefs: true });
+  const el = $('yaml-output');
+  el.textContent = yaml;
+  Prism.highlightElement(el);
+  $('yaml-stat').textContent = `${yaml.split('\n').length} lines · ${(yaml.length/1024).toFixed(1)} KB`;
+  $('save-indicator').textContent = 'preview updated';
+}
+
+// Debounced wrapper for form-input listeners. 300ms feels live without
+// re-running Prism on every keystroke. Use `renderYaml()` directly when you
+// need immediate feedback after a discrete UI action (card click, add-phase).
+let _yamlDebounceTimer = null;
+function renderYamlDebounced() {
+  if (_yamlDebounceTimer) clearTimeout(_yamlDebounceTimer);
+  $('save-indicator').textContent = 'editing…';
+  _yamlDebounceTimer = setTimeout(() => {
+    _yamlDebounceTimer = null;
+    renderYaml();
+  }, 300);
+}
+
+// -------------------- WIZARD NAV ------------------------------------------
+function showStep(n) {
+  document.querySelectorAll('.wizard-step').forEach(el => el.classList.add('step-hidden'));
+  document.querySelector(`.wizard-step[data-step="${n}"]`).classList.remove('step-hidden');
+  $('progress-label').textContent = `Step ${n} of ${TOTAL_STEPS}`;
+  $('progress-bar').style.width = `${(n / TOTAL_STEPS) * 100}%`;
+  $('btn-back').style.visibility = n === 1 ? 'hidden' : 'visible';
+  if (n === TOTAL_STEPS) {
+    $('btn-next').classList.add('hidden');
+    $('btn-save-draft').classList.remove('hidden');
+    $('btn-publish').classList.remove('hidden');
+  } else {
+    $('btn-next').classList.remove('hidden');
+    $('btn-save-draft').classList.add('hidden');
+    $('btn-publish').classList.add('hidden');
+  }
+  currentStep = n;
+}
+
+// -------------------- AUTH -----------------------------------------------
+function refreshAuthUi() {
+  const el = $('auth-state');
+  if (session?.user) {
+    el.innerHTML = `
+      <span class="text-slate-500">signed in as</span>
+      <span class="font-medium">${session.user.email}</span>
+      <button id="btn-signout" class="text-xs text-slate-500 hover:text-slate-700 underline">sign out</button>`;
+    $('btn-signout').onclick = async () => { await sb.auth.signOut(); session = null; refreshAuthUi(); };
+  } else {
+    el.innerHTML = `<button id="btn-signin" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-sm rounded">Sign in to save</button>`;
+    $('btn-signin').onclick = () => $('auth-modal').classList.replace('hidden', 'flex');
+  }
+}
+
+async function doSignIn() {
+  const email = $('auth-email').value.trim();
+  const pw = $('auth-password').value;
+  $('auth-error').classList.add('hidden');
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
+  if (error) {
+    $('auth-error').textContent = error.message;
+    $('auth-error').classList.remove('hidden');
+    return;
+  }
+  session = data.session;
+  $('auth-modal').classList.replace('flex', 'hidden');
+  refreshAuthUi();
+}
+
+// -------------------- SAVE / PUBLISH -------------------------------------
+//
+// NOTE — backend gap: the brief specifies POST /skills/generate with a `status`
+// field. The Phase 1 endpoint (skill_gen.py) ignores arbitrary YAML, regenerates
+// it from materials_text via Claude, hardcodes status='pilot', and forces a
+// `student.<id>.<slug>.<ts>` skill_id format that drops the teacher-authored
+// `institution.course.unit.slug` ID. So calling /skills/generate would discard
+// the wizard output entirely. We persist via the existing Supabase upsert path
+// (which already round-trips correctly to /admin/dashboard/skills) and
+// parameterize it by the new draft/publish buttons. See WS-T2 handback.
+
+function dashboardUrl(skillId) {
+  const base = (location.origin && location.origin.startsWith('http'))
+    ? `${location.origin}/opas-dashboard.html`
+    : `http://localhost:8080/opas-dashboard.html`;
+  return `${base}?skill_id=${encodeURIComponent(skillId)}`;
+}
+
+async function saveSkill(targetStatus) {
+  if (!session?.user) {
+    $('emit-status').innerHTML = `<div class="text-sm text-red-600">Sign in first — RLS blocks unsigned inserts.</div>`;
+    $('auth-modal').classList.replace('hidden', 'flex');
+    return;
+  }
+  const obj = buildOpasObject();
+  if (!obj.skill.id || !obj.skill.name) {
+    $('emit-status').innerHTML = `<div class="text-sm text-red-600">Skill name and ID required.</div>`;
+    return;
+  }
+  if (obj.skill.id.split('.').length < 3) {
+    $('emit-status').innerHTML = `<div class="text-sm text-red-600">Skill ID should follow <code class="font-mono">institution.course.unit.slug</code> (at least 3 dot-segments). Got: <code class="font-mono">${obj.skill.id}</code></div>`;
+    return;
+  }
+
+  const verb = targetStatus === 'draft' ? 'Saving draft' : 'Publishing';
+  $('emit-status').innerHTML = `<div class="text-sm text-slate-500">${verb}…</div>`;
+
+  // Lock the buttons so we don't double-submit.
+  $('btn-save-draft').disabled = true;
+  $('btn-publish').disabled = true;
+
+  try {
+    const { data, error } = await sb.from('skills').upsert({
+      id: obj.skill.id,
+      name: obj.skill.name,
+      version: obj.skill.version,
+      status: targetStatus,
+      author_id: session.user.id,
+      yaml: obj,
+      schema_version: '0.2'
+    }, { onConflict: 'id' }).select();
+    if (error) throw error;
+
+    const url = dashboardUrl(obj.skill.id);
+    $('emit-status').innerHTML = `
+      <div class="flex items-center gap-2 text-sm bg-emerald-50 border border-emerald-200 text-emerald-800 rounded px-3 py-2">
+        <span class="font-medium">✓ ${targetStatus === 'draft' ? 'Draft saved' : 'Published'}</span>
+        <span class="font-mono">${escapeHtml(obj.skill.id)}@${escapeHtml(obj.skill.version)}</span>
+        <span class="text-emerald-600">— redirecting to dashboard…</span>
+      </div>`;
+    // Brief small delay so the success state is visible.
+    setTimeout(() => { location.href = url; }, 700);
+  } catch (e) {
+    $('emit-status').innerHTML = `<div class="text-sm text-red-600">Save failed: ${escapeHtml(e.message || String(e))}</div>`;
+    $('btn-save-draft').disabled = false;
+    $('btn-publish').disabled = false;
+  }
+}
+
+// -------------------- SAMPLE DATA ----------------------------------------
+const SAMPLE_API318_UNIT1 = {
+  name: 'Thinking Probabilistically',
+  description: 'API-318 Unit 1 — uncertainty, probability, Bayesian updating.',
+  id: 'hks.api318.unit1.thinking-probabilistically',
+  version: '0.1.0',
+  level: 'graduate',
+  subject: 'Analytical thinking under uncertainty',
+  duration_hours: 6,
+  duration_unit: 'hours',
+  language: 'en',
+  objectives: [
+    "Explain why subjective probabilities are legitimate when frequencies aren't available.",
+    "Apply the Publisher-in-China rubric to assign a probability to a one-shot event.",
+    "Update a prior using new evidence via Bayes' rule and justify the updated number."
+  ].join('\n'),
+  extra_forbidden: [
+    "Stating Bayes' formula before the learner has offered a prior.",
+    "Accepting 'it depends' without pressing for a number."
+  ].join('\n')
+};
+
+function loadSampleData() {
+  const s = SAMPLE_API318_UNIT1;
+  $('f-name').value           = s.name;
+  $('f-description').value    = s.description;
+  $('f-id').value             = s.id;
+  $('f-version').value        = s.version;
+  $('f-level').value          = s.level;
+  $('f-subject').value        = s.subject;
+  $('f-duration-hours').value = s.duration_hours;
+  $('f-duration-unit').value  = s.duration_unit;
+  $('f-language').value       = s.language;
+  $('f-objectives').value     = s.objectives;
+  $('f-extra-forbidden').value= s.extra_forbidden;
+  // Mark the user as having authored the id so name-edits don't clobber it.
+  if (typeof window._idUserEdited !== 'undefined') window._idUserEdited = true;
+  renderYaml();
+  $('save-indicator').textContent = 'sample loaded';
+}
+
+// -------------------- INIT ------------------------------------------------
+async function init() {
+  // Restore session (if any)
+  const { data } = await sb.auth.getSession();
+  session = data.session;
+  refreshAuthUi();
+
+  // Seed phases + one empty corpus row
+  if (skillData.phases.length === 1) {
+    skillData.phases = [
+      { name: 'Uncertainty intro',        duration_min: 60, objective_ref: 'SLO-1', mastery: 'Learner can explain why subjective probabilities are legitimate when frequencies aren\'t available.' },
+      { name: 'Anchor case',              duration_min: 75, objective_ref: 'SLO-2', mastery: 'Learner applies the phase-2 rubric to a fresh case in their own words.' },
+      { name: 'Assigning probabilities',  duration_min: 70, objective_ref: 'SLO-2', mastery: 'Learner assigns a numeric prior and justifies it referencing a Maxim.' }
+    ];
+  }
+  skillData.corpus = [ { title: '', ref: '' } ];
+
+  // Demo-mode banner — shown only when ?demo=1 in URL, dismissible.
+  const params = new URLSearchParams(location.search);
+  if (params.get('demo') === '1') {
+    const banner = $('demo-banner');
+    banner.classList.remove('hidden');
+    banner.classList.add('flex');
+    // The <main> below has a hard-coded height: calc(100vh - 57px) that
+    // assumes only the header is above it. Bump the calc by the banner height
+    // so the YAML pane stays correctly sized.
+    const main = document.querySelector('main');
+    const adjust = () => {
+      const bh = banner.offsetHeight;
+      main.style.height = `calc(100vh - ${57 + bh}px)`;
+    };
+    adjust();
+    window.addEventListener('resize', adjust);
+    $('demo-dismiss').onclick = () => {
+      banner.remove();
+      main.style.height = 'calc(100vh - 57px)';
+    };
+  }
+
+  // Cards initial render uses local fallback; fetchPedagogies will replace
+  // them once the API responds.
+  renderPedagogyCards();
+  renderPhasesList();
+  renderCorpusList();
+  fetchPedagogies();
+
+  // Wire form inputs to YAML preview
+  // Track whether the user has manually edited the id; if not, keep it synced to the name.
+  window._idUserEdited = false;
+  $('f-id').addEventListener('input', () => { window._idUserEdited = true; });
+
+  ['f-name','f-description','f-id','f-version','f-level','f-subject','f-duration-hours','f-duration-unit','f-language','f-objectives','f-extra-forbidden','f-constitution']
+    .forEach(id => $(id).addEventListener('input', () => {
+      if (id === 'f-name' && !window._idUserEdited) {
+        // Pre-fill with a namespaced scaffold so authors see the convention.
+        // Default prefix is hks.api318.unit1 — authors should edit to match their own course.
+        const slug = slugify($('f-name').value || 'untitled-skill');
+        $('f-id').value = `hks.api318.unit1.${slug}`;
+      }
+      renderYamlDebounced();
+    }));
+
+  // Sample-data button — pre-fills the form for live demos.
+  $('btn-sample-data').onclick = loadSampleData;
+
+  // Add-phase / add-corpus buttons (immediate render — discrete UI action)
+  $('btn-add-phase').onclick = () => {
+    skillData.phases.push({ name:'', duration_min: 60, objective_ref: `SLO-${skillData.phases.length+1}`, mastery: '' });
+    renderPhasesList(); renderYaml();
+  };
+  $('btn-add-corpus').onclick = () => {
+    skillData.corpus.push({ title: '', ref: '' });
+    renderCorpusList(); renderYaml();
+  };
+
+  // Wizard nav
+  $('btn-next').onclick = () => showStep(Math.min(currentStep + 1, TOTAL_STEPS));
+  $('btn-back').onclick = () => showStep(Math.max(currentStep - 1, 1));
+  $('btn-save-draft').onclick = () => saveSkill('draft');
+  $('btn-publish').onclick    = () => saveSkill('pilot');
+
+  // Auth modal
+  $('auth-submit').onclick = doSignIn;
+  $('auth-cancel').onclick = () => $('auth-modal').classList.replace('flex', 'hidden');
+
+  showStep(1);
+  renderYaml();
+}
+
+init();
+</script>
+
+</body>
+</html>

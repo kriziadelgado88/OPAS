@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="opas-runtime" content="http://localhost:8001">
+<title>OPAS — Teacher Home</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --brand: #1a3a5c;
+  --accent: #c8a951;
+  --border: #dde3ea;
+  --text: #1c2b3a;
+  --muted: #64748b;
+  --bg: #f8fafc;
+  --surface: #fff;
+  --radius: 10px;
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+body { font-family: var(--font); color: var(--text); background: var(--bg); min-height: 100vh; display: flex; flex-direction: column; }
+
+#topbar {
+  background: var(--brand); color: #fff;
+  padding: 0 24px; height: 52px;
+  display: flex; align-items: center; gap: 14px; flex-shrink: 0;
+}
+#topbar .logo  { font-weight: 700; font-size: 15px; letter-spacing: .04em; }
+#topbar .title { font-size: 13px; opacity: .65; }
+#topbar .spacer { flex: 1; }
+#topbar .badge {
+  font-size: 11px; font-weight: 600; letter-spacing: .06em;
+  background: var(--accent); color: #1a1a1a;
+  padding: 3px 9px; border-radius: 20px;
+}
+#topbar .signout {
+  background: rgba(255,255,255,.08); color: #fff; border: 1px solid rgba(255,255,255,.18);
+  border-radius: 6px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
+}
+#topbar .signout:hover { background: rgba(255,255,255,.16); }
+
+#main {
+  flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 24px;
+}
+
+.container { width: 100%; max-width: 920px; }
+
+.greeting {
+  text-align: center; margin-bottom: 36px;
+}
+.greeting h1 {
+  font-size: 28px; font-weight: 700; color: var(--brand); margin-bottom: 6px;
+}
+.greeting p {
+  font-size: 15px; color: var(--muted);
+}
+
+.cards {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+}
+
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 28px 26px; text-decoration: none; color: var(--text);
+  display: flex; flex-direction: column; gap: 10px;
+  transition: border-color .15s, transform .15s, box-shadow .15s;
+  cursor: pointer;
+}
+.card:hover {
+  border-color: var(--brand);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(26,58,92,.08);
+}
+.card-icon {
+  width: 44px; height: 44px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; margin-bottom: 6px;
+}
+.card-icon.author { background: #eef2ff; color: #4338ca; }
+.card-icon.review { background: #ecfdf5; color: #047857; }
+
+.card-title { font-size: 18px; font-weight: 700; color: var(--brand); }
+.card-desc  { font-size: 14px; color: var(--muted); line-height: 1.5; }
+.card-cta   {
+  margin-top: 8px; font-size: 13px; font-weight: 600; color: var(--brand);
+  display: inline-flex; align-items: center; gap: 4px;
+}
+
+#footer {
+  text-align: center; padding: 18px 24px; color: var(--muted); font-size: 12px;
+}
+#footer code { font-family: 'Consolas', 'Menlo', monospace; }
+
+/* Auth gate (shown briefly while token is checked) */
+#gate {
+  flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column;
+  gap: 12px; color: var(--muted); font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .cards { grid-template-columns: 1fr; }
+  .greeting h1 { font-size: 22px; }
+}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <span class="logo">OPAS</span>
+  <span class="title">Teacher Home</span>
+  <span class="spacer"></span>
+  <span class="badge">TEACHER</span>
+  <button id="signout-btn" class="signout" style="display:none">Sign out</button>
+</div>
+
+<!-- Auth-checking placeholder -->
+<div id="gate">Checking sign-in…</div>
+
+<!-- Authenticated view -->
+<div id="main" style="display:none">
+  <div class="container">
+    <div class="greeting">
+      <h1>Welcome back</h1>
+      <p>Pick a surface — author a new skill, or review what your students are doing right now.</p>
+    </div>
+
+    <div class="cards">
+      <a class="card" id="card-author" href="opas-wizard.html">
+        <div class="card-icon author">✎</div>
+        <div class="card-title">Author a skill</div>
+        <div class="card-desc">
+          Open the OPAS Teacher Studio. Walk through six steps, watch the YAML emit live on the right, then publish to the runtime.
+        </div>
+        <div class="card-cta">Open the wizard →</div>
+      </a>
+
+      <a class="card" id="card-dashboard" href="opas-dashboard.html">
+        <div class="card-icon review">▤</div>
+        <div class="card-title">View student sessions</div>
+        <div class="card-desc">
+          See live tutoring sessions, pass rates, constitution events, and conversation transcripts for every skill you own.
+        </div>
+        <div class="card-cta">Open the dashboard →</div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<div id="footer">
+  Runtime: <code id="runtime-label">—</code>
+</div>
+
+<script>
+const RUNTIME = document.querySelector('meta[name="opas-runtime"]').content;
+const LS_KEY  = 'opas_teacher_token';
+document.getElementById('runtime-label').textContent = RUNTIME;
+
+const $gate    = document.getElementById('gate');
+const $main    = document.getElementById('main');
+const $signout = document.getElementById('signout-btn');
+
+async function checkAuth() {
+  const token = localStorage.getItem(LS_KEY);
+  if (!token) {
+    // Fall back to signup (Instance S owns opas-signup.html).
+    location.replace('opas-signup.html');
+    return;
+  }
+  // Verify the token still works against the runtime — cheap GET.
+  try {
+    const res = await fetch(`${RUNTIME}/admin/dashboard/skills`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.status === 401) {
+      localStorage.removeItem(LS_KEY);
+      location.replace('opas-signup.html');
+      return;
+    }
+    if (!res.ok) throw new Error(`Runtime returned ${res.status}`);
+  } catch (e) {
+    // Don't block the user on a network blip — show the cards anyway.
+    // Wizard / dashboard each handle their own re-auth on click.
+    console.warn('Auth verify failed (showing cards anyway):', e.message);
+  }
+  $gate.style.display = 'none';
+  $main.style.display = 'flex';
+  $signout.style.display = 'inline-block';
+}
+
+$signout.addEventListener('click', () => {
+  localStorage.removeItem(LS_KEY);
+  location.replace('opas-signup.html');
+});
+
+// Pass through ?demo=1 to the wizard so the banner shows up if the teacher
+// landed here from a demo deep-link.
+const params = new URLSearchParams(location.search);
+if (params.get('demo') === '1') {
+  document.getElementById('card-author').href = 'opas-wizard.html?demo=1';
+}
+
+checkAuth();
+</script>
+</body>
+</html>

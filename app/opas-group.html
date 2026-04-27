@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="opas-runtime" content="http://localhost:8001">
+<meta name="opas-static" content="http://localhost:8080">
+<title>OPAS — Group</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --brand: #1a3a5c;
+    --brand-hover: #254f7a;
+    --brand-light: #e8f0f8;
+    --accent: #c8a951;
+    --bg: #f8fafc;
+    --card-bg: #fff;
+    --border: #dde3ea;
+    --border-strong: #c5cdd6;
+    --text: #1c2b3a;
+    --muted: #64748b;
+    --error-bg: #fef2f2;
+    --error-fg: #b42318;
+    --error-border: #fecaca;
+    --success-bg: #ecfdf3;
+    --success-fg: #067647;
+    --success-border: #abefc6;
+    --pill-owner-bg: #fff4d6;
+    --pill-owner-fg: #7a5c00;
+    --pill-member-bg: #e8f0f8;
+    --pill-member-fg: #1a3a5c;
+    --pill-pilot:    #e8f0f8;
+    --pill-pilot-fg: #1a3a5c;
+    --pill-published-bg: #ecfdf3;
+    --pill-published-fg: #067647;
+    --radius: 12px;
+    --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+
+  body {
+    font-family: var(--font);
+    color: var(--text);
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── TOP BAR ─────────────────────────────────────────────── */
+  #topbar {
+    background: var(--brand);
+    color: #fff;
+    padding: 0 20px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+  #topbar .logo { font-weight: 700; font-size: 15px; letter-spacing: 0.04em; opacity: 0.95; }
+  #topbar .accent-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent); opacity: 0.85;
+  }
+  #topbar .back {
+    color: rgba(255,255,255,0.78);
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+  }
+  #topbar .back:hover { background: rgba(255,255,255,0.12); color: #fff; }
+  #topbar .spacer { flex: 1; }
+
+  .profile { position: relative; }
+  .profile-trigger {
+    background: rgba(255,255,255,0.15); color: #fff;
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--font);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.15s;
+  }
+  .profile-trigger:hover { background: rgba(255,255,255,0.25); }
+  .profile-trigger .caret { font-size: 10px; opacity: 0.8; }
+  .profile-menu {
+    display: none;
+    position: absolute; right: 0; top: calc(100% + 6px);
+    background: #fff; border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(26, 58, 92, 0.18);
+    min-width: 180px;
+    overflow: hidden;
+    color: var(--text);
+  }
+  .profile-menu.show { display: block; }
+  .profile-menu .header {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+  .profile-menu .header .name { font-weight: 600; word-break: break-word; }
+  .profile-menu a, .profile-menu button {
+    display: block; width: 100%;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-family: var(--font);
+    color: var(--text); background: #fff;
+    border: none; text-align: left; text-decoration: none;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .profile-menu a:hover, .profile-menu button:hover { background: var(--brand-light); }
+  .profile-menu .divider { height: 1px; background: var(--border); }
+  .profile-menu .danger { color: var(--error-fg); }
+
+  /* ── PAGE WRAPPER ─────────────────────────────────────────── */
+  .page {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 28px 22px 60px;
+    flex: 1;
+  }
+
+  .group-header {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px 26px;
+    margin-bottom: 22px;
+  }
+  .group-header h1 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    word-break: break-word;
+  }
+  .group-header .meta {
+    margin-top: 8px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .pill {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 3px 9px;
+    border-radius: 999px;
+    text-transform: lowercase;
+  }
+  .pill-owner   { background: var(--pill-owner-bg);  color: var(--pill-owner-fg); }
+  .pill-member  { background: var(--pill-member-bg); color: var(--pill-member-fg); }
+  .pill-pilot      { background: var(--pill-pilot); color: var(--pill-pilot-fg); }
+  .pill-published  { background: var(--pill-published-bg); color: var(--pill-published-fg); }
+  .pill-draft      { background: #fde7d3; color: #92400e; }
+
+  .section {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px 24px;
+    margin-bottom: 16px;
+  }
+  .section h2 {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .section .body { font-size: 14px; line-height: 1.55; }
+  .muted { color: var(--muted); font-size: 13px; }
+
+  /* members section */
+  .members-summary {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .member-circle {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: var(--brand);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .member-circle.you  { background: var(--brand); }
+  .member-circle.other { background: #c5cdd6; color: #fff; }
+  .member-stack {
+    display: flex;
+    align-items: center;
+  }
+  .member-stack .member-circle:not(:first-child) { margin-left: -10px; border: 2px solid #fff; }
+  .members-note {
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-top: 10px;
+    line-height: 1.5;
+  }
+
+  /* skills cards */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+  }
+  .skill-card {
+    background: #fafbfc;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .skill-card .title {
+    font-size: 14.5px;
+    font-weight: 600;
+    line-height: 1.35;
+    word-break: break-word;
+  }
+  .skill-card .meta {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .skill-card .meta .pill { text-transform: lowercase; }
+
+  /* invite link */
+  .invite-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .invite-row input {
+    flex: 1;
+    min-width: 200px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    font-family: 'Cascadia Code', 'Consolas', monospace;
+    color: var(--text);
+    background: #fafbfc;
+    outline: none;
+  }
+  .invite-row input:focus { border-color: var(--brand); background: #fff; }
+  .invite-hint {
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+  .invite-empty {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.55;
+    padding: 10px 12px;
+    background: #fafbfc;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+  }
+
+  /* ── BUTTONS ─────────────────────────────────────────────── */
+  .btn {
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 9px 14px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    border: 1px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+  .btn-primary   { background: var(--brand); color: #fff; border-color: var(--brand); }
+  .btn-primary:hover:not(:disabled)   { background: var(--brand-hover); border-color: var(--brand-hover); }
+  .btn-secondary { background: #fff; color: var(--brand); border-color: var(--border-strong); }
+  .btn-secondary:hover:not(:disabled) { background: var(--brand-light); border-color: var(--brand); }
+  .btn-ghost     { background: transparent; color: var(--muted); border-color: transparent; padding: 8px 12px; }
+  .btn-ghost:hover:not(:disabled)     { color: var(--brand); background: var(--brand-light); }
+  .btn-danger    { background: #fff; color: var(--error-fg); border-color: var(--error-border); }
+  .btn-danger:hover:not(:disabled)    { background: var(--error-bg); }
+  .btn-danger-solid { background: var(--error-fg); color: #fff; border-color: var(--error-fg); }
+  .btn-danger-solid:hover:not(:disabled) { background: #971a13; border-color: #971a13; }
+  .btn:disabled { opacity: 0.55; cursor: default; }
+
+  /* ── EMPTY / LOADING / ERROR ─────────────────────────────── */
+  .empty {
+    text-align: center;
+    padding: 28px 18px;
+    color: var(--muted);
+    font-size: 13.5px;
+    background: #fafbfc;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+  }
+  .loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--muted);
+    font-size: 14px;
+    padding: 28px 0;
+    justify-content: center;
+  }
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid var(--border);
+    border-top-color: var(--brand);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-card {
+    background: var(--error-bg);
+    color: var(--error-fg);
+    border: 1px solid var(--error-border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    line-height: 1.55;
+  }
+  .error-card .title { font-weight: 700; margin-bottom: 6px; }
+  .error-card a {
+    display: inline-block;
+    margin-top: 12px;
+    color: var(--error-fg);
+    font-weight: 600;
+    text-decoration: underline;
+  }
+
+  /* ── TOAST / MODAL ───────────────────────────────────────── */
+  .toast {
+    position: fixed;
+    bottom: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--text);
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    opacity: 0;
+    transition: opacity 0.18s, transform 0.18s;
+    pointer-events: none;
+    z-index: 200;
+    max-width: calc(100% - 40px);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+  .toast.error { background: var(--error-fg); }
+  .toast.ok    { background: var(--success-fg); }
+
+  .modal-backdrop {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(20, 30, 45, 0.45);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal {
+    width: 100%;
+    max-width: 460px;
+    background: #fff;
+    border-radius: 14px;
+    padding: 26px 26px 22px;
+    box-shadow: 0 18px 50px rgba(0,0,0,0.25);
+  }
+  .modal h3 { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+  .modal p  { font-size: 13.5px; color: var(--muted); line-height: 1.5; margin-bottom: 4px; }
+  .modal .modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 18px;
+  }
+  .modal .modal-error {
+    margin-top: 12px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    background: var(--error-bg);
+    color: var(--error-fg);
+    border: 1px solid var(--error-border);
+    font-size: 13px;
+    display: none;
+  }
+  .modal .modal-error.show { display: block; }
+
+  /* ── RESPONSIVE ──────────────────────────────────────────── */
+  @media (max-width: 540px) {
+    .grid { grid-template-columns: 1fr; }
+    .page { padding: 22px 14px 50px; }
+    .group-header { padding: 20px; }
+    .section { padding: 18px; }
+    .invite-row .btn { width: 100%; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<header id="topbar">
+  <a class="back" href="opas-skills.html">&larr; My agents</a>
+  <span class="logo">OPAS</span>
+  <span class="accent-dot"></span>
+  <span class="spacer"></span>
+  <div class="profile">
+    <button type="button" class="profile-trigger" id="profile-trigger" aria-haspopup="true" aria-expanded="false">
+      <span id="profile-name">&hellip;</span>
+      <span class="caret">&#9662;</span>
+    </button>
+    <div class="profile-menu" id="profile-menu" role="menu">
+      <div class="header"><div class="name" id="profile-menu-name">&hellip;</div></div>
+      <a href="opas-onboarding.html?return=opas-skills.html" role="menuitem">Edit profile</a>
+      <div class="divider"></div>
+      <button type="button" id="signout-btn" class="danger" role="menuitem">Sign out</button>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+
+  <!-- Loading state -->
+  <div id="loading" class="loading"><span class="spinner"></span><span id="loading-text">Loading group&hellip;</span></div>
+
+  <!-- Error state (no group_id, not a member, fetch failed) -->
+  <div id="error-card" class="error-card" style="display:none">
+    <div class="title" id="error-title"></div>
+    <div class="body"  id="error-body"></div>
+  </div>
+
+  <!-- Group view -->
+  <div id="content" style="display:none">
+
+    <header class="group-header">
+      <h1 id="group-name"></h1>
+      <div class="meta">
+        <span class="pill" id="group-role-pill"></span>
+        <span id="group-member-count"></span>
+      </div>
+    </header>
+
+    <!-- Members -->
+    <section class="section">
+      <h2>Members</h2>
+      <div class="members-summary">
+        <div class="member-stack" id="member-stack"></div>
+        <div class="body"><strong id="member-count-line">0 members</strong></div>
+      </div>
+      <div class="members-note" id="members-note">
+        Names of other members aren&rsquo;t shown yet &mdash; that endpoint is still on the backend roadmap.
+      </div>
+    </section>
+
+    <!-- Skills shared with this group -->
+    <section class="section">
+      <h2>Agents shared with this group</h2>
+      <div id="skills-grid" class="grid"></div>
+      <div id="skills-empty" class="empty" style="display:none">
+        No agents have been shared with this group yet.
+        <div class="muted" style="margin-top:6px">
+          Create one from <a href="opas-skills.html" style="color:var(--brand)">My agents</a> and pick &ldquo;Share with a group.&rdquo;
+        </div>
+      </div>
+    </section>
+
+    <!-- Invite link (owner only) -->
+    <section class="section" id="invite-section" style="display:none">
+      <h2>Invite a classmate</h2>
+      <div id="invite-known">
+        <div class="invite-row">
+          <input type="text" id="invite-input" readonly aria-label="Invite link">
+          <button type="button" class="btn btn-primary"   id="copy-invite-btn">Copy link</button>
+          <button type="button" class="btn btn-secondary" id="copy-code-btn">Copy code</button>
+        </div>
+        <div class="invite-hint">
+          Anyone who clicks this link and signs up will join this group.
+        </div>
+      </div>
+      <div id="invite-unknown" class="invite-empty" style="display:none">
+        We don&rsquo;t have the invite code cached for this session. The backend doesn&rsquo;t yet expose
+        invite codes for existing groups via <code>GET&nbsp;/groups/mine</code>; you can recover it from
+        the database (<code>groups.invite_code</code>), or recreate the group to get a fresh one.
+      </div>
+    </section>
+
+    <!-- Leave group (non-owners) -->
+    <section class="section" id="leave-section" style="display:none">
+      <h2>Leave group</h2>
+      <p class="muted" style="margin-bottom:12px">
+        You can leave this group at any time. The agent will forget any memories it built up
+        during your group sessions.
+      </p>
+      <button type="button" class="btn btn-danger" id="leave-btn">Leave this group</button>
+    </section>
+
+  </div>
+</main>
+
+<!-- ─── LEAVE-CONFIRM MODAL ─────────────────────────────────── -->
+<div class="modal-backdrop" id="leave-modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="leave-title">
+    <h3 id="leave-title">Leave this group?</h3>
+    <p>This removes you from the group and clears any memories the tutor built up about your group sessions. Other members&rsquo; memories are untouched.</p>
+    <div class="modal-error" id="leave-error"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost"        id="leave-cancel">Cancel</button>
+      <button type="button" class="btn btn-danger-solid" id="leave-confirm">Leave group</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── TOAST ───────────────────────────────────────────────── -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  const RUNTIME = document.querySelector('meta[name="opas-runtime"]').content;
+  const STATIC  = document.querySelector('meta[name="opas-static"]').content;
+
+  // ── URL params ──────────────────────────────────────────────
+  const params      = new URLSearchParams(location.search);
+  const inviteCode  = params.get('invite');
+  const groupId     = params.get('group_id');
+  // Optional: if a caller (e.g. the create-group flow) just received the
+  // invite code and passed it along, we can render the owner invite link
+  // without a backend lookup. Backend has no GET endpoint for it yet.
+  const inviteCodeHint = params.get('invite_code');
+
+  // ── Auth state ──────────────────────────────────────────────
+  const TOKEN = localStorage.getItem('opas_learner_token');
+  const authHeaders = (extra = {}) => ({ 'Authorization': 'Bearer ' + TOKEN, ...extra });
+
+  // ── DOM refs ────────────────────────────────────────────────
+  const loadingEl   = document.getElementById('loading');
+  const loadingText = document.getElementById('loading-text');
+  const errCard     = document.getElementById('error-card');
+  const errTitle    = document.getElementById('error-title');
+  const errBody     = document.getElementById('error-body');
+  const contentEl   = document.getElementById('content');
+  const groupNameEl = document.getElementById('group-name');
+  const rolePillEl  = document.getElementById('group-role-pill');
+  const groupMcEl   = document.getElementById('group-member-count');
+  const memberStack = document.getElementById('member-stack');
+  const memberLine  = document.getElementById('member-count-line');
+  const skillsGrid  = document.getElementById('skills-grid');
+  const skillsEmpty = document.getElementById('skills-empty');
+  const inviteSection = document.getElementById('invite-section');
+  const inviteKnown   = document.getElementById('invite-known');
+  const inviteUnknown = document.getElementById('invite-unknown');
+  const inviteInput   = document.getElementById('invite-input');
+  const copyLinkBtn   = document.getElementById('copy-invite-btn');
+  const copyCodeBtn   = document.getElementById('copy-code-btn');
+  const leaveSection  = document.getElementById('leave-section');
+  const leaveBtn      = document.getElementById('leave-btn');
+  const leaveModal    = document.getElementById('leave-modal');
+  const leaveCancel   = document.getElementById('leave-cancel');
+  const leaveConfirm  = document.getElementById('leave-confirm');
+  const leaveErrorEl  = document.getElementById('leave-error');
+  const profileTrigger= document.getElementById('profile-trigger');
+  const profileMenu   = document.getElementById('profile-menu');
+  const profileName   = document.getElementById('profile-name');
+  const profileMenuName = document.getElementById('profile-menu-name');
+
+  // ── Helpers ─────────────────────────────────────────────────
+  function escapeHtml(s) {
+    return String(s ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  async function safeDetail(res) {
+    try { const j = await res.json(); return j && j.detail ? j.detail : ('HTTP ' + res.status); }
+    catch { return 'HTTP ' + res.status; }
+  }
+  let toastTimer = null;
+  function toast(msg, kind = 'ok') {
+    const el = document.getElementById('toast');
+    el.className = 'toast show ' + kind;
+    el.textContent = msg;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+  }
+  function showError(title, body) {
+    loadingEl.style.display = 'none';
+    contentEl.style.display = 'none';
+    errCard.style.display = 'block';
+    errTitle.textContent = title;
+    errBody.innerHTML    = body;
+  }
+  function handleAuthFail() {
+    localStorage.removeItem('opas_learner_token');
+    localStorage.removeItem('opas_learner_id');
+    localStorage.removeItem('opas_learner_name');
+    window.location.replace('opas-signup.html');
+  }
+
+  // ── Profile dropdown ────────────────────────────────────────
+  profileTrigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const open = profileMenu.classList.toggle('show');
+    profileTrigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  document.addEventListener('click', (e) => {
+    if (!profileMenu.contains(e.target) && e.target !== profileTrigger) {
+      profileMenu.classList.remove('show');
+      profileTrigger.setAttribute('aria-expanded', 'false');
+    }
+  });
+  document.getElementById('signout-btn').addEventListener('click', () => {
+    localStorage.removeItem('opas_learner_token');
+    localStorage.removeItem('opas_learner_id');
+    localStorage.removeItem('opas_learner_name');
+    window.location.replace('opas-signup.html');
+  });
+
+  async function loadMe() {
+    try {
+      const res = await fetch(RUNTIME + '/me', { headers: authHeaders() });
+      if (res.status === 401) { handleAuthFail(); return null; }
+      if (!res.ok) throw new Error(await safeDetail(res));
+      const me = await res.json();
+      profileName.textContent     = me.name || 'Learner';
+      profileMenuName.textContent = me.name || 'Learner';
+      localStorage.setItem('opas_learner_name', me.name || '');
+      localStorage.setItem('opas_learner_id',   me.learner_id || '');
+      return me;
+    } catch {
+      const cached = localStorage.getItem('opas_learner_name') || 'Learner';
+      profileName.textContent     = cached;
+      profileMenuName.textContent = cached;
+      return null;
+    }
+  }
+
+  // ── Mode selection ──────────────────────────────────────────
+  // If ?invite= present:
+  //   - not authenticated → stash + redirect to signup
+  //   - authenticated     → POST /groups/join + redirect to ?group_id=
+  // Else if ?group_id= present:
+  //   - require auth + render group view
+  // Else: show error.
+  // ────────────────────────────────────────────────────────────
+  if (inviteCode) {
+    if (!TOKEN) {
+      // Stash invite for after-signup pickup; also encode return URL just in
+      // case the auth-callback / signup pages don't pick it up via localStorage.
+      localStorage.setItem('opas_pending_invite', inviteCode);
+      window.location.replace('opas-signup.html');
+      return;
+    }
+    autoJoinAndBounce(inviteCode);
+    return;
+  }
+
+  if (!groupId) {
+    showError('No group specified',
+      'This page expects a <code>?group_id=&lt;id&gt;</code> or an <code>?invite=&lt;code&gt;</code> in the URL. ' +
+      '<a href="opas-skills.html">Go to my agents &rarr;</a>'
+    );
+    return;
+  }
+
+  if (!TOKEN) {
+    // Without an invite code we can't preserve return-target meaningfully here;
+    // signup is the right next step.
+    window.location.replace('opas-signup.html');
+    return;
+  }
+
+  // ── Auto-join flow (?invite=) ───────────────────────────────
+  async function autoJoinAndBounce(code) {
+    loadingText.textContent = 'Joining group\u2026';
+    try {
+      const res = await fetch(RUNTIME + '/groups/join', {
+        method: 'POST',
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ invite_code: code }),
+      });
+      if (res.status === 401) { handleAuthFail(); return; }
+      if (!res.ok) {
+        const detail = await safeDetail(res);
+        showError('Couldn\u2019t join via that invite', escapeHtml(detail) +
+          '<br><a href="opas-skills.html">Go to my agents &rarr;</a>');
+        return;
+      }
+      const out = await res.json();
+      // Clear the pending-invite stash if it was stored before signup.
+      try { localStorage.removeItem('opas_pending_invite'); } catch {}
+      // Redirect to the canonical view URL. Pass invite_code as a hint so the
+      // owner-invite section renders without a backend lookup if the joiner
+      // becomes/already-was the owner.
+      const target = 'opas-group.html?group_id=' + encodeURIComponent(out.group_id) +
+                     '&invite_code=' + encodeURIComponent(code);
+      window.location.replace(target);
+    } catch (err) {
+      showError('Network error while joining',
+        escapeHtml(err.message || String(err)) +
+        '<br><a href="opas-skills.html">Go to my agents &rarr;</a>');
+    }
+  }
+
+  // ── View flow (?group_id=) ──────────────────────────────────
+  loadView();
+
+  async function loadView() {
+    loadingText.textContent = 'Loading group\u2026';
+    // Kick off all reads in parallel
+    const [me, groupsRes, skillsRes] = await Promise.all([
+      loadMe(),
+      fetch(RUNTIME + '/groups/mine', { headers: authHeaders() }).catch((e) => ({ _err: e })),
+      fetch(RUNTIME + '/skills/mine', { headers: authHeaders() }).catch((e) => ({ _err: e })),
+    ]);
+    if (groupsRes && groupsRes.status === 401) { handleAuthFail(); return; }
+    if (skillsRes && skillsRes.status === 401) { handleAuthFail(); return; }
+
+    let groups = [];
+    try {
+      if (groupsRes && groupsRes.ok) groups = await groupsRes.json();
+    } catch {}
+
+    let skills = [];
+    try {
+      if (skillsRes && skillsRes.ok) skills = await skillsRes.json();
+    } catch {}
+
+    const group = groups.find((g) => g.group_id === groupId);
+    if (!group) {
+      showError('You\u2019re not a member of this group',
+        'This group exists in the system but you don\u2019t belong to it. ' +
+        'Ask the owner for an invite link, then come back. ' +
+        '<a href="opas-skills.html">Go to my agents &rarr;</a>'
+      );
+      return;
+    }
+
+    renderHeader(group);
+    renderMembers(group, me);
+    renderSkills(skills.filter((s) => s.group_id === groupId));
+
+    if (group.role === 'owner') {
+      renderInvite();
+    } else {
+      // Members can leave; owners cannot leave their own group via this UI.
+      leaveSection.style.display = 'block';
+    }
+
+    loadingEl.style.display = 'none';
+    contentEl.style.display = 'block';
+  }
+
+  function renderHeader(group) {
+    document.title = 'OPAS — ' + (group.name || 'Group');
+    groupNameEl.textContent = group.name || 'Group';
+    rolePillEl.textContent  = group.role || 'member';
+    rolePillEl.classList.add(group.role === 'owner' ? 'pill-owner' : 'pill-member');
+    const mc = Number(group.member_count) || 0;
+    groupMcEl.textContent = mc + (mc === 1 ? ' member' : ' members');
+  }
+
+  function renderMembers(group, me) {
+    const mc = Number(group.member_count) || 0;
+    memberLine.textContent = mc === 1 ? 'You&rsquo;re the only member.' : (mc + ' members in this group.');
+    memberLine.innerHTML  = mc === 1 ? 'You&rsquo;re the only member.' : (mc + ' members in this group.');
+
+    // Show stacked avatars: 1 for you (initials), up to 4 placeholders for others.
+    memberStack.innerHTML = '';
+    const myInitials = (me && me.name) ? initials(me.name) : 'You';
+    const youCircle = document.createElement('div');
+    youCircle.className = 'member-circle you';
+    youCircle.textContent = myInitials;
+    youCircle.title = (me && me.name) ? (me.name + ' (you)') : 'You';
+    memberStack.appendChild(youCircle);
+    const otherPreview = Math.min(4, Math.max(0, mc - 1));
+    for (let i = 0; i < otherPreview; i++) {
+      const c = document.createElement('div');
+      c.className = 'member-circle other';
+      c.textContent = '?';
+      c.title = 'Member name not exposed';
+      memberStack.appendChild(c);
+    }
+    if (mc - 1 > otherPreview) {
+      const more = document.createElement('div');
+      more.className = 'member-circle other';
+      more.textContent = '+' + (mc - 1 - otherPreview);
+      memberStack.appendChild(more);
+    }
+  }
+
+  function initials(name) {
+    const parts = String(name).trim().split(/\s+/).slice(0, 2);
+    return parts.map((p) => p[0] || '').join('').toUpperCase() || '?';
+  }
+
+  function renderSkills(groupSkills) {
+    skillsGrid.innerHTML = '';
+    if (!groupSkills.length) {
+      skillsEmpty.style.display = 'block';
+      return;
+    }
+    skillsEmpty.style.display = 'none';
+    groupSkills.forEach((s) => {
+      const card = document.createElement('div');
+      card.className = 'skill-card';
+      const statusPill = '<span class="pill pill-' + escapeHtml(s.status || 'pilot') + '">' + escapeHtml(s.status || 'pilot') + '</span>';
+      const chunks = (s.total_chunks === 1) ? '1 chunk' : ((s.total_chunks || 0) + ' chunks');
+      card.innerHTML = `
+        <div class="title">${escapeHtml(s.name)}</div>
+        <div class="meta">${statusPill}<span>${chunks}</span></div>
+        <div>
+          <a class="btn btn-primary" href="opas-student.html?skill_id=${encodeURIComponent(s.skill_id)}">&#9654; Open</a>
+        </div>
+      `;
+      skillsGrid.appendChild(card);
+    });
+  }
+
+  function renderInvite() {
+    inviteSection.style.display = 'block';
+    if (inviteCodeHint) {
+      const url = STATIC + '/opas-group.html?invite=' + encodeURIComponent(inviteCodeHint);
+      inviteInput.value = url;
+      inviteKnown.style.display   = '';
+      inviteUnknown.style.display = 'none';
+
+      copyLinkBtn.addEventListener('click', () => copyToClipboard(url, 'Invite link copied'));
+      copyCodeBtn.addEventListener('click', () => copyToClipboard(inviteCodeHint, 'Invite code copied'));
+    } else {
+      inviteKnown.style.display   = 'none';
+      inviteUnknown.style.display = 'block';
+    }
+  }
+
+  async function copyToClipboard(text, okMsg) {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        // Legacy fallback
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta);
+        ta.select(); document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      toast(okMsg, 'ok');
+    } catch (err) {
+      toast('Couldn\u2019t copy. Select and copy manually.', 'error');
+      // Help the user: select the input
+      try { inviteInput.select(); } catch {}
+    }
+  }
+
+  // ── Leave group flow ────────────────────────────────────────
+  leaveBtn.addEventListener('click', () => {
+    leaveErrorEl.classList.remove('show');
+    leaveErrorEl.textContent = '';
+    leaveModal.classList.add('show');
+  });
+  leaveCancel.addEventListener('click', () => leaveModal.classList.remove('show'));
+  leaveModal.addEventListener('click', (e) => {
+    if (e.target === leaveModal) leaveModal.classList.remove('show');
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      leaveModal.classList.remove('show');
+      profileMenu.classList.remove('show');
+    }
+  });
+
+  leaveConfirm.addEventListener('click', async () => {
+    leaveErrorEl.classList.remove('show');
+    leaveConfirm.disabled = true;
+    leaveConfirm.textContent = 'Leaving\u2026';
+    try {
+      const res = await fetch(RUNTIME + '/groups/' + encodeURIComponent(groupId) + '/leave', {
+        method: 'POST',
+        headers: authHeaders(),
+      });
+      if (res.status === 401) { handleAuthFail(); return; }
+      if (!res.ok) throw new Error(await safeDetail(res));
+      const out = await res.json();
+      const purged = Number(out.memories_purged) || 0;
+      const msg = purged === 0
+        ? 'Left group. No memories needed clearing.'
+        : ('Left group. ' + purged + ' memor' + (purged === 1 ? 'y' : 'ies') + ' cleared.');
+      // Show inline + redirect after a brief moment so the user sees the count.
+      leaveModal.classList.remove('show');
+      toast(msg, 'ok');
+      setTimeout(() => { window.location.replace('opas-skills.html'); }, 1200);
+    } catch (err) {
+      leaveErrorEl.textContent = err.message || String(err);
+      leaveErrorEl.classList.add('show');
+      leaveConfirm.disabled = false;
+      leaveConfirm.textContent = 'Leave group';
+    }
+  });
+})();
+</script>
+</body>
+</html>

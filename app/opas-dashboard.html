@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="opas-runtime" content="http://localhost:8001">
+<title>OPAS — Teacher Dashboard</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --brand: #1a3a5c;
+  --accent: #c8a951;
+  --border: #dde3ea;
+  --text: #1c2b3a;
+  --muted: #64748b;
+  --bg: #f8fafc;
+  --surface: #fff;
+  --radius: 8px;
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --red: #dc2626;
+  --amber: #d97706;
+  --green: #16a34a;
+  --blue: #2563eb;
+}
+
+body { font-family: var(--font); color: var(--text); background: var(--bg); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+/* ── TOP BAR ─── */
+#topbar {
+  background: var(--brand); color: #fff;
+  padding: 0 24px; height: 52px;
+  display: flex; align-items: center; gap: 14px; flex-shrink: 0;
+}
+#topbar .logo  { font-weight: 700; font-size: 15px; letter-spacing: .04em; }
+#topbar .title { font-size: 13px; opacity: .65; }
+#topbar .spacer { flex: 1; }
+#topbar .badge {
+  font-size: 11px; font-weight: 600; letter-spacing: .06em;
+  background: var(--accent); color: #1a1a1a;
+  padding: 3px 9px; border-radius: 20px;
+}
+
+/* ── AUTH GATE ─── */
+#auth-gate {
+  flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 16px;
+}
+#auth-gate h2 { font-size: 18px; color: var(--brand); }
+#auth-gate p  { font-size: 13px; color: var(--muted); }
+#auth-input {
+  width: 360px; border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 14px; font-size: 14px; font-family: monospace;
+  outline: none;
+}
+#auth-input:focus { border-color: var(--brand); }
+#auth-btn {
+  background: var(--brand); color: #fff; border: none; border-radius: 8px;
+  padding: 10px 28px; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+#auth-error { color: var(--red); font-size: 13px; }
+
+/* ── MAIN CONTENT ─── */
+#content { flex: 1; overflow: hidden; display: none; flex-direction: column; }
+
+/* ── TOOLBAR ─── */
+#toolbar {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 12px 24px; display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+}
+#skill-select {
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 7px 12px; font-size: 14px; font-family: var(--font);
+  outline: none; min-width: 280px; cursor: pointer;
+}
+#skill-select:focus { border-color: var(--brand); }
+#refresh-btn {
+  background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+  padding: 7px 14px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text);
+}
+#refresh-btn:hover { background: var(--border); }
+#open-student-btn {
+  background: var(--accent); color: #1a1a1a; border: none; border-radius: 6px;
+  padding: 7px 14px; font-size: 13px; font-weight: 600; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+#open-student-btn:hover { filter: brightness(.95); }
+#open-student-btn:disabled { opacity: .5; cursor: not-allowed; }
+#last-refresh { font-size: 12px; color: var(--muted); margin-left: 8px; font-variant-numeric: tabular-nums; }
+#session-count { font-size: 13px; color: var(--muted); margin-left: auto; }
+
+/* Empty-state share-link block */
+.share-block {
+  margin-top: 18px; max-width: 640px; margin-left: auto; margin-right: auto;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 14px 16px; text-align: left;
+}
+.share-block .share-label {
+  font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 6px;
+}
+.share-block .share-url-row {
+  display: flex; align-items: center; gap: 8px;
+}
+.share-block .share-url {
+  flex: 1; font-family: 'Consolas', 'Menlo', monospace; font-size: 12px;
+  color: var(--brand); background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px; padding: 8px 10px; word-break: break-all; cursor: pointer;
+  transition: background .15s;
+}
+.share-block .share-url:hover { background: #eef3f8; }
+.share-block .copy-btn {
+  flex-shrink: 0; background: var(--brand); color: #fff; border: none; border-radius: 6px;
+  padding: 8px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.share-block .copy-btn.copied { background: var(--green); }
+.share-block .share-hint {
+  margin-top: 8px; font-size: 11.5px; color: var(--muted); line-height: 1.45;
+}
+
+/* Constitution event warning badge */
+#detail-warning-badge {
+  display: none; align-items: center; gap: 6px;
+  background: #fef2f2; color: var(--red); border: 1px solid #fecaca;
+  border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: background .15s;
+}
+#detail-warning-badge:hover { background: #fee2e2; }
+#detail-warning-badge.visible { display: inline-flex; }
+
+/* Highlighted target event */
+.event-row.flash { animation: flash-bg 1.6s ease-out; }
+@keyframes flash-bg {
+  0%   { background: #fef2f2; }
+  100% { background: transparent; }
+}
+
+/* Time column: relative + absolute */
+.time-rel { font-size: 13px; color: var(--text); }
+.time-abs { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+/* Mobile / narrow viewport guard */
+@media (max-width: 640px) {
+  #toolbar { flex-wrap: wrap; }
+  #skill-select { min-width: 0; flex: 1 1 100%; }
+  #session-count { margin-left: 0; }
+  #detail-panels { grid-template-columns: 1fr; }
+  .panel { border-right: none; border-bottom: 1px solid var(--border); }
+}
+
+/* ── LIST VIEW ─── */
+#list-view { flex: 1; overflow-y: auto; padding: 20px 24px; }
+
+.sessions-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.sessions-table th {
+  text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .06em; color: var(--muted);
+  border-bottom: 2px solid var(--border); background: var(--bg); position: sticky; top: 0;
+}
+.sessions-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.sessions-table tr:last-child td { border-bottom: none; }
+.sessions-table tbody tr { background: var(--surface); cursor: pointer; transition: background .1s; }
+.sessions-table tbody tr:hover { background: #eef3f8; }
+
+.status-pill {
+  font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 20px;
+}
+.status-pill.active    { background: #dcfce7; color: #15803d; }
+.status-pill.completed { background: #e0e7ff; color: #3730a3; }
+
+.pass-bar-wrap { display: flex; align-items: center; gap: 8px; }
+.pass-bar { height: 6px; border-radius: 3px; background: #e5e7eb; width: 80px; overflow: hidden; }
+.pass-bar-fill { height: 100%; border-radius: 3px; background: var(--green); }
+
+.empty-state { text-align: center; padding: 60px; color: var(--muted); font-size: 15px; }
+
+/* ── DETAIL VIEW ─── */
+#detail-view { flex: 1; overflow: hidden; display: none; flex-direction: column; }
+
+#detail-header {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 14px 24px; display: flex; align-items: center; gap: 16px; flex-shrink: 0;
+}
+#back-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 6px 14px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text);
+}
+#back-btn:hover { background: var(--bg); }
+#detail-title { font-size: 16px; font-weight: 700; }
+#detail-meta  { font-size: 13px; color: var(--muted); }
+#detail-status { margin-left: auto; }
+
+#detail-panels {
+  flex: 1; overflow: hidden;
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0;
+}
+.panel {
+  display: flex; flex-direction: column;
+  border-right: 1px solid var(--border); overflow: hidden;
+}
+.panel:last-child { border-right: none; }
+.panel-header {
+  padding: 12px 16px; font-size: 11px; font-weight: 700;
+  letter-spacing: .07em; text-transform: uppercase; color: var(--muted);
+  border-bottom: 1px solid var(--border); background: var(--bg); flex-shrink: 0;
+}
+.panel-body { flex: 1; overflow-y: auto; padding: 12px 16px; }
+
+/* Events */
+.event-row {
+  padding: 6px 0; border-bottom: 1px solid #f1f5f9; font-size: 13px;
+  display: flex; align-items: flex-start; gap: 8px;
+}
+.event-row:last-child { border-bottom: none; }
+.event-verb {
+  font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+  padding: 2px 6px; border-radius: 4px; background: #e2e8f0; color: var(--text); flex-shrink: 0;
+}
+.event-verb.protected { background: #fee2e2; color: var(--red); }
+.event-body { flex: 1; }
+.event-obj  { font-weight: 600; }
+.event-ctx  { color: var(--muted); font-size: 12px; margin-top: 1px; }
+.event-time { font-size: 11px; color: #94a3b8; flex-shrink: 0; margin-top: 2px; }
+
+/* Probe attempts */
+.probe-row {
+  padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 13px;
+}
+.probe-row:last-child { border-bottom: none; }
+.probe-id    { font-weight: 600; margin-bottom: 3px; }
+.probe-score { display: flex; align-items: center; gap: 8px; }
+.score-num {
+  font-size: 16px; font-weight: 700;
+}
+.score-num.pass { color: var(--green); }
+.score-num.fail { color: var(--red); }
+.score-num.null { color: var(--muted); }
+.probe-scorer { font-size: 11px; color: var(--muted); }
+.probe-phase  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+/* Conversation */
+.turn-row { padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
+.turn-row:last-child { border-bottom: none; }
+.turn-role {
+  font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.turn-role.user  { color: var(--brand); }
+.turn-role.assistant { color: var(--green); }
+.turn-content {
+  font-size: 13px; line-height: 1.5; white-space: pre-wrap; word-break: break-word;
+  max-height: 120px; overflow: hidden; position: relative; cursor: pointer;
+}
+.turn-content.expanded { max-height: none; }
+.turn-content.collapsed::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+  height: 32px; background: linear-gradient(transparent, var(--surface));
+}
+.turn-expand { font-size: 11px; color: var(--blue); cursor: pointer; margin-top: 4px; }
+
+.panel-empty { color: var(--muted); font-size: 13px; padding: 8px 0; font-style: italic; }
+
+/* Skeleton loaders (shown while a detail fetch is in flight) */
+.skeleton-row {
+  padding: 8px 0; border-bottom: 1px solid #f1f5f9;
+  display: flex; align-items: flex-start; gap: 8px;
+}
+.skeleton-row:last-child { border-bottom: none; }
+.skeleton-stack { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
+.skeleton-block {
+  background: linear-gradient(90deg, #e5e7eb 0%, #f1f5f9 50%, #e5e7eb 100%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  border-radius: 4px;
+  height: 10px;
+}
+.skeleton-chip { width: 48px; height: 14px; flex-shrink: 0; }
+.skeleton-line { width: 100%; }
+.skeleton-line.short { width: 55%; }
+@keyframes skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <span class="logo">OPAS</span>
+  <span class="title">Teacher Dashboard</span>
+  <span class="spacer"></span>
+  <span class="badge">TEACHER</span>
+</div>
+
+<!-- Auth gate -->
+<div id="auth-gate">
+  <h2>Enter teacher bearer token</h2>
+  <p>Use the OPAS_DEV_BEARER_TOKEN from your .env file.</p>
+  <input id="auth-input" type="password" placeholder="Bearer token…" autocomplete="off">
+  <button id="auth-btn">Unlock dashboard</button>
+  <span id="auth-error"></span>
+</div>
+
+<!-- Main content (shown after auth) -->
+<div id="content">
+
+  <!-- Toolbar -->
+  <div id="toolbar">
+    <select id="skill-select"><option value="">Loading skills…</option></select>
+    <button id="refresh-btn">Refresh</button>
+    <button id="open-student-btn" title="Open this skill as a student in a new tab">👁  Open as student</button>
+    <span id="last-refresh"></span>
+    <span id="session-count"></span>
+  </div>
+
+  <!-- List view -->
+  <div id="list-view">
+    <div class="empty-state" id="list-empty" style="display:none">No sessions found for this skill.</div>
+    <table class="sessions-table" id="sessions-table" style="display:none">
+      <thead>
+        <tr>
+          <th>Learner</th>
+          <th>Status</th>
+          <th>Started</th>
+          <th>Turns</th>
+          <th>Pass rate</th>
+          <th>Last activity</th>
+        </tr>
+      </thead>
+      <tbody id="sessions-body"></tbody>
+    </table>
+  </div>
+
+  <!-- Detail view -->
+  <div id="detail-view">
+    <div id="detail-header">
+      <button id="back-btn">&#8592; Back</button>
+      <div>
+        <div id="detail-title">Session</div>
+        <div id="detail-meta"></div>
+      </div>
+      <span id="detail-warning-badge" title="Click to jump to the first constitution event">⚠️ <span id="detail-warning-count">0</span> constitution events</span>
+      <div id="detail-status"></div>
+    </div>
+    <div id="detail-panels">
+      <div class="panel">
+        <div class="panel-header">Events timeline</div>
+        <div class="panel-body" id="panel-events"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">Probe attempts</div>
+        <div class="panel-body" id="panel-probes"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">Conversation</div>
+        <div class="panel-body" id="panel-turns"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+const RUNTIME = document.querySelector('meta[name="opas-runtime"]').content;
+const LS_KEY  = 'opas_teacher_token';
+let TOKEN = localStorage.getItem(LS_KEY) || '';
+let currentSkillId = new URLSearchParams(location.search).get('skill_id') || '';
+
+// ── DOM refs ─────────────────────────────────────────────────────────────────
+const $authGate    = document.getElementById('auth-gate');
+const $authInput   = document.getElementById('auth-input');
+const $authBtn     = document.getElementById('auth-btn');
+const $authError   = document.getElementById('auth-error');
+const $content     = document.getElementById('content');
+const $skillSelect = document.getElementById('skill-select');
+const $refreshBtn  = document.getElementById('refresh-btn');
+const $openStudentBtn = document.getElementById('open-student-btn');
+const $lastRefresh = document.getElementById('last-refresh');
+const $sessionCount = document.getElementById('session-count');
+const $listView    = document.getElementById('list-view');
+const $listEmpty   = document.getElementById('list-empty');
+const $table       = document.getElementById('sessions-table');
+const $tbody       = document.getElementById('sessions-body');
+const $detailView  = document.getElementById('detail-view');
+const $detailTitle = document.getElementById('detail-title');
+const $detailMeta  = document.getElementById('detail-meta');
+const $detailStatus = document.getElementById('detail-status');
+const $backBtn     = document.getElementById('back-btn');
+const $panelEvents = document.getElementById('panel-events');
+const $panelProbes = document.getElementById('panel-probes');
+const $panelTurns  = document.getElementById('panel-turns');
+const $warnBadge   = document.getElementById('detail-warning-badge');
+const $warnCount   = document.getElementById('detail-warning-count');
+
+// View state
+let inDetailView = false;
+let refreshTimer = null;
+const REFRESH_INTERVAL_MS = 30000;
+
+// ── API helpers ───────────────────────────────────────────────────────────────
+async function apiFetch(path) {
+  const res = await fetch(`${RUNTIME}${path}`, {
+    headers: { Authorization: `Bearer ${TOKEN}` },
+  });
+  if (res.status === 401) throw new Error('401');
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+// ── Auth gate ─────────────────────────────────────────────────────────────────
+async function tryUnlock(token) {
+  TOKEN = token;
+  try {
+    await apiFetch('/admin/dashboard/skills');
+    localStorage.setItem(LS_KEY, TOKEN);
+    $authGate.style.display = 'none';
+    $content.style.display = 'flex';
+    await loadSkills();
+    startAutoRefresh();
+  } catch (e) {
+    TOKEN = '';
+    localStorage.removeItem(LS_KEY);
+    $authError.textContent = e.message === '401'
+      ? 'Invalid token — check OPAS_DEV_BEARER_TOKEN.'
+      : `Error: ${e.message}`;
+  }
+}
+
+$authBtn.addEventListener('click', () => tryUnlock($authInput.value.trim()));
+$authInput.addEventListener('keydown', e => { if (e.key === 'Enter') tryUnlock($authInput.value.trim()); });
+
+// ── Skills dropdown ───────────────────────────────────────────────────────────
+async function loadSkills() {
+  const skills = await apiFetch('/admin/dashboard/skills');
+  $skillSelect.innerHTML = skills.map(s =>
+    `<option value="${s.skill_id}"${s.skill_id === currentSkillId ? ' selected' : ''}>${s.name}</option>`
+  ).join('');
+  if (!currentSkillId && skills.length) currentSkillId = skills[0].skill_id;
+  await loadSessions();
+}
+
+$skillSelect.addEventListener('change', async () => {
+  currentSkillId = $skillSelect.value;
+  showListView();
+  await loadSessions();
+});
+$refreshBtn.addEventListener('click', () => loadSessions());
+
+// ── Sessions list ─────────────────────────────────────────────────────────────
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function relTime(iso) {
+  if (!iso) return '—';
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return '—';
+  const diff = Math.max(0, Date.now() - t);
+  const sec  = Math.floor(diff / 1000);
+  if (sec < 60)        return 'just now';
+  const min  = Math.floor(sec / 60);
+  if (min < 60)        return `${min} min ago`;
+  const hr   = Math.floor(min / 60);
+  if (hr  < 24)        return `${hr} hr ago`;
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function fmtTimeCol(iso) {
+  if (!iso) return '—';
+  return `<div class="time-rel">${esc(relTime(iso))}</div>
+          <div class="time-abs">${esc(fmtDate(iso))}</div>`;
+}
+
+function fmtPassRate(rate) {
+  if (rate === null || rate === undefined) return '<span style="color:var(--muted)">—</span>';
+  const pct = Math.round(rate * 100);
+  const color = pct >= 70 ? 'var(--green)' : pct >= 40 ? 'var(--amber)' : 'var(--red)';
+  return `<div class="pass-bar-wrap">
+    <div class="pass-bar"><div class="pass-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+    <span style="font-size:12px;color:${color};font-weight:600">${pct}%</span>
+  </div>`;
+}
+
+function renderEmptyState() {
+  const studentBase = location.origin && location.origin.startsWith('http')
+    ? `${location.origin}/opas-student.html`
+    : `http://localhost:8080/opas-student.html`;
+  // Visible URL uses a literal "<TOKEN>" placeholder so a screenshot of an
+  // empty-state dashboard never leaks the teacher's bearer. The real token is
+  // substituted in only at the moment of clipboard write.
+  const displayUrl = `${studentBase}?skill_id=${encodeURIComponent(currentSkillId)}&token=<TOKEN>`;
+  const realUrl    = `${studentBase}?skill_id=${encodeURIComponent(currentSkillId)}&token=${encodeURIComponent(TOKEN)}`;
+
+  $listEmpty.innerHTML = `
+    <div>No student sessions yet.</div>
+    <div class="share-block">
+      <div class="share-label">Invite a learner</div>
+      <div class="share-url-row">
+        <div class="share-url" id="share-url" title="Click Copy — your bearer token is appended automatically">${esc(displayUrl)}</div>
+        <button class="copy-btn" id="share-copy-btn">Copy</button>
+      </div>
+      <div class="share-hint">🔒 Your bearer token is appended automatically when you click Copy. The placeholder above is safe to screenshot.</div>
+    </div>`;
+  const $url = document.getElementById('share-url');
+  const $btn = document.getElementById('share-copy-btn');
+  const doCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(realUrl);
+      $btn.textContent = 'Copied ✓';
+      $btn.classList.add('copied');
+      setTimeout(() => { $btn.textContent = 'Copy'; $btn.classList.remove('copied'); }, 1600);
+    } catch (e) {
+      // Clipboard API unavailable — write the real URL into a hidden textarea
+      // and select it so the user can ⌘C / Ctrl-C without seeing the token
+      // in the visible placeholder element.
+      const ta = document.createElement('textarea');
+      ta.value = realUrl;
+      ta.style.position = 'fixed';
+      ta.style.opacity  = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); } catch (_) {}
+      document.body.removeChild(ta);
+      $btn.textContent = 'Copied ✓';
+      $btn.classList.add('copied');
+      setTimeout(() => { $btn.textContent = 'Copy'; $btn.classList.remove('copied'); }, 1600);
+    }
+  };
+  $url.addEventListener('click', doCopy);
+  $btn.addEventListener('click', doCopy);
+}
+
+function updateLastRefreshLabel() {
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2,'0');
+  const mm = String(now.getMinutes()).padStart(2,'0');
+  const ss = String(now.getSeconds()).padStart(2,'0');
+  $lastRefresh.textContent = `Last refreshed: ${hh}:${mm}:${ss}`;
+}
+
+async function loadSessions() {
+  if (!currentSkillId) return;
+  $table.style.display = 'none';
+  $listEmpty.style.display = 'none';
+  $sessionCount.textContent = 'Loading…';
+  try {
+    const sessions = await apiFetch(`/admin/dashboard/skills/${encodeURIComponent(currentSkillId)}/sessions`);
+    $sessionCount.textContent = `${sessions.length} session${sessions.length !== 1 ? 's' : ''}`;
+    updateLastRefreshLabel();
+    if (!sessions.length) {
+      renderEmptyState();
+      $listEmpty.style.display = 'block';
+      return;
+    }
+    $tbody.innerHTML = sessions.map(s => `
+      <tr data-sid="${s.session_id}">
+        <td><strong>${esc(s.learner_name)}</strong></td>
+        <td><span class="status-pill ${s.status}">${s.status}</span></td>
+        <td>${fmtDate(s.started_at)}</td>
+        <td>${s.turn_count}</td>
+        <td>${fmtPassRate(s.pass_rate)}</td>
+        <td>${fmtTimeCol(s.last_activity_at)}</td>
+      </tr>`).join('');
+    $table.style.display = 'table';
+    $tbody.querySelectorAll('tr').forEach(row => {
+      row.addEventListener('click', () => loadDetail(row.dataset.sid));
+    });
+  } catch (e) {
+    $sessionCount.textContent = `Error: ${e.message}`;
+  }
+}
+
+// ── Auto-refresh (list view only) ─────────────────────────────────────────────
+function startAutoRefresh() {
+  stopAutoRefresh();
+  refreshTimer = setInterval(() => {
+    if (!inDetailView && document.visibilityState === 'visible') {
+      loadSessions();
+    }
+  }, REFRESH_INTERVAL_MS);
+}
+function stopAutoRefresh() {
+  if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+}
+
+// ── Open-as-student deep link ─────────────────────────────────────────────────
+$openStudentBtn.addEventListener('click', () => {
+  if (!currentSkillId) return;
+  const studentBase = location.origin && location.origin.startsWith('http')
+    ? `${location.origin}/opas-student.html`
+    : `http://localhost:8080/opas-student.html`;
+  const url = `${studentBase}?skill_id=${encodeURIComponent(currentSkillId)}&demo=1&token=${encodeURIComponent(TOKEN)}`;
+  window.open(url, '_blank', 'noopener');
+});
+
+// ── Detail view ───────────────────────────────────────────────────────────────
+function showListView() {
+  inDetailView = false;
+  $listView.style.display  = 'block';
+  $detailView.style.display = 'none';
+}
+function showDetailView() {
+  inDetailView = true;
+  $listView.style.display   = 'none';
+  $detailView.style.display = 'flex';
+}
+
+$backBtn.addEventListener('click', showListView);
+
+function skeletonRows(n = 3) {
+  let html = '';
+  for (let i = 0; i < n; i++) {
+    html += `<div class="skeleton-row">
+      <div class="skeleton-block skeleton-chip"></div>
+      <div class="skeleton-stack">
+        <div class="skeleton-block skeleton-line"></div>
+        <div class="skeleton-block skeleton-line short"></div>
+      </div>
+    </div>`;
+  }
+  return html;
+}
+
+async function loadDetail(sessionId) {
+  showDetailView();
+  $detailTitle.textContent = 'Loading…';
+  const skel = skeletonRows(3);
+  $panelEvents.innerHTML = $panelProbes.innerHTML = $panelTurns.innerHTML = skel;
+  $warnBadge.classList.remove('visible');
+  try {
+    const d = await apiFetch(`/admin/dashboard/sessions/${sessionId}`);
+    const m = d.session_meta;
+
+    $detailTitle.textContent = m.learner_name;
+    $detailMeta.textContent  = `${m.skill_id}`;
+    $detailStatus.innerHTML  = `<span class="status-pill ${m.status}">${m.status}</span>`;
+
+    renderEvents(d.events);
+    renderProbes(d.probe_attempts);
+    renderTurns(d.turns);
+    updateWarningBadge(d.events);
+  } catch (e) {
+    $detailTitle.textContent = `Error: ${e.message}`;
+  }
+}
+
+function updateWarningBadge(events) {
+  const protectedEvents = (events || []).filter(ev => ev.verb === 'protected');
+  if (!protectedEvents.length) {
+    $warnBadge.classList.remove('visible');
+    return;
+  }
+  $warnCount.textContent = String(protectedEvents.length);
+  $warnBadge.classList.add('visible');
+}
+
+$warnBadge.addEventListener('click', () => {
+  const first = $panelEvents.querySelector('.event-row .event-verb.protected');
+  if (!first) return;
+  const row = first.closest('.event-row');
+  if (!row) return;
+  row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  row.classList.remove('flash');
+  // Force reflow so re-adding the class restarts the animation.
+  void row.offsetWidth;
+  row.classList.add('flash');
+});
+
+function renderEvents(events) {
+  if (!events.length) { $panelEvents.innerHTML = '<div class="panel-empty">No events recorded.</div>'; return; }
+  $panelEvents.innerHTML = events.map(ev => {
+    const isProtected = ev.verb === 'protected';
+    const verbClass   = isProtected ? 'event-verb protected' : 'event-verb';
+    const ctx = ev.context ? Object.entries(ev.context)
+      .filter(([k]) => k !== 'turn_index')
+      .map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join(' · ') : '';
+    const time = ev.occurred_at ? new Date(ev.occurred_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '';
+    return `<div class="event-row">
+      <span class="${verbClass}">${esc(ev.verb)}</span>
+      <div class="event-body">
+        <div class="event-obj">${esc(ev.object_type)} · ${esc(ev.object_id || '')}</div>
+        ${ctx ? `<div class="event-ctx">${esc(ctx)}</div>` : ''}
+      </div>
+      <span class="event-time">${time}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderProbes(probes) {
+  if (!probes.length) { $panelProbes.innerHTML = '<div class="panel-empty">No probe attempts.</div>'; return; }
+  $panelProbes.innerHTML = probes.map(p => {
+    const score = p.score !== null && p.score !== undefined ? parseFloat(p.score) : null;
+    const cls   = score === null ? 'null' : score >= 0.5 ? 'pass' : 'fail';
+    const label = score === null ? 'unscored' : score.toFixed(2);
+    return `<div class="probe-row">
+      <div class="probe-id">${esc(p.probe_id)}</div>
+      <div class="probe-score">
+        <span class="score-num ${cls}">${label}</span>
+        <span class="probe-scorer">${esc(p.scorer || '')}</span>
+      </div>
+      <div class="probe-phase">${esc(p.phase_id)}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderTurns(turns) {
+  if (!turns.length) {
+    $panelTurns.innerHTML = '<div class="panel-empty">Conversation not available (session ended before data was captured).</div>';
+    return;
+  }
+  $panelTurns.innerHTML = turns.map((t, i) => {
+    const long = t.content.length > 300;
+    return `<div class="turn-row">
+      <div class="turn-role ${t.role}">${t.role === 'assistant' ? 'Tutor' : 'Learner'}</div>
+      <div class="turn-content${long ? ' collapsed' : ''}" id="turn-${i}">${esc(t.content)}</div>
+      ${long ? `<div class="turn-expand" onclick="toggleTurn('turn-${i}', this)">Show more</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+window.toggleTurn = (id, btn) => {
+  const el = document.getElementById(id);
+  const expanded = el.classList.toggle('expanded');
+  el.classList.toggle('collapsed', !expanded);
+  btn.textContent = expanded ? 'Show less' : 'Show more';
+};
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+if (TOKEN) {
+  tryUnlock(TOKEN);
+} else {
+  $authGate.style.display = 'flex';
+}
+</script>
+</body>
+</html>

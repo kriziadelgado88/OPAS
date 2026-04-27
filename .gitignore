@@ -1,0 +1,58 @@
+# --- Secrets — NEVER commit ------------------------------------------------
+.env
+.env.*
+!.env.template
+*.pem
+*.key
+credentials.json
+service-account*.json
+
+# --- Python ----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Node ------------------------------------------------------------------
+node_modules/
+dist/
+build/
+.next/
+.turbo/
+
+# --- Editor / OS -----------------------------------------------------------
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# --- Local scratch ---------------------------------------------------------
+/tmp/
+*.log
+.local/
+
+# --- Private notes & mentor conversations (don't share) ---
+.claude/
+shared with Claude/
+Internal brainstorming/
+Feedback from Jamie Martin.txt
+Mentor call*.txt
+MEntor call*.txt
+Transcript of our Prof Levy meeting*.txt
+OPAS_Krizia_Claude_conversation.pdf
+OPAS-Complete-Conversation-Summary*.txt
+agent/$null
+
+# --- Other folders not needed in repo ---
+HTMLs/
+Pedagogy for YAML/
+files/
+
+# --- Office temp/lock files ---
+~$*
+*.tmp

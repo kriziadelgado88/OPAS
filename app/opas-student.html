@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="opas-runtime" content="http://localhost:8001">
+<title>OPAS — Thinking Probabilistically</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --brand: #1a3a5c;
+    --brand-light: #e8f0f8;
+    --accent: #c8a951;
+    --agent-bg: #f0f4f8;
+    --user-bg: #1a3a5c;
+    --user-fg: #fff;
+    --border: #dde3ea;
+    --text: #1c2b3a;
+    --muted: #64748b;
+    --highlight: #ffe066;
+    --highlight-fade: rgba(255, 224, 102, 0);
+    --radius: 12px;
+    --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+
+  body {
+    font-family: var(--font);
+    color: var(--text);
+    background: #f8fafc;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── TOP BAR ─────────────────────────────────────────── */
+  #topbar {
+    background: var(--brand);
+    color: #fff;
+    padding: 0 20px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    z-index: 10;
+  }
+  #topbar .logo { font-weight: 700; font-size: 15px; letter-spacing: .04em; opacity: .9; }
+  #topbar .skill-name { font-size: 13px; opacity: .65; }
+  #topbar .spacer { flex: 1; }
+  #topbar .badge {
+    font-size: 11px; font-weight: 600; letter-spacing: .06em;
+    background: var(--accent); color: #1a1a1a;
+    padding: 3px 8px; border-radius: 20px;
+  }
+  #end-btn {
+    font-size: 12px; font-weight: 600;
+    background: rgba(255,255,255,.15); color: #fff;
+    border: 1px solid rgba(255,255,255,.3);
+    border-radius: 6px; padding: 5px 12px; cursor: pointer;
+    transition: background .15s;
+  }
+  #end-btn:hover { background: rgba(255,255,255,.25); }
+  #end-btn:disabled { opacity: .4; cursor: default; }
+
+  /* ── MAIN LAYOUT ─────────────────────────────────────── */
+  #main {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* ── CHAT PANE ───────────────────────────────────────── */
+  #chat-pane {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  #messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 20px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    scroll-behavior: smooth;
+  }
+
+  /* center messages in student mode */
+  body:not(.demo) #messages { align-items: center; }
+  body:not(.demo) .bubble-wrap { width: 100%; max-width: 720px; }
+
+  .bubble-wrap { display: flex; flex-direction: column; gap: 4px; }
+  .bubble-wrap.user { align-items: flex-end; }
+  .bubble-wrap.agent { align-items: flex-start; }
+
+  .bubble {
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    font-size: 15px;
+    line-height: 1.6;
+    max-width: 85%;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .bubble.agent { background: var(--agent-bg); color: var(--text); border-bottom-left-radius: 4px; }
+  .bubble.user  { background: var(--user-bg);  color: var(--user-fg); border-bottom-right-radius: 4px; }
+  .bubble.system {
+    background: #fef9ec; border: 1px solid #f0dfa0;
+    color: #7a5c00; font-style: italic; font-size: 13px;
+    border-radius: 8px; padding: 10px 14px; max-width: 100%;
+  }
+
+  .typing {
+    display: flex; gap: 5px; align-items: center;
+    padding: 14px 18px; background: var(--agent-bg);
+    border-radius: var(--radius); border-bottom-left-radius: 4px;
+    width: fit-content;
+  }
+  .typing span {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--muted); animation: blink 1.2s infinite;
+  }
+  .typing span:nth-child(2) { animation-delay: .2s; }
+  .typing span:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0%,80%,100%{opacity:.3} 40%{opacity:1} }
+
+  /* ── INPUT BAR ───────────────────────────────────────── */
+  #input-area {
+    padding: 12px 20px 16px;
+    background: #fff;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+  }
+  body:not(.demo) #input-area { justify-content: center; }
+  body:not(.demo) #input-inner { width: 100%; max-width: 720px; display: flex; gap: 10px; }
+  body.demo #input-area { flex-direction: row; }
+
+  #input-inner { display: contents; }
+
+  #user-input {
+    flex: 1;
+    resize: none;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 15px;
+    font-family: var(--font);
+    line-height: 1.5;
+    outline: none;
+    min-height: 44px;
+    max-height: 160px;
+    overflow-y: auto;
+    color: var(--text);
+    transition: border-color .15s;
+  }
+  #user-input:focus { border-color: var(--brand); }
+  #user-input:disabled { background: #f5f5f5; cursor: not-allowed; }
+
+  #send-btn {
+    background: var(--brand); color: #fff;
+    border: none; border-radius: 10px;
+    padding: 0 18px; height: 44px;
+    font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: background .15s; flex-shrink: 0;
+  }
+  #send-btn:hover { background: #254f7a; }
+  #send-btn:disabled { opacity: .45; cursor: default; }
+
+  /* ── YAML PANE (demo mode only) ──────────────────────── */
+  #yaml-pane {
+    display: none;
+    width: 50%;
+    flex-shrink: 0;
+    border-left: 1px solid var(--border);
+    background: #1e2433;
+    overflow-y: auto;
+    padding: 20px;
+  }
+  body.demo #yaml-pane { display: block; }
+  body.demo #chat-pane { width: 50%; flex: none; }
+
+  #yaml-pane h3 {
+    color: #8fb4d8; font-size: 12px; font-weight: 600;
+    letter-spacing: .08em; text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  #yaml-content {
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 12.5px;
+    line-height: 1.7;
+    color: #c9d1d9;
+    white-space: pre;
+  }
+
+  #yaml-content .yaml-line {
+    display: block;
+    padding: 1px 4px;
+    border-radius: 3px;
+    transition: background-color .3s, color .3s;
+  }
+
+  #yaml-content .yaml-line.highlight {
+    background-color: var(--highlight);
+    color: #1a1a1a;
+    animation: pulse-fade 2s ease-out forwards;
+  }
+
+  @keyframes pulse-fade {
+    0%   { background-color: #ffe066; color: #1a1a1a; }
+    60%  { background-color: #ffe066; color: #1a1a1a; }
+    100% { background-color: transparent; color: #c9d1d9; }
+  }
+
+  /* ── START SCREEN ─────────────────────────────────────── */
+  #start-screen {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 20px;
+    padding: 40px;
+    text-align: center;
+  }
+  #start-screen h2 { font-size: 22px; color: var(--brand); }
+  #start-screen p  { font-size: 15px; color: var(--muted); max-width: 480px; }
+  #start-btn {
+    background: var(--brand); color: #fff;
+    border: none; border-radius: 10px;
+    padding: 12px 32px; font-size: 16px; font-weight: 600;
+    cursor: pointer; transition: background .15s;
+  }
+  #start-btn:hover { background: #254f7a; }
+
+  /* ── MEMORY PANEL ───────────────────────────────────────── */
+  #memory-panel {
+    border-top: 1px solid var(--border);
+    background: #f8fafc;
+    flex-shrink: 0;
+  }
+  body:not(.demo) #memory-panel { display: flex; flex-direction: column; align-items: center; }
+  body:not(.demo) #memory-panel-inner { width: 100%; max-width: 720px; }
+  body.demo #memory-panel { display: block; }
+  #memory-panel-inner { width: 100%; }
+
+  #memory-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 20px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    user-select: none;
+  }
+  #memory-toggle:hover { color: var(--brand); }
+  #memory-toggle .chevron { transition: transform .2s; font-style: normal; }
+  #memory-panel.open .chevron { transform: rotate(180deg); }
+
+  #memory-content {
+    padding: 0 20px 10px;
+    display: none;
+  }
+  #memory-panel.open #memory-content { display: block; }
+
+  .memory-item {
+    display: flex;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.4;
+  }
+  .memory-tag {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .memory-tag.success     { background: #d1fae5; color: #065f46; }
+  .memory-tag.struggle    { background: #fee2e2; color: #991b1b; }
+  .memory-tag.breakthrough{ background: #dbeafe; color: #1e40af; }
+  .memory-tag.completion  { background: #ede9fe; color: #5b21b6; }
+  .memory-tag.interest    { background: #fef3c7; color: #92400e; }
+
+  /* ── TOKEN GATE ─────────────────────────────────────────── */
+  #token-gate {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+    padding: 40px;
+    text-align: center;
+  }
+  #token-gate h2 { font-size: 20px; color: var(--brand); }
+  #token-gate p  { font-size: 14px; color: var(--muted); max-width: 400px; }
+  #token-input {
+    width: 100%; max-width: 420px;
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 14px; font-size: 14px; font-family: monospace;
+    outline: none;
+  }
+  #token-input:focus { border-color: var(--brand); }
+  #token-submit {
+    background: var(--brand); color: #fff;
+    border: none; border-radius: 8px;
+    padding: 10px 28px; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: background .15s;
+  }
+  #token-submit:hover { background: #254f7a; }
+  #token-error { color: #c0392b; font-size: 13px; }
+
+  /* ── TOPBAR LINKS (Switch agent / Edit profile) ─────────── */
+  #topbar .topbar-link {
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.78);
+    text-decoration: none;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background .15s, color .15s;
+    white-space: nowrap;
+  }
+  #topbar .topbar-link:hover { background: rgba(255,255,255,0.12); color: #fff; }
+  @media (max-width: 640px) {
+    #topbar .topbar-link .full { display: none; }
+  }
+
+  /* ── PROGRESS BAR HEADER ──────────────────────────────────── */
+  #progress-wrap {
+    display: none;
+    flex-direction: column;
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  #progress-wrap.show { display: flex; }
+  #progress-bar {
+    height: 4px;
+    background: #eef1f5;
+    overflow: hidden;
+  }
+  #progress-fill {
+    height: 100%;
+    width: 0;
+    background: linear-gradient(90deg, var(--brand) 0%, #3d6a99 100%);
+    transition: width 0.6s ease-out;
+  }
+  #progress-meta {
+    font-size: 11.5px;
+    color: var(--muted);
+    padding: 4px 20px 5px;
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    align-items: center;
+    line-height: 1.4;
+  }
+  #progress-meta .sep { opacity: 0.4; }
+
+  /* ── SESSION-START PREFS (time-budget + mode chips) ────────── */
+  #start-prefs {
+    width: 100%;
+    max-width: 560px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin: 8px 0 4px;
+    text-align: left;
+  }
+  .pref-group .pref-label {
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+    text-align: left;
+  }
+  .chip-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .chip {
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 500;
+    background: #fff;
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 7px 14px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    line-height: 1.2;
+  }
+  .chip:hover { border-color: var(--brand); }
+  .chip.active {
+    background: var(--brand);
+    color: #fff;
+    border-color: var(--brand);
+  }
+  .chip:disabled { opacity: 0.55; cursor: default; }
+
+  @media (max-width: 480px) {
+    #start-prefs { padding: 0 8px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="topbar">
+  <a href="opas-skills.html" class="topbar-link" id="switch-agent-link" title="Back to my agents">&larr; <span class="full">Switch agent</span></a>
+  <span class="logo">OPAS</span>
+  <span class="skill-name" id="skill-label">Loading…</span>
+  <span class="spacer"></span>
+  <a href="opas-onboarding.html?return=opas-student.html" class="topbar-link" id="edit-profile-link" title="Edit profile preferences">&#9881; <span class="full">Edit profile</span></a>
+  <span class="badge" id="demo-badge" style="display:none">DEMO MODE</span>
+  <button id="end-btn" disabled>End session</button>
+</div>
+
+<!-- PROGRESS BAR (hidden until session starts) -->
+<div id="progress-wrap">
+  <div id="progress-bar"><div id="progress-fill"></div></div>
+  <div id="progress-meta"></div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- CHAT PANE -->
+  <div id="chat-pane">
+    <!-- Token gate (shown when no token is in URL or localStorage) -->
+    <div id="token-gate" style="display:none">
+      <h2>Enter your access token</h2>
+      <p>You received a personal link from your instructor. Paste the token from that link below, or click the link again to load it automatically.</p>
+      <input id="token-input" type="text" placeholder="Paste your access token here…" autocomplete="off" spellcheck="false">
+      <button id="token-submit">Continue</button>
+      <span id="token-error"></span>
+    </div>
+
+    <!-- Start screen (shown before session starts) -->
+    <div id="start-screen">
+      <h2 id="start-title">Thinking Probabilistically</h2>
+      <p>An AI tutor guided by the OPAS pedagogy framework.<br>Socratic dialogue, grounded in your course materials.</p>
+
+      <div id="start-prefs">
+        <div class="pref-group">
+          <div class="pref-label">How long do you have?</div>
+          <div class="chip-row" id="time-chips" role="radiogroup" aria-label="Time budget">
+            <button type="button" class="chip" data-time="15" role="radio" aria-checked="false">15 min</button>
+            <button type="button" class="chip" data-time="30" role="radio" aria-checked="false">30 min</button>
+            <button type="button" class="chip" data-time="45" role="radio" aria-checked="false">45 min</button>
+            <button type="button" class="chip" data-time="60" role="radio" aria-checked="false">60 min</button>
+            <button type="button" class="chip" data-time=""   role="radio" aria-checked="true">As long as it takes</button>
+          </div>
+        </div>
+        <div class="pref-group">
+          <div class="pref-label">Where are you with the materials?</div>
+          <div class="chip-row" id="mode-chips" role="radiogroup" aria-label="Session mode">
+            <button type="button" class="chip active" data-mode="auto"   role="radio" aria-checked="true">Auto (recommended)</button>
+            <button type="button" class="chip"        data-mode="review" role="radio" aria-checked="false">I&rsquo;ve read the materials</button>
+            <button type="button" class="chip"        data-mode="teach"  role="radio" aria-checked="false">I haven&rsquo;t read them yet</button>
+          </div>
+        </div>
+      </div>
+
+      <button id="start-btn">Start session</button>
+    </div>
+
+    <!-- Messages (hidden until session starts) -->
+    <div id="messages" style="display:none"></div>
+
+    <!-- Memory panel (collapsed, only shown when memories exist) -->
+    <div id="memory-panel" style="display:none">
+      <div id="memory-panel-inner">
+        <div id="memory-toggle" onclick="toggleMemoryPanel()">
+          <em class="chevron">▾</em>
+          What I remember about you
+          <span id="memory-count"></span>
+        </div>
+        <div id="memory-content"></div>
+      </div>
+    </div>
+
+    <!-- Input bar (hidden until session starts) -->
+    <div id="input-area" style="display:none">
+      <div id="input-inner">
+        <textarea id="user-input" rows="1" placeholder="Type your response…" disabled></textarea>
+        <button id="send-btn" disabled>Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- YAML PANE (demo mode only) -->
+  <div id="yaml-pane">
+    <h3>Skill YAML · Live highlights</h3>
+    <div id="yaml-content"></div>
+  </div>
+
+</div>
+
+<script type="module">
+// ─────────────────────────────────────────────────────────────────────────────
+// Config
+// ─────────────────────────────────────────────────────────────────────────────
+const RUNTIME_URL = document.querySelector('meta[name="opas-runtime"]')?.content ?? 'http://localhost:8001';
+
+const params    = new URLSearchParams(location.search);
+const DEMO      = params.has('demo');
+const AUTOSTART = params.has('autostart');
+const SKILL_ID  = params.get('skill_id') ?? 'hks.api318.unit1.thinking-probabilistically';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Token resolution (three-step, per brief)
+// ─────────────────────────────────────────────────────────────────────────────
+const LS_KEY = 'opas_learner_token';
+let BEARER = null;
+
+function resolveToken() {
+  // Step 1: URL ?token= param
+  const urlToken = params.get('token');
+  if (urlToken) {
+    localStorage.setItem(LS_KEY, urlToken);
+    // Strip token from URL bar without triggering a reload.
+    const clean = new URL(location.href);
+    clean.searchParams.delete('token');
+    history.replaceState(null, '', clean.toString());
+    return urlToken;
+  }
+  // Step 2: localStorage
+  const stored = localStorage.getItem(LS_KEY);
+  if (stored) return stored;
+  // Step 3: must prompt
+  return null;
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────────────────────────────────────
+let sessionId  = null;
+let sessionEnded = false;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DOM refs
+// ─────────────────────────────────────────────────────────────────────────────
+const $body          = document.body;
+const $skillLabel    = document.getElementById('skill-label');
+const $startTitle    = document.getElementById('start-title');
+const $demoBadge     = document.getElementById('demo-badge');
+const $tokenGate     = document.getElementById('token-gate');
+const $tokenInput    = document.getElementById('token-input');
+const $tokenSubmit   = document.getElementById('token-submit');
+const $tokenError    = document.getElementById('token-error');
+const $startScreen   = document.getElementById('start-screen');
+const $messages      = document.getElementById('messages');
+const $memoryPanel   = document.getElementById('memory-panel');
+const $memoryCount   = document.getElementById('memory-count');
+const $memoryContent = document.getElementById('memory-content');
+const $inputArea     = document.getElementById('input-area');
+const $input         = document.getElementById('user-input');
+const $sendBtn       = document.getElementById('send-btn');
+const $startBtn      = document.getElementById('start-btn');
+const $endBtn        = document.getElementById('end-btn');
+const $yamlContent   = document.getElementById('yaml-content');
+const $timeChips     = document.getElementById('time-chips');
+const $modeChips     = document.getElementById('mode-chips');
+const $progressWrap  = document.getElementById('progress-wrap');
+const $progressFill  = document.getElementById('progress-fill');
+const $progressMeta  = document.getElementById('progress-meta');
+
+// ─── Session-start preferences (selected via chip rows) ──────────────────
+//   selectedTimeBudget: number | null   (null ⇒ omit time_budget_minutes from POST)
+//   selectedMode:       'auto' | 'review' | 'teach'   (default 'auto')
+let selectedTimeBudget = null;
+let selectedMode       = 'auto';
+
+function wireChipGroup(container, onSelect) {
+  if (!container) return;
+  container.addEventListener('click', (e) => {
+    const btn = e.target.closest('.chip');
+    if (!btn || btn.disabled) return;
+    container.querySelectorAll('.chip').forEach((c) => {
+      c.classList.remove('active');
+      c.setAttribute('aria-checked', 'false');
+    });
+    btn.classList.add('active');
+    btn.setAttribute('aria-checked', 'true');
+    onSelect(btn);
+  });
+}
+
+wireChipGroup($timeChips, (btn) => {
+  const v = btn.dataset.time;
+  selectedTimeBudget = v === '' ? null : Number(v);
+});
+// Default: "As long as it takes" (the empty data-time) is the active pill on load.
+const $defaultTime = $timeChips?.querySelector('.chip[data-time=""]');
+if ($defaultTime) $defaultTime.classList.add('active');
+
+wireChipGroup($modeChips, (btn) => {
+  selectedMode = btn.dataset.mode || 'auto';
+});
+
+if (DEMO) {
+  $body.classList.add('demo');
+  $demoBadge.style.display = '';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Memory panel
+// ─────────────────────────────────────────────────────────────────────────────
+function toggleMemoryPanel() {
+  $memoryPanel.classList.toggle('open');
+}
+// Expose to window so inline onclick can reach it (module scripts don't auto-expose).
+window.toggleMemoryPanel = toggleMemoryPanel;
+
+function renderMemories(memories) {
+  if (!memories || memories.length === 0) return;
+  $memoryCount.textContent = `(${memories.length})`;
+  $memoryContent.innerHTML = memories.map(m => `
+    <div class="memory-item">
+      <span class="memory-tag ${m.category}">${m.category}</span>
+      <span>${m.memory_text}</span>
+    </div>`).join('');
+  $memoryPanel.style.display = '';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Token gate — show if no token found
+// ─────────────────────────────────────────────────────────────────────────────
+BEARER = resolveToken();
+
+function showTokenGate() {
+  $tokenGate.style.display = 'flex';
+  $startScreen.style.display = 'none';
+  $tokenInput.focus();
+}
+
+function acceptToken(token) {
+  if (!token || token.trim().length < 8) {
+    $tokenError.textContent = 'Token looks too short. Check your link and try again.';
+    return;
+  }
+  localStorage.setItem(LS_KEY, token.trim());
+  BEARER = token.trim();
+  $tokenGate.style.display = 'none';
+  $startScreen.style.display = 'flex';
+  loadSkillMeta();
+}
+
+$tokenSubmit.addEventListener('click', () => acceptToken($tokenInput.value));
+$tokenInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') acceptToken($tokenInput.value);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Runtime API helpers
+// ─────────────────────────────────────────────────────────────────────────────
+async function runtimePost(path, body) {
+  const res = await fetch(`${RUNTIME_URL}${path}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${BEARER}`,
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`${res.status} ${text}`);
+  }
+  return res.json();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// YAML pane
+// ─────────────────────────────────────────────────────────────────────────────
+
+// pathMap: dotted-path → array of line-span elements
+let pathMap = {};
+
+function buildYamlPane(yamlText) {
+  pathMap = {};
+  const lines = yamlText.split('\n');
+
+  // We walk the lines and infer paths heuristically from indentation + key names.
+  // This is good enough for the demo: it handles top-level keys, nested keys,
+  // and phase array entries keyed by their id field.
+  const keyStack = [];   // [{key, indent}]
+  let lastPhaseId = null;
+
+  $yamlContent.innerHTML = '';
+
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i];
+    const span = document.createElement('span');
+    span.className = 'yaml-line';
+    span.textContent = raw;
+
+    // Compute indent level (2-space)
+    const trimmed = raw.trimStart();
+    const indent  = raw.length - trimmed.length;
+
+    // Pop stack entries deeper than current indent
+    while (keyStack.length && keyStack[keyStack.length - 1].indent >= indent) {
+      keyStack.pop();
+    }
+
+    // Extract key from "key: ..." or "- key: ..." or "- id: ..."
+    const keyMatch = trimmed.match(/^-?\s*(\w[\w._-]*):/);
+    let currentKey = keyMatch ? keyMatch[1] : null;
+
+    // Detect phase id for array entries like "  - id: p1-uncertainty-intro"
+    const idMatch = trimmed.match(/^-\s+id:\s+["']?([^"'\s]+)["']?/);
+    if (idMatch && keyStack.some(k => k.key === 'phases')) {
+      lastPhaseId = idMatch[1];
+    }
+
+    if (currentKey) {
+      keyStack.push({ key: currentKey, indent });
+    }
+
+    // Build dotted path for this line
+    const pathParts = keyStack.map(k => k.key);
+    let linePath = pathParts.join('.');
+
+    // Replace phases.N → phases[phaseId] when we know the phase id
+    if (lastPhaseId && linePath.includes('phases.')) {
+      linePath = linePath.replace(/^phases(\..+)?$/, (_, rest) =>
+        rest ? `phases[${lastPhaseId}]${rest}` : `phases[${lastPhaseId}]`
+      );
+    }
+
+    if (linePath) {
+      if (!pathMap[linePath]) pathMap[linePath] = [];
+      pathMap[linePath].push(span);
+    }
+
+    $yamlContent.appendChild(span);
+  }
+}
+
+function highlightPaths(yamlRefs) {
+  if (!DEMO || !yamlRefs?.length) return;
+
+  // Remove any existing highlights first
+  document.querySelectorAll('.yaml-line.highlight').forEach(el => {
+    el.classList.remove('highlight');
+  });
+
+  let firstEl = null;
+  for (const ref of yamlRefs) {
+    // Exact match
+    const spans = pathMap[ref] ?? [];
+    // Prefix match (e.g. "pedagogy.instructional_model" covers sub-lines)
+    const prefixSpans = Object.entries(pathMap)
+      .filter(([k]) => k === ref || k.startsWith(ref + '.') || k.startsWith(ref + '['))
+      .flatMap(([, v]) => v);
+
+    const allSpans = [...new Set([...spans, ...prefixSpans])];
+    for (const el of allSpans) {
+      el.classList.remove('highlight'); // reset animation
+      void el.offsetWidth;              // reflow to restart animation
+      el.classList.add('highlight');
+      if (!firstEl) firstEl = el;
+    }
+  }
+
+  if (firstEl) {
+    firstEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Chat UI
+// ─────────────────────────────────────────────────────────────────────────────
+function addBubble(role, text) {
+  const wrap = document.createElement('div');
+  wrap.className = `bubble-wrap ${role}`;
+  const bub = document.createElement('div');
+  bub.className = `bubble ${role}`;
+  bub.textContent = text;
+  wrap.appendChild(bub);
+  $messages.appendChild(wrap);
+  $messages.scrollTop = $messages.scrollHeight;
+  return bub;
+}
+
+function addSystem(text) {
+  const wrap = document.createElement('div');
+  wrap.className = 'bubble-wrap agent';
+  const bub = document.createElement('div');
+  bub.className = 'bubble system';
+  bub.textContent = text;
+  wrap.appendChild(bub);
+  $messages.appendChild(wrap);
+  $messages.scrollTop = $messages.scrollHeight;
+}
+
+function showTyping() {
+  const wrap = document.createElement('div');
+  wrap.className = 'bubble-wrap agent';
+  wrap.id = 'typing-indicator';
+  wrap.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+  $messages.appendChild(wrap);
+  $messages.scrollTop = $messages.scrollHeight;
+}
+
+function removeTyping() {
+  document.getElementById('typing-indicator')?.remove();
+}
+
+function setInputEnabled(enabled) {
+  $input.disabled    = !enabled;
+  $sendBtn.disabled  = !enabled;
+}
+
+// Auto-resize textarea
+$input.addEventListener('input', () => {
+  $input.style.height = 'auto';
+  $input.style.height = Math.min($input.scrollHeight, 160) + 'px';
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Session lifecycle
+// ─────────────────────────────────────────────────────────────────────────────
+async function startSession() {
+  $startBtn.disabled = true;
+  $startScreen.style.display = 'none';
+  $messages.style.display = 'flex';
+  $inputArea.style.display = 'flex';
+
+  // Build session-start payload. Only include time_budget_minutes when the
+  // learner picked one — omitted ⇒ "as long as it takes".
+  const payload = {
+    skill_id: SKILL_ID,
+    mode:     selectedMode || 'auto',
+    // learner_id resolved from Bearer token server-side
+  };
+  if (selectedTimeBudget != null) payload.time_budget_minutes = selectedTimeBudget;
+
+  showTyping();
+  try {
+    const data = await runtimePost('/session/start', payload);
+    sessionId = data.session_id;
+    removeTyping();
+    addBubble('agent', data.opening_turn);
+    if (DEMO) highlightPaths(data.yaml_refs);
+    renderMemories(data.memory_context);
+    setInputEnabled(true);
+    $input.focus();
+    $endBtn.disabled = false;
+    // Kick off progress polling — first read happens immediately, then every 30s.
+    startProgressPolling();
+  } catch (err) {
+    removeTyping();
+    addSystem(`Failed to start session: ${err.message}`);
+    $startScreen.style.display = 'flex';
+    $startBtn.disabled = false;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Progress polling (phase / minutes-elapsed / probes)
+// ─────────────────────────────────────────────────────────────────────────────
+let progressTimer = null;
+
+async function pollProgress() {
+  if (!sessionId || sessionEnded) return;
+  try {
+    const res = await fetch(`${RUNTIME_URL}/session/${encodeURIComponent(sessionId)}/progress`, {
+      headers: { 'Authorization': `Bearer ${BEARER}` },
+    });
+    if (!res.ok) return; // soft-fail: progress is non-critical UI
+    const p = await res.json();
+    renderProgress(p);
+  } catch (_) {
+    /* network blip — try again next tick */
+  }
+}
+
+function renderProgress(p) {
+  const idx   = (p.current_phase_index ?? 0) + 1;
+  const total = p.total_phases || 1;
+  // Use phase position as the spine of the bar; mix in time-completion when a
+  // budget is set so it advances within a phase too.
+  const phaseFrac = Math.min(1, Math.max(0, idx / total));
+  let pct = phaseFrac * 100;
+  const elapsed   = Number(p.minutes_elapsed) || 0;
+  const remaining = Number(p.estimated_remaining_minutes);
+  if (Number.isFinite(remaining) && (elapsed + remaining) > 0) {
+    const timeFrac = elapsed / (elapsed + remaining);
+    pct = Math.max(pct, Math.min(100, timeFrac * 100));
+  }
+  $progressFill.style.width = pct.toFixed(1) + '%';
+
+  const elapsedTxt = formatMinutes(elapsed);
+  const parts = [`Phase ${idx} of ${total}`, `${elapsedTxt} in`];
+  if (Number.isFinite(remaining)) {
+    parts.push(`~${formatMinutes(remaining)} left`);
+  }
+  if (Number.isFinite(p.probes_total) && p.probes_total > 0) {
+    parts.push(`${p.probes_passed || 0}/${p.probes_total} probes passed`);
+  }
+  $progressMeta.innerHTML = parts.map((t, i) =>
+    (i === 0 ? '' : '<span class="sep">&middot;</span> ') + escapeText(t)
+  ).join(' ');
+  $progressWrap.classList.add('show');
+}
+
+function formatMinutes(m) {
+  if (!Number.isFinite(m)) return '—';
+  if (m < 1) return '<1 min';
+  return Math.round(m) + ' min';
+}
+
+function escapeText(s) {
+  return String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function startProgressPolling() {
+  pollProgress();
+  if (progressTimer) clearInterval(progressTimer);
+  progressTimer = setInterval(pollProgress, 30_000);
+}
+
+function stopProgressPolling() {
+  if (progressTimer) {
+    clearInterval(progressTimer);
+    progressTimer = null;
+  }
+}
+
+async function sendTurn() {
+  const msg = $input.value.trim();
+  if (!msg || !sessionId || sessionEnded) return;
+
+  $input.value = '';
+  $input.style.height = 'auto';
+  setInputEnabled(false);
+  addBubble('user', msg);
+  showTyping();
+
+  try {
+    const data = await runtimePost('/session/turn', {
+      session_id: sessionId,
+      learner_msg: msg,
+    });
+    removeTyping();
+    addBubble('agent', data.agent_reply);
+    if (DEMO) highlightPaths(data.yaml_refs);
+    setInputEnabled(true);
+    $input.focus();
+    // Refresh progress immediately after each agent turn — phase or probe count
+    // may have advanced. The 30s timer keeps it fresh during longer pauses.
+    pollProgress();
+  } catch (err) {
+    removeTyping();
+    addSystem(`Error: ${err.message}`);
+    setInputEnabled(true);
+  }
+}
+
+async function endSession() {
+  if (!sessionId || sessionEnded) return;
+  $endBtn.disabled = true;
+  setInputEnabled(false);
+  stopProgressPolling();
+  try {
+    await runtimePost('/session/end', { session_id: sessionId });
+  } catch (_) { /* best-effort */ }
+  sessionEnded = true;
+  addSystem('Session ended. Thank you for learning with OPAS.');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Load skill name + YAML from Supabase (for title + demo pane)
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadSkillMeta() {
+  try {
+    const res = await fetch(
+      `${RUNTIME_URL}/session/skill/${encodeURIComponent(SKILL_ID)}`,
+      { headers: { Authorization: `Bearer ${BEARER}` } }
+    );
+    if (!res.ok) return;
+    const data = await res.json();
+
+    $skillLabel.textContent = data.name;
+    $startTitle.textContent = data.name;
+    document.title = `OPAS — ${data.name}`;
+
+    if (DEMO) {
+      const yamlText = jsonToYaml(data.yaml, 0);
+      buildYamlPane(yamlText);
+    }
+  } catch (_) { /* non-fatal */ }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Minimal JSON→YAML serialiser (no dependency)
+// ─────────────────────────────────────────────────────────────────────────────
+function jsonToYaml(val, depth, key) {
+  const indent = '  '.repeat(depth);
+
+  if (val === null || val === undefined) return 'null';
+  if (typeof val === 'boolean') return val.toString();
+  if (typeof val === 'number') return val.toString();
+
+  if (typeof val === 'string') {
+    if (val.includes('\n') || val.includes(': ') || val.startsWith('"')) {
+      return `"${val.replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`;
+    }
+    return val;
+  }
+
+  if (Array.isArray(val)) {
+    if (val.length === 0) return '[]';
+    return val.map(item => {
+      if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
+        const entries = Object.entries(item);
+        if (entries.length === 1) {
+          const [k, v] = entries[0];
+          return `${indent}- ${k}: ${jsonToYaml(v, depth + 1)}`;
+        }
+        const first = entries[0];
+        const rest  = entries.slice(1);
+        let out = `${indent}- ${first[0]}: ${jsonToYaml(first[1], depth + 1)}\n`;
+        out += rest.map(([k, v]) => {
+          const vs = jsonToYaml(v, depth + 1);
+          return vs.includes('\n')
+            ? `${indent}  ${k}:\n${vs}`
+            : `${indent}  ${k}: ${vs}`;
+        }).join('\n');
+        return out;
+      }
+      return `${indent}- ${jsonToYaml(item, depth + 1)}`;
+    }).join('\n');
+  }
+
+  if (typeof val === 'object') {
+    if (Object.keys(val).length === 0) return '{}';
+    return Object.entries(val).map(([k, v]) => {
+      const vs = jsonToYaml(v, depth + 1);
+      if (typeof v === 'object' && v !== null && Object.keys(v).length > 0) {
+        return `${indent}${k}:\n${vs}`;
+      }
+      if (typeof v === 'object' && Array.isArray(v) && v.length > 0) {
+        return `${indent}${k}:\n${vs}`;
+      }
+      return `${indent}${k}: ${vs}`;
+    }).join('\n');
+  }
+
+  return String(val);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Event wiring
+// ─────────────────────────────────────────────────────────────────────────────
+$startBtn.addEventListener('click', startSession);
+$endBtn.addEventListener('click', endSession);
+
+$sendBtn.addEventListener('click', sendTurn);
+$input.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendTurn(); }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Init
+// ─────────────────────────────────────────────────────────────────────────────
+if (BEARER) {
+  loadSkillMeta();
+  if (AUTOSTART) startSession();
+} else {
+  showTokenGate();
+}
+</script>
+</body>
+</html>

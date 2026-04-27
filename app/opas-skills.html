@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="opas-runtime" content="http://localhost:8001">
+<title>OPAS — My Agents</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --brand: #1a3a5c;
+    --brand-hover: #254f7a;
+    --brand-light: #e8f0f8;
+    --accent: #c8a951;
+    --bg: #f8fafc;
+    --card-bg: #fff;
+    --border: #dde3ea;
+    --border-strong: #c5cdd6;
+    --text: #1c2b3a;
+    --muted: #64748b;
+    --error-bg: #fef2f2;
+    --error-fg: #b42318;
+    --error-border: #fecaca;
+    --success-bg: #ecfdf3;
+    --success-fg: #067647;
+    --success-border: #abefc6;
+    --pill-private: #eef1f5;
+    --pill-private-fg: #3a4a5c;
+    --pill-group:   #fff4d6;
+    --pill-group-fg: #7a5c00;
+    --pill-pilot:    #e8f0f8;
+    --pill-pilot-fg: #1a3a5c;
+    --pill-published-bg: #ecfdf3;
+    --pill-published-fg: #067647;
+    --radius: 12px;
+    --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+
+  body {
+    font-family: var(--font);
+    color: var(--text);
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── TOP BAR (matches opas-student.html) ─────────────────────── */
+  #topbar {
+    background: var(--brand);
+    color: #fff;
+    padding: 0 20px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+  #topbar .logo {
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.04em;
+    opacity: 0.95;
+  }
+  #topbar .accent-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent); opacity: 0.85;
+  }
+  #topbar .spacer { flex: 1; }
+
+  /* profile dropdown */
+  .profile {
+    position: relative;
+  }
+  .profile-trigger {
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--font);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.15s;
+  }
+  .profile-trigger:hover { background: rgba(255,255,255,0.25); }
+  .profile-trigger .caret {
+    font-size: 10px;
+    opacity: 0.8;
+  }
+  .profile-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(26, 58, 92, 0.18);
+    min-width: 200px;
+    overflow: hidden;
+    color: var(--text);
+  }
+  .profile-menu.show { display: block; }
+  .profile-menu .header {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+  .profile-menu .header .name {
+    font-weight: 600;
+    color: var(--text);
+    word-break: break-word;
+  }
+  .profile-menu .header .email {
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 2px;
+    word-break: break-word;
+  }
+  .profile-menu a, .profile-menu button {
+    display: block;
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-family: var(--font);
+    color: var(--text);
+    background: #fff;
+    border: none;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .profile-menu a:hover, .profile-menu button:hover { background: var(--brand-light); }
+  .profile-menu .divider { height: 1px; background: var(--border); margin: 0; }
+  .profile-menu .danger { color: var(--error-fg); }
+
+  /* ── PAGE WRAPPER ─────────────────────────────────────────────── */
+  .page {
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 28px 22px 60px;
+    flex: 1;
+  }
+
+  .page-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  .page-head h1 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .page-head .toolbar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  /* ── BUTTONS ─────────────────────────────────────────────────── */
+  .btn {
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 9px 14px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    border: 1px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+  .btn-primary {
+    background: var(--brand);
+    color: #fff;
+    border-color: var(--brand);
+  }
+  .btn-primary:hover:not(:disabled) { background: var(--brand-hover); border-color: var(--brand-hover); }
+  .btn-secondary {
+    background: #fff;
+    color: var(--brand);
+    border-color: var(--border-strong);
+  }
+  .btn-secondary:hover:not(:disabled) { background: var(--brand-light); border-color: var(--brand); }
+  .btn-ghost {
+    background: transparent;
+    color: var(--brand);
+    border-color: transparent;
+    padding: 6px 10px;
+  }
+  .btn-ghost:hover:not(:disabled) { background: var(--brand-light); }
+  .btn-danger {
+    background: #fff;
+    color: var(--error-fg);
+    border-color: var(--error-border);
+  }
+  .btn-danger:hover:not(:disabled) { background: var(--error-bg); }
+  .btn-danger-solid {
+    background: var(--error-fg);
+    color: #fff;
+    border-color: var(--error-fg);
+  }
+  .btn-danger-solid:hover:not(:disabled) { background: #971a13; border-color: #971a13; }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+
+  /* ── SECTION ─────────────────────────────────────────────────── */
+  .section { margin-bottom: 36px; }
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .section-head h2 {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .section-head .count {
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--brand-light);
+    border-radius: 999px;
+    padding: 2px 8px;
+    font-weight: 600;
+  }
+
+  /* ── CARDS GRID ──────────────────────────────────────────────── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 14px;
+  }
+
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .card:hover { border-color: var(--border-strong); }
+
+  .card-title {
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.35;
+    word-break: break-word;
+  }
+  .card-meta {
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    align-items: center;
+  }
+
+  .pill {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 2px 8px;
+    border-radius: 999px;
+    text-transform: lowercase;
+  }
+  .pill-private    { background: var(--pill-private); color: var(--pill-private-fg); }
+  .pill-group      { background: var(--pill-group);   color: var(--pill-group-fg); }
+  .pill-pilot      { background: var(--pill-pilot);   color: var(--pill-pilot-fg); }
+  .pill-published  { background: var(--pill-published-bg); color: var(--pill-published-fg); }
+  .pill-draft      { background: #fde7d3; color: #92400e; }
+  .pill-role       { background: var(--brand-light); color: var(--brand); }
+
+  .card-actions {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: auto;
+  }
+
+  /* ── ADD MATERIALS DRAWER (per skill card) ───────────────────── */
+  .drawer {
+    display: none;
+    border-top: 1px dashed var(--border);
+    padding-top: 12px;
+    margin-top: 4px;
+  }
+  .drawer.show { display: block; }
+  .drawer-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 10px;
+  }
+  .drawer-tab {
+    background: #f1f4f8;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-family: var(--font);
+    cursor: pointer;
+    color: var(--muted);
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .drawer-tab.active {
+    background: var(--brand);
+    color: #fff;
+    border-color: var(--brand);
+  }
+  .drawer textarea {
+    width: 100%;
+    min-height: 80px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-family: var(--font);
+    font-size: 13px;
+    color: var(--text);
+    resize: vertical;
+    outline: none;
+  }
+  .drawer textarea:focus { border-color: var(--brand); }
+  .drawer .file-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .drawer .file-row input[type="file"] {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .drawer-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    align-items: center;
+  }
+  .drawer-status {
+    font-size: 12px;
+    color: var(--muted);
+    flex: 1;
+    min-width: 0;
+  }
+  .drawer-status.error { color: var(--error-fg); }
+  .drawer-status.ok    { color: var(--success-fg); }
+
+  /* ── EMPTY STATES ────────────────────────────────────────────── */
+  .empty {
+    text-align: center;
+    padding: 36px 22px;
+    background: var(--card-bg);
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius);
+    color: var(--muted);
+  }
+  .empty .empty-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .empty .empty-sub { font-size: 13px; line-height: 1.5; max-width: 420px; margin: 0 auto 14px; }
+
+  /* ── LOADING + ERRORS ────────────────────────────────────────── */
+  .loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--muted);
+    font-size: 13px;
+    padding: 18px 0;
+  }
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--brand);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .toast {
+    position: fixed;
+    bottom: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--text);
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    opacity: 0;
+    transition: opacity 0.18s, transform 0.18s;
+    pointer-events: none;
+    z-index: 200;
+    max-width: calc(100% - 40px);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+  .toast.error { background: var(--error-fg); }
+  .toast.ok    { background: var(--success-fg); }
+
+  /* ── MODAL ───────────────────────────────────────────────────── */
+  .modal-backdrop {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(20, 30, 45, 0.45);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal {
+    width: 100%;
+    max-width: 540px;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    background: #fff;
+    border-radius: 14px;
+    padding: 26px 26px 22px;
+    box-shadow: 0 18px 50px rgba(0,0,0,0.25);
+  }
+  .modal h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .modal .modal-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 18px;
+    line-height: 1.5;
+  }
+  .modal label {
+    display: block;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin: 14px 0 6px;
+  }
+  .modal label:first-of-type { margin-top: 0; }
+  .modal input[type="text"], .modal select, .modal textarea {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 14px;
+    font-family: var(--font);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .modal textarea { min-height: 120px; resize: vertical; }
+  .modal input[type="text"]:focus, .modal select:focus, .modal textarea:focus { border-color: var(--brand); }
+  .modal .radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .modal .radio-group label {
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text);
+    margin: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .modal .radio-group label:hover { background: var(--bg); }
+  .modal .radio-group input[type="radio"] {
+    margin-top: 3px;
+    accent-color: var(--brand);
+  }
+  .modal .radio-group .radio-desc {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .modal .ped-desc {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 6px;
+    line-height: 1.5;
+    min-height: 16px;
+  }
+  .modal .modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 22px;
+  }
+  .modal .modal-error {
+    margin-top: 14px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    background: var(--error-bg);
+    color: var(--error-fg);
+    border: 1px solid var(--error-border);
+    font-size: 13px;
+    display: none;
+  }
+  .modal .modal-error.show { display: block; }
+  .modal .group-pick { display: none; }
+  .modal .group-pick.show { display: block; }
+
+  /* ── RESPONSIVE ──────────────────────────────────────────────── */
+  @media (max-width: 540px) {
+    .grid { grid-template-columns: 1fr; }
+    .page { padding: 22px 14px 50px; }
+    .page-head { flex-direction: column; align-items: flex-start; }
+    .page-head .toolbar { width: 100%; }
+    .page-head .toolbar .btn { flex: 1; justify-content: center; }
+    .modal { padding: 22px 18px 18px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ─── TOP BAR ─────────────────────────────────────────────── -->
+<header id="topbar">
+  <span class="logo">OPAS</span>
+  <span class="accent-dot"></span>
+  <span class="spacer"></span>
+  <div class="profile">
+    <button type="button" class="profile-trigger" id="profile-trigger" aria-haspopup="true" aria-expanded="false">
+      <span id="profile-name">&hellip;</span>
+      <span class="caret">&#9662;</span>
+    </button>
+    <div class="profile-menu" id="profile-menu" role="menu">
+      <div class="header">
+        <div class="name" id="profile-menu-name">&hellip;</div>
+        <div class="email" id="profile-menu-email"></div>
+      </div>
+      <a href="opas-onboarding.html?return=opas-skills.html" role="menuitem">Edit profile</a>
+      <div class="divider"></div>
+      <button type="button" id="signout-btn" class="danger" role="menuitem">Sign out</button>
+    </div>
+  </div>
+</header>
+
+<!-- ─── PAGE BODY ───────────────────────────────────────────── -->
+<main class="page">
+
+  <div class="page-head">
+    <h1>My Agents</h1>
+    <div class="toolbar">
+      <button type="button" class="btn btn-primary"   id="btn-new-skill">+ Create new agent</button>
+      <button type="button" class="btn btn-secondary" id="btn-join-group">+ Join a group</button>
+    </div>
+  </div>
+
+  <!-- skills section -->
+  <section class="section">
+    <div class="section-head">
+      <h2>Agents</h2>
+      <span class="count" id="skill-count" style="display:none">0</span>
+    </div>
+    <div id="skills-loading" class="loading"><span class="spinner"></span> Loading your agents&hellip;</div>
+    <div id="skills-grid" class="grid"></div>
+    <div id="skills-empty" class="empty" style="display:none">
+      <div class="empty-title">No agents yet</div>
+      <div class="empty-sub">Spin up a tutor by pasting your study materials and picking a teaching style. The agent will quiz you, scaffold your understanding, and remember what you&rsquo;ve mastered.</div>
+      <button type="button" class="btn btn-primary" id="btn-new-skill-empty">+ Create your first agent</button>
+    </div>
+  </section>
+
+  <!-- groups section -->
+  <section class="section">
+    <div class="section-head">
+      <h2>Groups</h2>
+      <span class="count" id="group-count" style="display:none">0</span>
+    </div>
+    <div id="groups-loading" class="loading"><span class="spinner"></span> Loading your groups&hellip;</div>
+    <div id="groups-grid" class="grid"></div>
+    <div id="groups-empty" class="empty" style="display:none">
+      <div class="empty-title">No groups yet</div>
+      <div class="empty-sub">Join a group to study with classmates and share agents that you build together.</div>
+      <button type="button" class="btn btn-secondary" id="btn-join-group-empty">+ Join a group</button>
+    </div>
+  </section>
+
+</main>
+
+<!-- ─── CREATE-SKILL MODAL ──────────────────────────────────── -->
+<div class="modal-backdrop" id="create-modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="create-title">
+    <h3 id="create-title">Create new agent</h3>
+    <p class="modal-sub">Paste the materials your agent should teach from, pick a teaching style, and we&rsquo;ll spin up a tutor for you.</p>
+
+    <label for="create-name">Title</label>
+    <input type="text" id="create-name" placeholder="e.g. Probability Unit 1">
+
+    <label for="create-pedagogy">Teaching style</label>
+    <select id="create-pedagogy"></select>
+    <div class="ped-desc" id="create-pedagogy-desc"></div>
+
+    <label>Visibility</label>
+    <div class="radio-group">
+      <label>
+        <input type="radio" name="create-visibility" value="private" checked>
+        <span>
+          <strong>Private</strong>
+          <div class="radio-desc">Only you can use this agent.</div>
+        </span>
+      </label>
+      <label>
+        <input type="radio" name="create-visibility" value="group">
+        <span>
+          <strong>Share with a group</strong>
+          <div class="radio-desc">Group members can use it; their progress stays private.</div>
+        </span>
+      </label>
+    </div>
+    <div class="group-pick" id="create-group-pick">
+      <label for="create-group" style="margin-top:12px">Group</label>
+      <select id="create-group"></select>
+    </div>
+
+    <label for="create-materials" style="margin-top:14px">Materials</label>
+    <textarea id="create-materials" placeholder="Paste lecture notes, a chapter, a problem set&hellip; The more text, the better the agent."></textarea>
+
+    <div class="modal-error" id="create-error"></div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost"   id="create-cancel">Cancel</button>
+      <button type="button" class="btn btn-primary" id="create-submit">Create agent</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── JOIN-GROUP MODAL ────────────────────────────────────── -->
+<div class="modal-backdrop" id="join-modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="join-title" style="max-width:440px">
+    <h3 id="join-title">Join a group</h3>
+    <p class="modal-sub">Enter the invite code your classmate shared. (Or, click an invite link directly &mdash; that auto-joins.)</p>
+
+    <label for="join-code">Invite code</label>
+    <input type="text" id="join-code" placeholder="e.g. aB3xT9zQ" autocomplete="off">
+
+    <div class="modal-error" id="join-error"></div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost"   id="join-cancel">Cancel</button>
+      <button type="button" class="btn btn-primary" id="join-submit">Join</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── DELETE-CONFIRM MODAL ────────────────────────────────── -->
+<div class="modal-backdrop" id="delete-modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="delete-title" style="max-width:440px">
+    <h3 id="delete-title">Delete this agent?</h3>
+    <p class="modal-sub" id="delete-sub">
+      This permanently removes the agent and its materials. Past sessions are archived (not deleted) so you can still reference them.
+    </p>
+    <div class="modal-error" id="delete-error"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost"        id="delete-cancel">Cancel</button>
+      <button type="button" class="btn btn-danger-solid" id="delete-confirm">Delete agent</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── TOAST ───────────────────────────────────────────────── -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  const RUNTIME = document.querySelector('meta[name="opas-runtime"]').content;
+
+  // ── Auth gate ────────────────────────────────────────────────
+  const TOKEN = localStorage.getItem('opas_learner_token');
+  if (!TOKEN) {
+    window.location.replace('opas-signup.html');
+    return;
+  }
+
+  const authHeaders = (extra = {}) => ({
+    'Authorization': 'Bearer ' + TOKEN,
+    ...extra,
+  });
+
+  // ── State ────────────────────────────────────────────────────
+  let pedagogies = [];
+  let groups     = [];
+  let skills     = [];
+  let pendingDeleteSkill = null;
+
+  // ── DOM refs ─────────────────────────────────────────────────
+  const skillsGrid    = document.getElementById('skills-grid');
+  const skillsLoading = document.getElementById('skills-loading');
+  const skillsEmpty   = document.getElementById('skills-empty');
+  const skillCount    = document.getElementById('skill-count');
+
+  const groupsGrid    = document.getElementById('groups-grid');
+  const groupsLoading = document.getElementById('groups-loading');
+  const groupsEmpty   = document.getElementById('groups-empty');
+  const groupCount    = document.getElementById('group-count');
+
+  const profileTrigger = document.getElementById('profile-trigger');
+  const profileMenu    = document.getElementById('profile-menu');
+  const profileName    = document.getElementById('profile-name');
+  const profileMenuName  = document.getElementById('profile-menu-name');
+  const profileMenuEmail = document.getElementById('profile-menu-email');
+
+  // ── Helpers ──────────────────────────────────────────────────
+  function escapeHtml(s) {
+    return String(s ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  async function safeDetail(res) {
+    try {
+      const j = await res.json();
+      return j && j.detail ? j.detail : ('HTTP ' + res.status);
+    } catch {
+      return 'HTTP ' + res.status;
+    }
+  }
+
+  let toastTimer = null;
+  function toast(msg, kind = 'ok') {
+    const el = document.getElementById('toast');
+    el.className = 'toast show ' + kind;
+    el.textContent = msg;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.classList.remove('show'); }, 2800);
+  }
+
+  function openModal(id) {
+    document.getElementById(id).classList.add('show');
+  }
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('show');
+  }
+
+  // ── Auth gate: handle 401 globally on critical loads ─────────
+  function handleAuthFail() {
+    localStorage.removeItem('opas_learner_token');
+    localStorage.removeItem('opas_learner_id');
+    localStorage.removeItem('opas_learner_name');
+    window.location.replace('opas-signup.html');
+  }
+
+  // ── Initial loads ────────────────────────────────────────────
+  async function loadMe() {
+    try {
+      const res = await fetch(RUNTIME + '/me', { headers: authHeaders() });
+      if (res.status === 401) { handleAuthFail(); return; }
+      if (!res.ok) throw new Error(await safeDetail(res));
+      const me = await res.json();
+      profileName.textContent = me.name || 'Learner';
+      profileMenuName.textContent = me.name || 'Learner';
+      profileMenuEmail.textContent = me.email || '';
+      localStorage.setItem('opas_learner_name', me.name || '');
+      localStorage.setItem('opas_learner_id',   me.learner_id || '');
+    } catch (err) {
+      const cached = localStorage.getItem('opas_learner_name') || 'Learner';
+      profileName.textContent = cached;
+      profileMenuName.textContent = cached;
+    }
+  }
+
+  async function loadSkills() {
+    skillsLoading.style.display = 'flex';
+    skillsGrid.innerHTML = '';
+    skillsEmpty.style.display = 'none';
+    skillCount.style.display = 'none';
+    try {
+      const res = await fetch(RUNTIME + '/skills/mine', { headers: authHeaders() });
+      if (res.status === 401) { handleAuthFail(); return; }
+      if (!res.ok) throw new Error(await safeDetail(res));
+      skills = await res.json();
+      renderSkills();
+    } catch (err) {
+      skillsLoading.style.display = 'none';
+      skillsGrid.innerHTML = '<div class="empty"><div class="empty-title">Couldn\u2019t load your agents</div><div class="empty-sub">' + escapeHtml(err.message) + '</div></div>';
+    }
+  }
+
+  async function loadGroups() {
+    groupsLoading.style.display = 'flex';
+    groupsGrid.innerHTML = '';
+    groupsEmpty.style.display = 'none';
+    groupCount.style.display = 'none';
+    try {
+      const res = await fetch(RUNTIME + '/groups/mine', { headers: authHeaders() });
+      if (res.status === 401) { handleAuthFail(); return; }
+      if (!res.ok) throw new Error(await safeDetail(res));
+      groups = await res.json();
+      renderGroups();
+    } catch (err) {
+      groupsLoading.style.display = 'none';
+      groupsGrid.innerHTML = '<div class="empty"><div class="empty-title">Couldn\u2019t load your groups</div><div class="empty-sub">' + escapeHtml(err.message) + '</div></div>';
+    }
+  }
+
+  async function loadPedagogies() {
+    try {
+      const res = await fetch(RUNTIME + '/pedagogies');
+      if (!res.ok) throw new Error(await safeDetail(res));
+      pedagogies = await res.json();
+    } catch {
+      pedagogies = [];
+    }
+  }
+
+  // ── Render: skills ───────────────────────────────────────────
+  function renderSkills() {
+    skillsLoading.style.display = 'none';
+    skillsGrid.innerHTML = '';
+    if (!skills.length) {
+      skillsEmpty.style.display = 'block';
+      return;
+    }
+    skillCount.textContent = String(skills.length);
+    skillCount.style.display = 'inline-block';
+
+    skills.forEach((s) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.dataset.skillId = s.skill_id;
+
+      const visPill = s.visibility === 'group'
+        ? '<span class="pill pill-group">group</span>'
+        : '<span class="pill pill-private">private</span>';
+
+      const statusPillClass = 'pill-' + (s.status || 'pilot');
+      const statusPill = '<span class="pill ' + statusPillClass + '">' + escapeHtml(s.status || 'pilot') + '</span>';
+
+      const chunkLine = s.total_chunks === 1
+        ? '1 chunk'
+        : (s.total_chunks || 0) + ' chunks';
+
+      card.innerHTML = `
+        <div class="card-title">${escapeHtml(s.name)}</div>
+        <div class="card-meta">
+          ${statusPill}${visPill}
+          <span>${chunkLine}</span>
+        </div>
+        <div class="card-actions">
+          <button type="button" class="btn btn-primary"   data-action="continue">&#9654; Continue</button>
+          <button type="button" class="btn btn-secondary" data-action="add-materials">+ Add materials</button>
+          <button type="button" class="btn btn-danger"    data-action="delete">&#128465; Delete</button>
+        </div>
+        <div class="drawer" data-drawer>
+          <div class="drawer-tabs">
+            <button type="button" class="drawer-tab active" data-tab="text">Paste text</button>
+            <button type="button" class="drawer-tab"        data-tab="file">Upload PDF</button>
+          </div>
+          <div data-pane="text">
+            <textarea data-mat-text placeholder="Paste additional notes, a chapter, a worked example&hellip;"></textarea>
+          </div>
+          <div data-pane="file" style="display:none">
+            <div class="file-row">
+              <input type="file" data-mat-file accept="application/pdf,text/plain">
+            </div>
+          </div>
+          <div class="drawer-actions">
+            <button type="button" class="btn btn-primary" data-action="materials-submit">Add to agent</button>
+            <button type="button" class="btn btn-ghost"   data-action="materials-cancel">Cancel</button>
+            <span class="drawer-status" data-mat-status></span>
+          </div>
+        </div>
+      `;
+
+      // wire actions
+      card.querySelector('[data-action="continue"]').addEventListener('click', () => {
+        window.location.href = 'opas-student.html?skill_id=' + encodeURIComponent(s.skill_id);
+      });
+      card.querySelector('[data-action="add-materials"]').addEventListener('click', () => {
+        const drawer = card.querySelector('[data-drawer]');
+        drawer.classList.toggle('show');
+      });
+      card.querySelector('[data-action="delete"]').addEventListener('click', () => {
+        pendingDeleteSkill = s;
+        document.getElementById('delete-sub').innerHTML =
+          'Permanently remove <strong>' + escapeHtml(s.name) + '</strong> and its materials. Past sessions stay archived for reference.';
+        document.getElementById('delete-error').classList.remove('show');
+        openModal('delete-modal');
+      });
+      card.querySelector('[data-action="materials-cancel"]').addEventListener('click', () => {
+        card.querySelector('[data-drawer]').classList.remove('show');
+      });
+      card.querySelectorAll('.drawer-tab').forEach((tab) => {
+        tab.addEventListener('click', () => {
+          card.querySelectorAll('.drawer-tab').forEach((t) => t.classList.remove('active'));
+          tab.classList.add('active');
+          const which = tab.dataset.tab;
+          card.querySelector('[data-pane="text"]').style.display = which === 'text' ? '' : 'none';
+          card.querySelector('[data-pane="file"]').style.display = which === 'file' ? '' : 'none';
+        });
+      });
+      card.querySelector('[data-action="materials-submit"]').addEventListener('click', () => submitMaterials(card, s));
+
+      skillsGrid.appendChild(card);
+    });
+  }
+
+  // ── Submit materials (text or PDF) ───────────────────────────
+  async function submitMaterials(card, skill) {
+    const statusEl = card.querySelector('[data-mat-status]');
+    const submitBtn = card.querySelector('[data-action="materials-submit"]');
+    const activeTab = card.querySelector('.drawer-tab.active').dataset.tab;
+    statusEl.className = 'drawer-status';
+    statusEl.textContent = '';
+
+    let body, headers, fetchOpts;
+
+    if (activeTab === 'text') {
+      const txt = card.querySelector('[data-mat-text]').value.trim();
+      if (!txt) {
+        statusEl.className = 'drawer-status error';
+        statusEl.textContent = 'Paste some text first.';
+        return;
+      }
+      body = JSON.stringify({ materials_text: txt });
+      headers = authHeaders({ 'Content-Type': 'application/json' });
+      fetchOpts = { method: 'POST', headers, body };
+    } else {
+      const fileInput = card.querySelector('[data-mat-file]');
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) {
+        statusEl.className = 'drawer-status error';
+        statusEl.textContent = 'Pick a PDF or .txt file first.';
+        return;
+      }
+      const fd = new FormData();
+      fd.append('file', file);
+      headers = authHeaders(); // browser sets Content-Type with boundary
+      fetchOpts = { method: 'POST', headers, body: fd };
+    }
+
+    submitBtn.disabled = true;
+    statusEl.className = 'drawer-status';
+    statusEl.textContent = 'Embedding\u2026';
+
+    try {
+      const res = await fetch(RUNTIME + '/skills/' + encodeURIComponent(skill.skill_id) + '/materials', fetchOpts);
+      if (res.status === 401) { handleAuthFail(); return; }
+      if (!res.ok) throw new Error(await safeDetail(res));
+      const out = await res.json();
+      const added = out.chunks_added ?? 0;
+      const total = out.total_chunks ?? skill.total_chunks;
+      statusEl.className = 'drawer-status ok';
+      statusEl.textContent = 'Added ' + added + ' chunk' + (added === 1 ? '' : 's') + ' \u2014 total ' + total + '.';
+      // Update the in-memory record + the visible card meta line
+      skill.total_chunks = total;
+      const metaLine = card.querySelector('.card-meta span');
+      if (metaLine) metaLine.textContent = (total === 1) ? '1 chunk' : (total + ' chunks');
+      // Clear the input so a second submit doesn't double-post
+      const ta = card.querySelector('[data-mat-text]');
+      if (ta) ta.value = '';
+      const fi = card.querySelector('[data-mat-file]');
+      if (fi) fi.value = '';
+    } catch (err) {
+      statusEl.className = 'drawer-status error';
+      statusEl.textContent = err.message || 'Upload failed.';
+    } finally {
+      submitBtn.disabled = false;
+    }
+  }
+
+  // ── Render: groups ───────────────────────────────────────────
+  function renderGroups() {
+    groupsLoading.style.display = 'none';
+    groupsGrid.innerHTML = '';
+    if (!groups.length) {
+      groupsEmpty.style.display = 'block';
+      return;
+    }
+    groupCount.textContent = String(groups.length);
+    groupCount.style.display = 'inline-block';
+
+    groups.forEach((g) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      const memberStr = (g.member_count === 1) ? '1 member' : (g.member_count + ' members');
+      card.innerHTML = `
+        <div class="card-title">${escapeHtml(g.name)}</div>
+        <div class="card-meta">
+          <span class="pill pill-role">${escapeHtml(g.role)}</span>
+          <span>${memberStr}</span>
+        </div>
+        <div class="card-actions">
+          <a class="btn btn-secondary" href="opas-group.html?group_id=${encodeURIComponent(g.group_id)}">Open group &rarr;</a>
+        </div>
+      `;
+      groupsGrid.appendChild(card);
+    });
+  }
+
+  // ── Profile dropdown ─────────────────────────────────────────
+  profileTrigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const open = profileMenu.classList.toggle('show');
+    profileTrigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  document.addEventListener('click', (e) => {
+    if (!profileMenu.contains(e.target) && e.target !== profileTrigger) {
+      profileMenu.classList.remove('show');
+      profileTrigger.setAttribute('aria-expanded', 'false');
+    }
+  });
+  document.getElementById('signout-btn').addEventListener('click', () => {
+    localStorage.removeItem('opas_learner_token');
+    localStorage.removeItem('opas_learner_id');
+    localStorage.removeItem('opas_learner_name');
+    window.location.replace('opas-signup.html');
+  });
+
+  // ── Create-skill modal ───────────────────────────────────────
+  const createName     = document.getElementById('create-name');
+  const createPedagogy = document.getElementById('create-pedagogy');
+  const createPedDesc  = document.getElementById('create-pedagogy-desc');
+  const createMaterials= document.getElementById('create-materials');
+  const createGroupPick= document.getElementById('create-group-pick');
+  const createGroup    = document.getElementById('create-group');
+  const createError    = document.getElementById('create-error');
+  const createSubmit   = document.getElementById('create-submit');
+
+  function openCreateModal() {
+    // Pedagogy options
+    createPedagogy.innerHTML = pedagogies.map((p) =>
+      '<option value="' + escapeHtml(p.id) + '">' + escapeHtml(p.name) + '</option>'
+    ).join('');
+    if (pedagogies.length) {
+      createPedagogy.value = pedagogies[0].id;
+      createPedDesc.textContent = pedagogies[0].description || '';
+    } else {
+      createPedDesc.textContent = '';
+    }
+    // Group options
+    createGroup.innerHTML = groups.map((g) =>
+      '<option value="' + escapeHtml(g.group_id) + '">' + escapeHtml(g.name) + '</option>'
+    ).join('');
+    // Reset visibility to private
+    document.querySelector('input[name="create-visibility"][value="private"]').checked = true;
+    createGroupPick.classList.remove('show');
+    createName.value = '';
+    createMaterials.value = '';
+    createError.classList.remove('show');
+    createError.textContent = '';
+    openModal('create-modal');
+    setTimeout(() => createName.focus(), 50);
+  }
+
+  createPedagogy.addEventListener('change', () => {
+    const p = pedagogies.find((x) => x.id === createPedagogy.value);
+    createPedDesc.textContent = p ? (p.description || '') : '';
+  });
+  document.querySelectorAll('input[name="create-visibility"]').forEach((r) => {
+    r.addEventListener('change', () => {
+      const isGroup = document.querySelector('input[name="create-visibility"]:checked').value === 'group';
+      createGroupPick.classList.toggle('show', isGroup);
+    });
+  });
+  document.getElementById('create-cancel').addEventListener('click', () => closeModal('create-modal'));
+
+  createSubmit.addEventListener('click', async () => {
+    createError.classList.remove('show');
+    const title = createName.value.trim();
+    const materials = createMaterials.value.trim();
+    const pedagogy_id = createPedagogy.value;
+    const visibility = document.querySelector('input[name="create-visibility"]:checked').value;
+    const group_id = visibility === 'group' ? createGroup.value : null;
+
+    if (!title) { showCreateErr('Give your agent a title.'); return; }
+    if (!materials || materials.length < 40) {
+      showCreateErr('Paste a bit more material \u2014 at least a paragraph or two.');
+      return;
+    }
+    if (!pedagogy_id) { showCreateErr('Pick a teaching style.'); return; }
+    if (visibility === 'group' && !group_id) {
+      showCreateErr('You don\u2019t belong to any groups yet \u2014 create or join one first.');
+      return;
+    }
+
+    createSubmit.disabled = true;
+    createSubmit.textContent = 'Generating\u2026';
+
+    try {
+      const res = await fetch(RUNTIME + '/skills/generate', {
+        method: 'POST',
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ title, materials_text: materials, pedagogy_id, visibility, group_id }),
+      });
+      if (res.status === 401) { handleAuthFail(); return; }
+      if (!res.ok) throw new Error(await safeDetail(res));
+      const out = await res.json();
+      if (!out || !out.skill_id) throw new Error('No skill_id returned.');
+      // Land on a session with the new skill running
+      window.location.href = 'opas-student.html?skill_id=' + encodeURIComponent(out.skill_id);
+    } catch (err) {
+      showCreateErr(err.message || String(err));
+      createSubmit.disabled = false;
+      createSubmit.textContent = 'Create agent';
+    }
+  });
+
+  function showCreateErr(msg) {
+    createError.textContent = msg;
+    createError.classList.add('show');
+  }
+
+  document.getElementById('btn-new-skill').addEventListener('click', openCreateModal);
+  document.getElementById('btn-new-skill-empty').addEventListener('click', openCreateModal);
+
+  // ── Join-group modal ─────────────────────────────────────────
+  const joinCode    = document.getElementById('join-code');
+  const joinError   = document.getElementById('join-error');
+  const joinSubmit  = document.getElementById('join-submit');
+
+  function openJoinModal() {
+    joinCode.value = '';
+    joinError.classList.remove('show');
+    joinError.textContent = '';
+    openModal('join-modal');
+    setTimeout(() => joinCode.focus(), 50);
+  }
+
+  document.getElementById('btn-join-group').addEventListener('click', openJoinModal);
+  document.getElementById('btn-join-group-empty').addEventListener('click', openJoinModal);
+  document.getElementById('join-cancel').addEventListener('click', () => closeModal('join-modal'));
+
+  joinSubmit.addEventListener('click', async () => {
+    const code = joinCode.value.trim();
+    joinError.classList.remove('show');
+    if (!code) {
+      joinError.textContent = 'Enter the invite code.';
+      joinError.classList.add('show');
+      return;
+    }
+    joinSubmit.disabled = true;
+    joinSubmit.textContent = 'Joining\u2026';
+    try {
+      const res = await fetch(RUNTIME + '/groups/join', {
+        method: 'POST',
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ invite_code: code }),
+      });
+      if (res.status === 401) { handleAuthFail(); return; }
+      if (!res.ok) throw new Error(await safeDetail(res));
+      const out = await res.json();
+      closeModal('join-modal');
+      toast('Joined "' + (out.name || 'group') + '"', 'ok');
+      await loadGroups();
+    } catch (err) {
+      joinError.textContent = err.message || String(err);
+      joinError.classList.add('show');
+    } finally {
+      joinSubmit.disabled = false;
+      joinSubmit.textContent = 'Join';
+    }
+  });
+
+  // ── Delete-confirm modal ─────────────────────────────────────
+  const deleteCancel  = document.getElementById('delete-cancel');
+  const deleteConfirm = document.getElementById('delete-confirm');
+  const deleteError   = document.getElementById('delete-error');
+
+  deleteCancel.addEventListener('click', () => {
+    pendingDeleteSkill = null;
+    closeModal('delete-modal');
+  });
+
+  deleteConfirm.addEventListener('click', async () => {
+    if (!pendingDeleteSkill) { closeModal('delete-modal'); return; }
+    const skill = pendingDeleteSkill;
+    deleteError.classList.remove('show');
+    deleteConfirm.disabled = true;
+    deleteConfirm.textContent = 'Deleting\u2026';
+    try {
+      const res = await fetch(RUNTIME + '/skills/' + encodeURIComponent(skill.skill_id), {
+        method: 'DELETE',
+        headers: authHeaders(),
+      });
+      if (res.status === 401) { handleAuthFail(); return; }
+      if (!res.ok) throw new Error(await safeDetail(res));
+      // Remove the card from view + state
+      skills = skills.filter((s) => s.skill_id !== skill.skill_id);
+      const card = skillsGrid.querySelector('[data-skill-id="' + CSS.escape(skill.skill_id) + '"]');
+      if (card) card.remove();
+      if (!skills.length) {
+        skillsEmpty.style.display = 'block';
+        skillCount.style.display = 'none';
+      } else {
+        skillCount.textContent = String(skills.length);
+      }
+      closeModal('delete-modal');
+      toast('Deleted "' + skill.name + '"', 'ok');
+    } catch (err) {
+      deleteError.textContent = err.message || String(err);
+      deleteError.classList.add('show');
+    } finally {
+      pendingDeleteSkill = null;
+      deleteConfirm.disabled = false;
+      deleteConfirm.textContent = 'Delete agent';
+    }
+  });
+
+  // ── Close modals on backdrop click + ESC ─────────────────────
+  document.querySelectorAll('.modal-backdrop').forEach((bd) => {
+    bd.addEventListener('click', (e) => {
+      if (e.target === bd) bd.classList.remove('show');
+    });
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-backdrop.show').forEach((bd) => bd.classList.remove('show'));
+      profileMenu.classList.remove('show');
+    }
+  });
+
+  // ── Boot ─────────────────────────────────────────────────────
+  Promise.all([loadMe(), loadSkills(), loadGroups(), loadPedagogies()]);
+})();
+</script>
+</body>
+</html>

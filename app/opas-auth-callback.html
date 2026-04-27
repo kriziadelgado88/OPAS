@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="opas-runtime" content="http://localhost:8001">
+<title>OPAS — Signing you in&hellip;</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --brand: #1a3a5c;
+    --brand-hover: #254f7a;
+    --brand-light: #e8f0f8;
+    --accent: #c8a951;
+    --border: #dde3ea;
+    --text: #1c2b3a;
+    --muted: #64748b;
+    --error-bg: #fef2f2;
+    --error-fg: #b42318;
+    --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+
+  body {
+    font-family: var(--font);
+    color: var(--text);
+    background: linear-gradient(180deg, #f8fafc 0%, #eef3f9 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+
+  .card {
+    width: 100%;
+    max-width: 440px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px 32px;
+    box-shadow: 0 8px 28px rgba(26, 58, 92, 0.08);
+    text-align: center;
+  }
+
+  .logo {
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.12em;
+    color: var(--brand);
+    margin-bottom: 4px;
+  }
+  .logo-accent {
+    width: 28px; height: 3px;
+    background: var(--accent);
+    border-radius: 2px;
+    margin: 0 auto 28px;
+  }
+
+  .spinner {
+    width: 44px; height: 44px;
+    margin: 0 auto 22px;
+    border: 3px solid var(--brand-light);
+    border-top-color: var(--brand);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  h1 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .subtitle {
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .error-icon {
+    width: 44px; height: 44px;
+    margin: 0 auto 22px;
+    border-radius: 50%;
+    background: var(--error-bg);
+    color: var(--error-fg);
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 44px;
+    display: none;
+  }
+
+  .error-detail {
+    margin-top: 12px;
+    padding: 10px 12px;
+    background: var(--error-bg);
+    color: var(--error-fg);
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+    word-break: break-word;
+    text-align: left;
+  }
+
+  .actions {
+    margin-top: 22px;
+    display: none;
+  }
+  .actions a.primary {
+    display: inline-block;
+    background: var(--brand);
+    color: #fff;
+    text-decoration: none;
+    border-radius: 10px;
+    padding: 11px 22px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background 0.15s;
+  }
+  .actions a.primary:hover { background: var(--brand-hover); }
+
+  body.error .spinner    { display: none; }
+  body.error .error-icon { display: block; }
+  body.error .actions    { display: block; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">OPAS</div>
+    <div class="logo-accent"></div>
+
+    <div class="spinner" id="spinner"></div>
+    <div class="error-icon" id="error-icon">!</div>
+
+    <h1 id="title">Signing you in&hellip;</h1>
+    <p class="subtitle" id="subtitle">Verifying your magic link with the runtime.</p>
+
+    <div class="error-detail" id="error-detail" style="display:none"></div>
+
+    <div class="actions" id="actions">
+      <a href="opas-signup.html" class="primary">Back to sign up</a>
+    </div>
+  </div>
+
+<script>
+(function () {
+  const RUNTIME = document.querySelector('meta[name="opas-runtime"]').content;
+
+  const titleEl    = document.getElementById('title');
+  const subtitleEl = document.getElementById('subtitle');
+  const detailEl   = document.getElementById('error-detail');
+
+  function fail(headline, detail) {
+    document.body.classList.add('error');
+    titleEl.textContent = headline;
+    subtitleEl.textContent = 'You can try the magic link again, or sign up below.';
+    if (detail) {
+      detailEl.style.display = 'block';
+      detailEl.textContent = detail;
+    }
+  }
+
+  // Supabase magic-link convention places the token in the URL fragment, e.g.
+  //   #access_token=eyJhbGciOi...&token_type=bearer&expires_in=...&type=magiclink
+  function parseFragment() {
+    const hash = window.location.hash || '';
+    const stripped = hash.startsWith('#') ? hash.slice(1) : hash;
+    const params = new URLSearchParams(stripped);
+    return {
+      access_token: params.get('access_token'),
+      error:        params.get('error'),
+      error_desc:   params.get('error_description') || params.get('error_code'),
+    };
+  }
+
+  async function exchange(accessToken) {
+    const res = await fetch(RUNTIME + '/auth/callback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ access_token: accessToken }),
+    });
+    if (!res.ok) {
+      let detail = 'HTTP ' + res.status;
+      try {
+        const j = await res.json();
+        if (j && j.detail) detail = j.detail;
+      } catch { /* ignore */ }
+      throw new Error(detail);
+    }
+    return res.json();
+  }
+
+  async function fetchMe(token) {
+    const res = await fetch(RUNTIME + '/me', {
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    if (!res.ok) return null;
+    return res.json();
+  }
+
+  (async function run() {
+    const { access_token, error, error_desc } = parseFragment();
+
+    if (error) {
+      fail('Magic link failed', error_desc || error);
+      return;
+    }
+    if (!access_token) {
+      fail('No access token found', 'The magic link didn\u2019t carry a token. Try signing up again to get a fresh one.');
+      return;
+    }
+
+    try {
+      const out = await exchange(access_token);
+      if (!out || !out.token) {
+        throw new Error('Runtime did not return a bearer token.');
+      }
+
+      // Persist the opaque OPAS bearer for every subsequent page.
+      localStorage.setItem('opas_learner_token', out.token);
+      localStorage.setItem('opas_learner_id',    out.learner_id || '');
+      localStorage.setItem('opas_learner_name',  out.name || '');
+
+      // Wipe the fragment so a refresh doesn't re-attempt the exchange and so
+      // the access_token doesn't sit in browser history any longer than needed.
+      try { history.replaceState(null, '', window.location.pathname); } catch {}
+
+      // If the learner clicked a group invite link before signing up, we stashed
+      // the invite code in localStorage. Honour it now so the auto-join flow
+      // continues seamlessly across the auth redirect.
+      const pendingInvite = localStorage.getItem('opas_pending_invite');
+      if (pendingInvite) {
+        localStorage.removeItem('opas_pending_invite');
+        titleEl.textContent = 'Welcome' + (out.name ? ', ' + out.name : '') + '!';
+        subtitleEl.textContent = 'Joining your group\u2026';
+        setTimeout(() => {
+          window.location.replace('opas-group.html?invite=' + encodeURIComponent(pendingInvite));
+        }, 350);
+        return;
+      }
+
+      // First-time sign-in → onboarding. Returning learner → straight to skills.
+      // We infer "first-time" from an empty profile_prefs.
+      const me = await fetchMe(out.token);
+      const isFirstTime = !me || !me.profile_prefs || Object.keys(me.profile_prefs).length === 0;
+
+      titleEl.textContent = 'Welcome' + (out.name ? ', ' + out.name : '') + '!';
+      subtitleEl.textContent = 'Taking you to ' + (isFirstTime ? 'onboarding' : 'your agents') + '\u2026';
+
+      setTimeout(() => {
+        window.location.replace(isFirstTime ? 'opas-onboarding.html' : 'opas-skills.html');
+      }, 350);
+    } catch (err) {
+      fail('Couldn\u2019t verify your magic link', err.message || String(err));
+    }
+  })();
+})();
+</script>
+</body>
+</html>
