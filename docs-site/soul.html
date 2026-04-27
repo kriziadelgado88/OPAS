@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Soul — Constitutional Safety for Tutoring Agents</title>
+<meta name="description" content="A drop-in constitutional safety layer for any AI agent that talks to students. Five always-on rules, 25 deterministic patterns, MIT-licensed.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <a href="index.html" class="brand">
+    <span class="opas-mark"><span class="stripe stripe-1"></span><span class="stripe stripe-2"></span><span class="stripe stripe-3"></span></span>
+    <span class="opas-word">OPAS</span>
+  </a>
+  <nav>
+    <a href="opas.html">protocol</a>
+    <a href="soul.html" class="active">soul</a>
+    <a href="quickstart.html">quickstart</a>
+    <a href="architecture.html" class="no-mobile">architecture</a>
+    <a href="https://github.com/kriziadelgado88/OPAS" class="cta">github</a>
+  </nav>
+</header>
+
+<main>
+
+  <div class="page-head">
+    <div class="breadcrumb">Safety layer · The Soul</div>
+    <h1>Constitutional safety for tutoring agents</h1>
+    <p class="lede">Two files. A YAML constitution defining five always-on rules + 16 distress patterns + 9 harm patterns. And a Python enforcer that scans every learner message and every agent reply against those patterns deterministically. That's it.</p>
+  </div>
+
+  <h2>The five rules</h2>
+  <ol>
+    <li><strong>Distress response</strong> — if the learner expresses distress or frustration ("I can't do this", "I'm stupid"), stop teaching and respond with empathy first.</li>
+    <li><strong>No shame</strong> — never use shame, comparison to other students, or pressure as motivation. Frame struggle as growth, not failure.</li>
+    <li><strong>Epistemic honesty</strong> — admit when you don't know rather than guessing. Never present uncertainty as fact.</li>
+    <li><strong>Break respect</strong> — when the learner wants to stop, respect that immediately. Do not pressure them to continue.</li>
+    <li><strong>Harm disclosure</strong> — if the learner discloses harm (abuse, self-harm), respond with care and suggest a trusted adult. <strong>Do not</strong> probe for details.</li>
+  </ol>
+  <p>These are not configurable per skill. That's the point: a tutoring agent that breaks any of these is unsafe regardless of pedagogy. Make them constitutional, not user-tunable.</p>
+
+  <h2>Why deterministic</h2>
+  <p>LLM-based safety judges are probabilistic. They might catch "I want to die" in 99% of phrasings and miss the 1%. For five rules where the cost of a miss is genuine harm to a kid, 99% isn't enough.</p>
+  <p>The Soul uses a regex scanner that catches a curated list of phrases — 16 distress patterns, 9 harm patterns — and intercepts deterministically. Add patterns over time as you observe real user phrasings; the list grows, the determinism stays.</p>
+  <div class="callout red">
+    <strong>The Soul does not replace model-level safety.</strong> Model-level RLHF, constitutional AI, and system prompts still run above this layer. The Soul is a backstop you can ship and verify in tests, not in production logs.
+  </div>
+
+  <h2>The two canonical files</h2>
+  <pre><code>agent/app/constitutions/enforcer.py    <span class="com"># the regex scanner</span>
+agent/constitutions/minerva.soul.v1.yaml   <span class="com"># rules + patterns + injections</span></code></pre>
+  <p>Copy these two files into any agent project to get the Soul. They have no dependencies beyond Python's stdlib <code>re</code> module and PyYAML.</p>
+
+  <h2>Drop it into any agent in 5 lines</h2>
+<pre><code><span class="kw">from</span> soul <span class="kw">import</span> Soul
+
+soul = Soul.load(<span class="str">"constitutions/minerva.soul.v1.yaml"</span>)
+
+<span class="kw">def</span> chat_turn(learner_msg: <span class="kw">str</span>, model_call) -> <span class="kw">str</span>:
+    <span class="kw">if</span> (intercept := soul.scan_learner(learner_msg)):
+        <span class="kw">return</span> intercept                          <span class="com"># wellbeing protocol fired</span>
+    reply = model_call(learner_msg)
+    <span class="kw">return</span> soul.scan_agent(reply, learner_msg)    <span class="com"># blocks/rewrites bad agent replies</span></code></pre>
+  <p><code>soul.scan_learner()</code> returns a wellbeing-protocol response if a distress or harm pattern matches. Your agent never sees the message in those cases — the learner sees a care response.</p>
+  <p><code>soul.scan_agent()</code> checks the LLM's reply for shame, pressure, or rule violations before it reaches the learner.</p>
+
+  <h2>The 16 distress patterns</h2>
+  <p>A 60-second cooldown applies — the same pattern won't re-trigger inside that window, so a learner repeatedly typing "i can't do this" doesn't loop them through the wellbeing protocol on every turn.</p>
+  <div class="chips">
+    <span class="chip">i'm stupid</span>
+    <span class="chip">im stupid</span>
+    <span class="chip">i am stupid</span>
+    <span class="chip">i'm dumb</span>
+    <span class="chip">im dumb</span>
+    <span class="chip">i am dumb</span>
+    <span class="chip">i can't do this</span>
+    <span class="chip">i cant do this</span>
+    <span class="chip">i give up</span>
+    <span class="chip">i quit</span>
+    <span class="chip">this is impossible</span>
+    <span class="chip">i'm not smart enough</span>
+    <span class="chip">im not smart enough</span>
+    <span class="chip">i hate myself</span>
+    <span class="chip">i'm worthless</span>
+    <span class="chip">im worthless</span>
+  </div>
+  <p>Match injects this system note before the agent's next turn:</p>
+  <div class="callout">
+    Student is expressing emotional distress. Follow wellbeing protocol. Acknowledge feeling first before any teaching.
+  </div>
+
+  <h2>The 9 harm patterns</h2>
+  <p><strong>Zero cooldown.</strong> Every match triggers, every time. There is no "this learner already disclosed once today, skip it." Intentional.</p>
+  <div class="chips">
+    <span class="chip harm">hits me</span>
+    <span class="chip harm">hurts me</span>
+    <span class="chip harm">abuses me</span>
+    <span class="chip harm">touches me</span>
+    <span class="chip harm">i don't feel safe</span>
+    <span class="chip harm">i dont feel safe</span>
+    <span class="chip harm">i want to hurt myself</span>
+    <span class="chip harm">i want to die</span>
+    <span class="chip harm">kill myself</span>
+  </div>
+  <p>Match injects:</p>
+  <div class="callout red">
+    Student may be disclosing harm. Follow harm-disclosure protocol. Do NOT probe for details. Respond with care and suggest a trusted adult or counselor.
+  </div>
+  <p>The pattern list is intentionally narrow. It catches explicit disclosure phrasings — not implicit hints, not metaphor, not "I'm dying of boredom." For ambiguous cases, the model-level safety training is what catches them; the Soul covers the explicit ones the model might fumble.</p>
+
+  <h2>Adding patterns over time</h2>
+  <p>Edit <code>agent/constitutions/minerva.soul.v1.yaml</code>. The patterns are case-insensitive substring matches. Bump <code>version</code> (e.g. <code>minerva.soul.v1.1</code>) when you add patterns so consumers can pin a version if they want stability.</p>
+  <p>If you observe a phrasing the scanner missed — please <a href="https://github.com/kriziadelgado88/OPAS/issues">open an issue</a> or PR. The pattern list is the single highest-leverage contribution to safety.</p>
+
+  <h2>What the Soul is grounded in</h2>
+  <ul>
+    <li><strong>UN Convention on the Rights of the Child + UDHR</strong> — the human-rights backbone for child-facing AI. Article 19 (protection from harm) and Article 28 (right to education) are the core anchors.</li>
+    <li><strong>Anthropic's Constitutional AI</strong> methodology — but narrower (5 rules, not dozens) and deterministic (regex, not LLM judge).</li>
+    <li><strong>Educational psychology + child-protection guidance</strong> — the patterns and interventions are reviewed against published clinical recommendations, not vibes.</li>
+  </ul>
+
+  <h2>When NOT to use it</h2>
+  <p>The Soul is tuned for student-facing tutoring. It's probably wrong for:</p>
+  <ul>
+    <li>Adult professional contexts (its empathy thresholds will fire on normal frustration like "I can't do this" said about a difficult work problem)</li>
+    <li>Code completion or productivity tools (no distress patterns relevant)</li>
+    <li>Any context where users have explicitly opted into harsh / blunt feedback styles</li>
+  </ul>
+  <p>In those cases you want a <strong>different constitution</strong>, not no constitution. The grammar (rules + patterns + interventions) is the reusable part — write your own YAML using <code>minerva.soul.v1.yaml</code> as a template.</p>
+
+  <h2>Soul context extensions (proposal — v0.2)</h2>
+  <p>The Soul is <strong>additive-only</strong>. Future context-specific extensions would add detection patterns and rules without removing any of the five core rules:</p>
+  <ul>
+    <li>Neurodivergence (ADHD, autism, dyslexia, dyscalculia)</li>
+    <li>Refugee / displaced populations</li>
+    <li>Physical disability / chronic illness</li>
+    <li>Economic hardship</li>
+    <li>First-generation students</li>
+    <li>Language learners (ELL/ESL)</li>
+  </ul>
+  <p>These ship as separate YAML files that compose with the core constitution. PR your own.</p>
+
+  <h2>Limitations</h2>
+  <ul>
+    <li><strong>English-only</strong> in the current pattern lists. Multilingual patterns are a near-term priority.</li>
+    <li><strong>Substring matching</strong> — won't catch creative misspellings or l33tspeak. The threat model assumes good-faith learner phrasings, not adversarial input.</li>
+    <li><strong>Not a replacement for human review</strong> — a tutoring deployment that goes to real students should have a process for educators or counselors to review flagged sessions.</li>
+  </ul>
+
+  <h2>License</h2>
+  <p>MIT. The Soul is permissively licensed because we want it adopted as widely as possible — the more student-facing AI agents that route through a constitutional layer, the better. If you ship the Soul (or a derivative) in a production agent, we'd love to hear about it.</p>
+
+  <p style="margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--ink-15);">
+    <a class="btn btn-soul" href="https://github.com/kriziadelgado88/OPAS/blob/main/agent/constitutions/minerva.soul.v1.yaml">View the constitution YAML →</a>
+    <a class="btn btn-secondary" href="opas.html" style="margin-left: 8px;">Read about OPAS →</a>
+  </p>
+
+</main>
+
+<footer>
+  <span class="left">
+    <span class="opas-mark"><span class="stripe stripe-1"></span><span class="stripe stripe-2"></span><span class="stripe stripe-3"></span></span>
+    <span class="opas-word">OPAS</span>
+  </span>
+  <nav>
+    <a href="https://github.com/kriziadelgado88/OPAS">github</a>
+    <a href="https://github.com/kriziadelgado88/OPAS/blob/main/LICENSE">MIT license</a>
+    <a href="quickstart.html">quickstart</a>
+    <a href="architecture.html">architecture</a>
+  </nav>
+</footer>
+
+</body>
+</html>

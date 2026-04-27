@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Architecture — OPAS</title>
+<meta name="description" content="How OPAS fits together — frontend, agent runtime, storage, and where the Soul wires in.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <a href="index.html" class="brand">
+    <span class="opas-mark"><span class="stripe stripe-1"></span><span class="stripe stripe-2"></span><span class="stripe stripe-3"></span></span>
+    <span class="opas-word">OPAS</span>
+  </a>
+  <nav>
+    <a href="opas.html">protocol</a>
+    <a href="soul.html">soul</a>
+    <a href="quickstart.html">quickstart</a>
+    <a href="architecture.html" class="active no-mobile">architecture</a>
+    <a href="https://github.com/kriziadelgado88/OPAS" class="cta">github</a>
+  </nav>
+</header>
+
+<main class="wide">
+
+  <div class="page-head">
+    <div class="breadcrumb">Architecture</div>
+    <h1>How the pieces fit together</h1>
+    <p class="lede">For developers who want to understand or modify the OPAS runtime. Three layers — frontend, agent runtime, storage — with the Soul wiring in at the agent layer.</p>
+  </div>
+
+  <h2>System map</h2>
+  <div class="sysmap">
+    <svg viewBox="0 0 1000 460" role="img" aria-label="OPAS system architecture: frontend, agent runtime with Soul enforcer, services">
+      <text x="20"  y="22" font-family="DM Mono, monospace" font-size="10" fill="rgba(242,239,230,.5)" letter-spacing="2">FRONTEND (STATIC)</text>
+      <text x="380" y="22" font-family="DM Mono, monospace" font-size="10" fill="rgba(242,239,230,.5)" letter-spacing="2">AGENT RUNTIME (FASTAPI)</text>
+      <text x="800" y="22" font-family="DM Mono, monospace" font-size="10" fill="rgba(242,239,230,.5)" letter-spacing="2">SERVICES</text>
+
+      <line x1="370" y1="0"   x2="370" y2="460" stroke="rgba(242,239,230,.06)" stroke-dasharray="3 4"/>
+      <line x1="780" y1="0"   x2="780" y2="460" stroke="rgba(242,239,230,.06)" stroke-dasharray="3 4"/>
+
+      <!-- Frontend -->
+      <rect x="20" y="50" width="330" height="120" rx="10" fill="#181820" stroke="rgba(242,239,230,.15)"/>
+      <text x="36" y="76" font-family="Unbounded, sans-serif" font-size="14" font-weight="700" fill="#F2EFE6">Web frontend</text>
+      <text x="36" y="98" font-family="DM Mono, monospace" font-size="11" fill="rgba(242,239,230,.7)">opas-student.html · learner client</text>
+      <text x="36" y="116" font-family="DM Mono, monospace" font-size="11" fill="rgba(242,239,230,.7)">opas-wizard.html · skill authoring</text>
+      <text x="36" y="134" font-family="DM Mono, monospace" font-size="11" fill="rgba(242,239,230,.7)">opas-skills.html · catalogue</text>
+      <text x="36" y="156" font-family="DM Mono, monospace" font-size="11" fill="rgba(242,239,230,.5)">vanilla js · no build step</text>
+
+      <!-- Agent runtime files -->
+      <rect x="400" y="50" width="340" height="60" rx="10" fill="#181820" stroke="rgba(242,239,230,.15)"/>
+      <text x="416" y="74" font-family="Unbounded, sans-serif" font-size="13" font-weight="700" fill="#F2EFE6">prompt_assembler.py</text>
+      <text x="416" y="93" font-family="DM Mono, monospace" font-size="11" fill="rgba(242,239,230,.7)">12 sections — persona, objectives, corpus chunks…</text>
+
+      <rect x="400" y="125" width="340" height="50" rx="10" fill="#181820" stroke="rgba(242,239,230,.15)"/>
+      <text x="416" y="148" font-family="Unbounded, sans-serif" font-size="13" font-weight="700" fill="#F2EFE6">model_adapter.py</text>
+      <text x="416" y="165" font-family="DM Mono, monospace" font-size="11" fill="rgba(242,239,230,.7)">claude · openai · gemini — pluggable</text>
+
+      <rect x="400" y="190" width="340" height="60" rx="10" fill="rgba(204,72,72,.10)" stroke="rgba(204,72,72,.6)"/>
+      <text x="416" y="216" font-family="Unbounded, sans-serif" font-size="13" font-weight="700" fill="#CC4848">Soul enforcer ★ always on</text>
+      <text x="416" y="234" font-family="DM Mono, monospace" font-size="11" fill="rgba(242,239,230,.7)">scans every learner_msg AND every agent_reply</text>
+
+      <rect x="400" y="265" width="340" height="60" rx="10" fill="#181820" stroke="rgba(242,239,230,.15)"/>
+      <text x="416" y="289" font-family="Unbounded, sans-serif" font-size="13" font-weight="700" fill="#F2EFE6">routers/session.py + others</text>
+      <text x="416" y="307" font-family="DM Mono, monospace" font-size="11" fill="rgba(242,239,230,.7)">/session · /skills · /pedagogies · /me · /auth · /groups</text>
+
+      <!-- Services -->
+      <rect x="800" y="50" width="180" height="60" rx="10" fill="#181820" stroke="rgba(242,239,230,.15)"/>
+      <text x="816" y="74" font-family="Unbounded, sans-serif" font-size="13" font-weight="700" fill="#F2EFE6">Supabase</text>
+      <text x="816" y="93" font-family="DM Mono, monospace" font-size="11" fill="rgba(242,239,230,.7)">postgres · pgvector · auth</text>
+
+      <rect x="800" y="130" width="180" height="60" rx="10" fill="#181820" stroke="rgba(242,239,230,.15)"/>
+      <text x="816" y="154" font-family="Unbounded, sans-serif" font-size="13" font-weight="700" fill="#F2EFE6">Claude</text>
+      <text x="816" y="173" font-family="DM Mono, monospace" font-size="11" fill="rgba(242,239,230,.5)">claude-sonnet-4-6</text>
+
+      <rect x="800" y="210" width="180" height="60" rx="10" fill="#181820" stroke="rgba(242,239,230,.15)"/>
+      <text x="816" y="234" font-family="Unbounded, sans-serif" font-size="13" font-weight="700" fill="#F2EFE6">OpenAI / Gemini</text>
+      <text x="816" y="253" font-family="DM Mono, monospace" font-size="11" fill="rgba(242,239,230,.5)">optional adapters</text>
+
+      <!-- Arrows -->
+      <defs>
+        <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(242,239,230,.45)"/>
+        </marker>
+      </defs>
+      <path d="M 350 110 L 400 110" stroke="rgba(242,239,230,.30)" stroke-width="1.5" fill="none" marker-end="url(#a2)"/>
+      <path d="M 740 80  L 800 80"  stroke="rgba(64,112,192,.40)"  stroke-width="1.5" fill="none" marker-end="url(#a2)"/>
+      <path d="M 740 150 L 800 160" stroke="rgba(212,176,64,.40)"  stroke-width="1.5" fill="none" marker-end="url(#a2)"/>
+      <path d="M 740 220 L 800 240" stroke="rgba(212,128,64,.40)"  stroke-width="1.5" fill="none" marker-end="url(#a2)"/>
+
+      <!-- Soul ribbon -->
+      <rect x="20" y="430" width="960" height="22" rx="11" fill="rgba(204,72,72,.10)" stroke="rgba(204,72,72,.40)"/>
+      <circle cx="38" cy="441" r="5" fill="#CC4848"/>
+      <text x="52" y="445" font-family="Unbounded, sans-serif" font-size="11" font-weight="600" fill="#CC4848">SOUL · enforcer.py · always on, never configurable</text>
+      <text x="980" y="445" text-anchor="end" font-family="DM Mono, monospace" font-size="11" fill="rgba(242,239,230,.5)">scans every learner_msg AND every agent_reply</text>
+    </svg>
+  </div>
+
+  <h2>The three layers</h2>
+
+  <h3>Frontend</h3>
+  <p>Static HTML + vanilla JS, served by any web server. No build step.</p>
+  <ul>
+    <li><code>app/opas-student.html</code> — learner client. Token gate, chat pane, optional YAML demo pane.</li>
+    <li><code>app/opas-wizard.html</code> — skill authoring tool for educators. Tailwind via CDN.</li>
+    <li><code>app/opas-skills.html</code> — catalogue of published skills.</li>
+    <li><code>app/opas-dashboard.html</code> — read-only teacher dashboard.</li>
+    <li><code>app/opas-onboarding.html</code> — first-run learner profile setup.</li>
+  </ul>
+  <p>The frontend talks to the agent runtime over HTTP. No direct database access from the browser; everything is gated through the runtime so that row-level-security and the constitution enforcer get a chance to run.</p>
+
+  <h3>Agent runtime</h3>
+  <p><code>agent/app/</code> — a FastAPI service. The two files that do the real work:</p>
+
+  <p><strong><code>prompt_assembler.py</code></strong> assembles the system prompt for each model call. It composes 12 sections, in this order: learner profile, mode directive, instructional model, persona, forbidden moves, disallowed phrases, current phase objectives, personalization rules, citation requirement, session-opening instruction, prior session memories, grounded corpus chunks, probe elicitation, time budget, constitution injection.</p>
+
+  <p>Each section is data-driven from the skill YAML. The assembler returns the prompt text plus a list of YAML reference paths the prompt drew from — used by the wizard's demo mode to show which YAML lines shaped each turn.</p>
+
+  <p><strong><code>constitutions/enforcer.py</code></strong> (the Soul) is the constitutional safety layer. Every learner message goes through <code>scan_learner()</code> before reaching the model; every model reply goes through <code>scan_agent()</code> before reaching the learner. See <a href="soul.html">the Soul docs</a> for the full grammar.</p>
+
+  <p><strong><code>model_adapter.py</code></strong> is the LLM-swap point. One method, <code>chat()</code>, returns a string. Implementations for Claude (default), OpenAI, and Gemini. Adding a new provider is ~50 lines.</p>
+
+  <p>Routers in <code>agent/app/routers/</code>:</p>
+  <table>
+    <thead><tr><th>route</th><th>purpose</th><th>auth</th></tr></thead>
+    <tbody>
+      <tr><td><code>/session/start /turn /end</code></td><td>the agent loop</td><td>learner token</td></tr>
+      <tr><td><code>/session/compare</code></td><td>multi-model side-by-side</td><td>dev bearer</td></tr>
+      <tr><td><code>/admin/dashboard/*</code></td><td>read-only teacher analytics</td><td>dev bearer</td></tr>
+      <tr><td><code>/auth/*</code></td><td>magic-link signup</td><td>none</td></tr>
+      <tr><td><code>/groups/*</code></td><td>study group management</td><td>learner token</td></tr>
+      <tr><td><code>/pedagogies</code></td><td>public catalogue</td><td>none</td></tr>
+      <tr><td><code>/me/*</code></td><td>learner profile + prefs</td><td>learner token</td></tr>
+      <tr><td><code>/skills/*</code></td><td>self-serve skill lifecycle</td><td>learner token</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Storage</h3>
+  <p>Supabase (PostgreSQL + pgvector + Auth). Schema is in <code>deployment/supabase/schema.sql</code>. The important tables:</p>
+  <table>
+    <thead><tr><th>table</th><th>what it holds</th></tr></thead>
+    <tbody>
+      <tr><td><code>skills</code></td><td>one row per skill YAML; status is draft / published / archived</td></tr>
+      <tr><td><code>sessions</code></td><td>one row per learner session; tracks current phase, time, mode</td></tr>
+      <tr><td><code>xapi_events</code></td><td>every learner turn + agent reply, for analytics</td></tr>
+      <tr><td><code>corpus_chunks</code></td><td>embedded source material; queried per turn for grounding</td></tr>
+      <tr><td><code>profiles</code></td><td>learner preferences (language, interests, bandwidth)</td></tr>
+      <tr><td><code>study_groups</code></td><td>optional cohort grouping for class-level dashboards</td></tr>
+    </tbody>
+  </table>
+  <p>Row-level security is on by default. The runtime uses the service-role key server-side; the browser only ever sees a learner JWT.</p>
+
+  <h2>Data flow for one turn</h2>
+<pre><code>Learner types  →  POST /session/turn
+                  ├─ enforcer.scan_learner(msg)
+                  │   └─ if distress/harm pattern: return wellbeing protocol response,
+                  │      do NOT call the model
+                  ├─ retrieve corpus chunks (top-k via pgvector cosine)
+                  ├─ load skill YAML, current phase, prior memories
+                  ├─ build_system_prompt(skill, phase, chunks, ...)
+                  ├─ model_adapter.chat(prompt, conversation_history)
+                  ├─ enforcer.scan_agent(reply, learner_msg)
+                  │   └─ if rule violation: rewrite or block
+                  ├─ check probes — did the learner answer one correctly?
+                  │   └─ if yes: advance phase
+                  ├─ write xAPI event to Supabase
+                  └─ return reply to frontend</code></pre>
+  <p>The whole loop is roughly 200 lines in <code>agent/app/routers/session.py</code>. Most of it is plumbing; the substantive work happens in <code>prompt_assembler.py</code> and <code>enforcer.py</code>.</p>
+
+  <h2>Why the boundaries are where they are</h2>
+  <p><strong>Why the skill is YAML (data) rather than code.</strong> Code requires a deploy. YAML can be authored by an educator in the wizard, saved to Supabase, and run immediately. It also means the skill survives prompt-engineering churn — the prompt assembler can change its formatting without breaking any existing skill.</p>
+  <p><strong>Why the model adapter is a single method.</strong> Different providers have different SDK shapes. One method (<code>chat(prompt, history) → str</code>) is the smallest portable interface that works for all of them.</p>
+  <p><strong>Why the enforcer is regex, not an LLM judge.</strong> Determinism. <a href="soul.html">See the Soul docs</a> for the full case.</p>
+  <p><strong>Why frontend → runtime → Supabase, not frontend → Supabase directly.</strong> The constitution enforcer needs to see every learner message; the runtime emits xAPI events on every turn. We need a single chokepoint.</p>
+
+  <h2>What's swappable</h2>
+  <ul>
+    <li><strong>Model provider</strong> — Claude is default; swap via <code>model_adapter.py</code>.</li>
+    <li><strong>Database</strong> — Supabase is convenient (auth + RLS + pgvector in one). Replacing with vanilla Postgres + a separate auth provider is straightforward; the schema is plain SQL.</li>
+    <li><strong>Frontend</strong> — vanilla static HTML. Swap for a React/Vue/Svelte app if you prefer; the runtime API is just HTTP/JSON.</li>
+    <li><strong>Constitution</strong> — <code>minerva.soul.v1.yaml</code> is one constitution. You can ship your own (different rules, different patterns) by changing the YAML and pointing skills at the new id.</li>
+  </ul>
+
+  <h2>What's NOT swappable (deliberate)</h2>
+  <ul>
+    <li>The skill YAML schema — v1.0 frozen. Future versions are additive.</li>
+    <li>The 12-section prompt assembler structure — sections may be added (additive) but not reordered.</li>
+    <li>The enforcer's two scan points (learner-side + agent-side) — both are required.</li>
+  </ul>
+
+  <h2>Where to look first when changing something</h2>
+  <table>
+    <thead><tr><th>if you want to…</th><th>start here</th></tr></thead>
+    <tbody>
+      <tr><td>Add a new pedagogy template</td><td><code>agent/app/routers/pedagogies.py</code></td></tr>
+      <tr><td>Add a new LLM provider</td><td><code>agent/app/model_adapter.py</code></td></tr>
+      <tr><td>Change how prompts get assembled</td><td><code>agent/app/prompt_assembler.py</code></td></tr>
+      <tr><td>Add a new Soul pattern</td><td><code>agent/constitutions/minerva.soul.v1.yaml</code></td></tr>
+      <tr><td>Change how the wizard authors skills</td><td><code>app/opas-wizard.html</code></td></tr>
+      <tr><td>Modify the database schema</td><td><code>deployment/supabase/schema.sql</code></td></tr>
+      <tr><td>Add a new analytics event</td><td><code>agent/app/event_emitter.py</code></td></tr>
+    </tbody>
+  </table>
+
+  <p style="margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--ink-15);">
+    <a class="btn btn-primary" href="quickstart.html">Run it locally →</a>
+    <a class="btn btn-secondary" href="https://github.com/kriziadelgado88/OPAS" style="margin-left: 8px;">View on GitHub →</a>
+  </p>
+
+</main>
+
+<footer>
+  <span class="left">
+    <span class="opas-mark"><span class="stripe stripe-1"></span><span class="stripe stripe-2"></span><span class="stripe stripe-3"></span></span>
+    <span class="opas-word">OPAS</span>
+  </span>
+  <nav>
+    <a href="https://github.com/kriziadelgado88/OPAS">github</a>
+    <a href="https://github.com/kriziadelgado88/OPAS/blob/main/LICENSE">MIT license</a>
+    <a href="opas.html">protocol</a>
+    <a href="soul.html">soul</a>
+  </nav>
+</footer>
+
+</body>
+</html>

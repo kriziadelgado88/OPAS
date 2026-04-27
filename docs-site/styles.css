@@ -1,0 +1,523 @@
+/* OPAS docs site — shared stylesheet
+ * Cousin to Poppy: same dark canvas, same layer palette, same Unbounded
+ * typeface. Distinct identity via the Layered Stack mark.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700;900&family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600;700&display=swap');
+
+:root {
+  --blue:   #4070C0;
+  --red:    #CC4848;
+  --green:  #48A060;
+  --gold:   #D4B040;
+  --orange: #D48040;
+
+  --bg:  #080808;
+  --bg2: #111116;
+  --bg3: #181820;
+  --bg4: #1f1f28;
+
+  --ink:    #F2EFE6;
+  --ink-70: rgba(242,239,230,.7);
+  --ink-50: rgba(242,239,230,.5);
+  --ink-30: rgba(242,239,230,.3);
+  --ink-15: rgba(242,239,230,.15);
+  --ink-08: rgba(242,239,230,.08);
+
+  --font-display: 'Unbounded', system-ui, sans-serif;
+  --font-mono:    'DM Mono', 'SF Mono', Menlo, monospace;
+  --font-body:    'Syne', system-ui, -apple-system, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  flex-direction: column;
+}
+
+a { color: var(--blue); text-decoration: none; }
+a:hover { color: var(--ink); }
+
+/* ── Layered Stack mark (the OPAS identity) ──────────────────────────── */
+.opas-mark {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.opas-mark .stripe {
+  height: 4px;
+  border-radius: 1px;
+}
+.opas-mark .stripe-1 { width: 28px; background: var(--blue); }
+.opas-mark .stripe-2 { width: 22px; background: var(--gold); }
+.opas-mark .stripe-3 { width: 16px; background: var(--red); }
+
+.opas-mark.lg { gap: 6px; }
+.opas-mark.lg .stripe { height: 8px; }
+.opas-mark.lg .stripe-1 { width: 64px; }
+.opas-mark.lg .stripe-2 { width: 50px; }
+.opas-mark.lg .stripe-3 { width: 36px; }
+
+.opas-mark.xl { gap: 10px; }
+.opas-mark.xl .stripe { height: 12px; }
+.opas-mark.xl .stripe-1 { width: 100px; }
+.opas-mark.xl .stripe-2 { width: 78px; }
+.opas-mark.xl .stripe-3 { width: 56px; }
+
+/* Wordmark */
+.opas-word {
+  font-family: var(--font-display);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--ink);
+}
+
+/* ── Topbar (every page) ─────────────────────────────────────────────── */
+.topbar {
+  background: var(--bg);
+  border-bottom: 1px solid var(--ink-15);
+  padding: 14px 32px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  background: rgba(8,8,8,0.85);
+}
+.topbar .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+}
+.topbar .brand .opas-word { font-size: 20px; }
+.topbar .brand:hover { opacity: 0.9; }
+
+.topbar nav {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.topbar nav a {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  color: var(--ink-70);
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: all .15s;
+}
+.topbar nav a:hover { color: var(--ink); background: var(--ink-15); }
+.topbar nav a.active { color: var(--ink); background: var(--ink-15); }
+.topbar nav a.cta {
+  background: var(--blue);
+  color: var(--ink);
+  padding: 7px 14px;
+  font-weight: 500;
+}
+.topbar nav a.cta:hover { background: var(--ink); color: var(--bg); }
+
+@media (max-width: 700px) {
+  .topbar { padding: 12px 18px; gap: 10px; }
+  .topbar nav { gap: 2px; }
+  .topbar nav a { padding: 6px 8px; font-size: 11px; }
+  .topbar nav a.no-mobile { display: none; }
+}
+
+/* ── Page container ─────────────────────────────────────────────────── */
+main {
+  flex: 1;
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 56px 32px 80px;
+}
+main.wide { max-width: 1100px; }
+
+/* ── Typography ─────────────────────────────────────────────────────── */
+h1, h2, h3, h4, h5 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  line-height: 1.2;
+}
+h1 {
+  font-weight: 900;
+  font-size: 48px;
+  margin-bottom: 16px;
+  letter-spacing: -0.03em;
+}
+h2 {
+  font-weight: 700;
+  font-size: 28px;
+  margin: 56px 0 20px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ink-15);
+}
+h2:first-of-type { border-top: none; padding-top: 0; margin-top: 32px; }
+h3 { font-weight: 700; font-size: 19px; margin: 28px 0 10px; }
+h4 {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-50);
+  margin: 18px 0 8px;
+}
+
+p { margin-bottom: 16px; color: var(--ink-70); }
+p strong, li strong { color: var(--ink); font-weight: 600; }
+p code, li code, td code {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  background: var(--bg3);
+  color: var(--ink);
+  padding: 1px 6px;
+  border-radius: 4px;
+  letter-spacing: 0;
+}
+
+ul, ol { margin: 16px 0; padding-left: 24px; color: var(--ink-70); }
+li { margin-bottom: 8px; }
+li::marker { color: var(--ink-50); }
+
+/* Callouts */
+.callout {
+  background: var(--bg2);
+  border-left: 3px solid var(--gold);
+  border-radius: 0 8px 8px 0;
+  padding: 16px 20px;
+  margin: 20px 0;
+  color: var(--ink-70);
+  font-size: 14.5px;
+}
+.callout strong { color: var(--gold); }
+.callout.blue { border-left-color: var(--blue); } .callout.blue strong { color: var(--blue); }
+.callout.red  { border-left-color: var(--red); }  .callout.red strong  { color: var(--red); }
+.callout.green{ border-left-color: var(--green); }.callout.green strong{ color: var(--green); }
+
+/* Code blocks */
+pre {
+  background: var(--bg2);
+  border: 1px solid var(--ink-15);
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin: 18px 0;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--ink);
+}
+pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+}
+pre .kw   { color: var(--blue); }
+pre .str  { color: var(--gold); }
+pre .com  { color: var(--ink-50); font-style: italic; }
+pre .key  { color: var(--orange); }
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 18px 0;
+  font-size: 14px;
+}
+th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--ink-15); }
+th {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-50);
+  font-weight: 500;
+  background: var(--bg2);
+}
+td { color: var(--ink-70); }
+
+/* ── Footer ─────────────────────────────────────────────────────────── */
+footer {
+  border-top: 1px solid var(--ink-15);
+  padding: 28px 32px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--ink-50);
+}
+footer .left { display: inline-flex; align-items: center; gap: 10px; }
+footer .left .opas-word { font-size: 12px; letter-spacing: 0; text-transform: lowercase; font-weight: 700; }
+footer nav { margin-left: auto; display: flex; gap: 18px; }
+footer nav a { color: var(--ink-50); }
+footer nav a:hover { color: var(--ink); }
+
+/* ── Buttons ────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+  border-radius: 10px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  transition: all .15s;
+  border: 1px solid transparent;
+}
+.btn-primary { background: var(--blue); color: var(--ink); }
+.btn-primary:hover { filter: brightness(1.12); color: var(--ink); }
+.btn-secondary {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--ink-30);
+}
+.btn-secondary:hover { background: var(--ink-15); }
+.btn-soul { background: var(--red); color: var(--ink); }
+.btn-soul:hover { filter: brightness(1.12); color: var(--ink); }
+
+/* ── Hero (home page) ───────────────────────────────────────────────── */
+.hero {
+  padding: 72px 0 32px;
+  text-align: center;
+}
+.hero .mark-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 26px;
+  margin-bottom: 28px;
+}
+.hero .mark-row .opas-word { font-size: 84px; }
+.hero h1 {
+  font-size: 38px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  max-width: 700px;
+  margin: 0 auto 16px;
+  color: var(--ink);
+}
+.hero .lede {
+  font-size: 17px;
+  color: var(--ink-70);
+  max-width: 640px;
+  margin: 0 auto 32px;
+  line-height: 1.55;
+}
+.hero .ctas {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+.hero .gh-row {
+  margin-top: 22px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--ink-50);
+  letter-spacing: 0.02em;
+}
+.hero .gh-row a { color: var(--ink-70); }
+.hero .gh-row a:hover { color: var(--ink); }
+
+@media (max-width: 600px) {
+  .hero .mark-row { flex-direction: column; gap: 14px; }
+  .hero .mark-row .opas-word { font-size: 56px; }
+  .hero h1 { font-size: 26px; }
+}
+
+/* ── Two-card primitives split (home) ──────────────────────────────── */
+.primitives-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin: 56px 0;
+}
+@media (max-width: 760px) { .primitives-split { grid-template-columns: 1fr; } }
+
+.prim-card {
+  background: var(--bg2);
+  border: 1px solid var(--ink-15);
+  border-radius: 14px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all .2s;
+  text-decoration: none;
+  color: inherit;
+}
+.prim-card:hover {
+  border-color: var(--ink-30);
+  background: var(--bg3);
+}
+.prim-card.opas { border-top: 3px solid var(--blue); }
+.prim-card.soul { border-top: 3px solid var(--red); }
+.prim-card .label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.prim-card.opas .label { color: var(--blue); }
+.prim-card.soul .label { color: var(--red); }
+.prim-card h3 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 0;
+}
+.prim-card p { color: var(--ink-70); font-size: 14.5px; margin: 0; }
+.prim-card .read-more {
+  margin-top: auto;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-50);
+  letter-spacing: 0.04em;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.prim-card:hover .read-more { color: var(--ink); }
+
+/* ── System map diagram (architecture page + home) ──────────────────── */
+.sysmap {
+  background: var(--bg2);
+  border: 1px solid var(--ink-15);
+  border-radius: 14px;
+  padding: 28px;
+  margin: 32px 0;
+}
+.sysmap svg { width: 100%; height: auto; display: block; }
+
+/* ── Page header (non-home pages) ───────────────────────────────────── */
+.page-head {
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--ink-15);
+  margin-bottom: 36px;
+}
+.page-head .breadcrumb {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--ink-50);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+.page-head h1 { font-size: 40px; margin-bottom: 12px; }
+.page-head .lede { color: var(--ink-70); font-size: 17px; max-width: 700px; }
+
+/* ── Step list (quickstart) ─────────────────────────────────────────── */
+.steps { counter-reset: step; padding: 0; list-style: none; margin: 0; }
+.steps > li {
+  counter-increment: step;
+  position: relative;
+  padding-left: 56px;
+  padding-bottom: 32px;
+  border-left: 1px dashed var(--ink-15);
+  margin-left: 16px;
+}
+.steps > li:last-child { border-left: 1px solid transparent; padding-bottom: 0; }
+.steps > li::before {
+  content: counter(step);
+  position: absolute;
+  left: -16px;
+  top: 0;
+  width: 32px; height: 32px;
+  background: var(--bg);
+  border: 1px solid var(--ink-30);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+}
+.steps > li > h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  margin: 0 0 8px;
+  color: var(--ink);
+}
+.steps > li p { font-size: 14.5px; }
+
+/* ── Pattern chip lists (Soul page) ─────────────────────────────────── */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 14px 0 22px;
+}
+.chip {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--bg3);
+  color: var(--ink-70);
+  border: 1px solid var(--ink-15);
+}
+.chip.harm {
+  background: rgba(204,72,72,.08);
+  color: var(--red);
+  border-color: rgba(204,72,72,.40);
+}
+
+/* ── TOC sidebar (long pages) ───────────────────────────────────────── */
+.with-toc {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 56px;
+  align-items: start;
+}
+@media (max-width: 900px) { .with-toc { grid-template-columns: 1fr; } }
+.toc {
+  position: sticky;
+  top: 90px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+}
+.toc h4 { margin: 0 0 10px; color: var(--ink-50); }
+.toc ul { list-style: none; padding: 0; margin: 0; }
+.toc li { margin: 6px 0; }
+.toc a { color: var(--ink-50); text-decoration: none; }
+.toc a:hover, .toc a.active { color: var(--ink); }
+@media (max-width: 900px) { .toc { display: none; } }
+
+/* ── Animation: chalk-write the layered stack ──────────────────────── */
+.opas-mark.animate .stripe {
+  transform-origin: left center;
+  transform: scaleX(0);
+  animation: bb-grow 0.7s cubic-bezier(.2,.8,.2,1) forwards;
+}
+.opas-mark.animate .stripe-1 { animation-delay: .15s; }
+.opas-mark.animate .stripe-2 { animation-delay: .35s; }
+.opas-mark.animate .stripe-3 { animation-delay: .55s; }
+
+@keyframes bb-grow {
+  to { transform: scaleX(1); }
+}

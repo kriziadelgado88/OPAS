@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OPAS · Two open primitives for safe, portable AI tutoring</title>
+<meta name="description" content="OPAS is a protocol for authoring tutoring skills as YAML and running them on any LLM. The Soul is a constitutional safety layer for any agent that talks to students. Both MIT-licensed.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <a href="index.html" class="brand">
+    <span class="opas-mark"><span class="stripe stripe-1"></span><span class="stripe stripe-2"></span><span class="stripe stripe-3"></span></span>
+    <span class="opas-word">OPAS</span>
+  </a>
+  <nav>
+    <a href="opas.html">protocol</a>
+    <a href="soul.html">soul</a>
+    <a href="quickstart.html">quickstart</a>
+    <a href="architecture.html" class="no-mobile">architecture</a>
+    <a href="https://github.com/kriziadelgado88/OPAS" class="cta">github</a>
+  </nav>
+</header>
+
+<main class="wide">
+
+  <section class="hero">
+    <div class="mark-row">
+      <span class="opas-mark xl animate" aria-hidden="true">
+        <span class="stripe stripe-1"></span>
+        <span class="stripe stripe-2"></span>
+        <span class="stripe stripe-3"></span>
+      </span>
+      <span class="opas-word">OPAS</span>
+    </div>
+    <h1>Two open primitives for safe, portable AI tutoring.</h1>
+    <p class="lede">A protocol for authoring tutoring skills once and running them on any LLM. Plus a constitutional safety layer for any agent that talks to students. Both MIT-licensed. Both usable independently.</p>
+    <div class="ctas">
+      <a class="btn btn-primary" href="opas.html">Read the OPAS docs →</a>
+      <a class="btn btn-soul" href="soul.html">Read the Soul docs →</a>
+    </div>
+    <div class="gh-row">
+      <a href="https://github.com/kriziadelgado88/OPAS">github.com/kriziadelgado88/OPAS</a>
+    </div>
+  </section>
+
+  <!-- Two-card primitives split -->
+  <section class="primitives-split">
+    <a class="prim-card opas" href="opas.html">
+      <span class="label">protocol</span>
+      <h3>OPAS</h3>
+      <p>A skill is a YAML file describing pedagogy, persona, learning phases, and corpus references. The runtime loads any conformant skill and runs it as a tutoring agent — Socratic dialogue, grounded in your corpus, structured by phases. Model-agnostic: Claude, GPT-4, Gemini all work.</p>
+      <span class="read-more">Read more →</span>
+    </a>
+    <a class="prim-card soul" href="soul.html">
+      <span class="label">safety layer</span>
+      <h3>The Soul</h3>
+      <p>Two files. A YAML constitution defining five always-on rules + 16 distress patterns + 9 harm patterns. And a Python enforcer that scans every learner message and every agent reply against those patterns deterministically. Drop into any agent in 5 lines.</p>
+      <span class="read-more">Read more →</span>
+    </a>
+  </section>
+
+  <!-- System map preview -->
+  <section>
+    <h2>How they fit together</h2>
+    <p>Every learner message routes through the Soul before reaching the model; every agent reply routes through the Soul before reaching the learner. OPAS provides the tutoring structure; the Soul provides the safety floor. Each primitive works without the other — they compose when you use both.</p>
+
+    <div class="sysmap">
+      <svg viewBox="0 0 1000 360" role="img" aria-label="OPAS plus Soul architecture diagram showing learner, frontend, agent runtime with the Soul enforcer, and LLM provider">
+        <!-- Lane labels -->
+        <text x="20"  y="22" font-family="DM Mono, monospace" font-size="10" fill="rgba(242,239,230,.5)" letter-spacing="2">FRONTEND</text>
+        <text x="380" y="22" font-family="DM Mono, monospace" font-size="10" fill="rgba(242,239,230,.5)" letter-spacing="2">AGENT RUNTIME (FASTAPI)</text>
+        <text x="800" y="22" font-family="DM Mono, monospace" font-size="10" fill="rgba(242,239,230,.5)" letter-spacing="2">LLM PROVIDER</text>
+
+        <!-- Lane separators -->
+        <line x1="370" y1="0"   x2="370" y2="360" stroke="rgba(242,239,230,.06)" stroke-dasharray="3 4"/>
+        <line x1="780" y1="0"   x2="780" y2="360" stroke="rgba(242,239,230,.06)" stroke-dasharray="3 4"/>
+
+        <!-- Frontend -->
+        <rect x="20" y="50" width="330" height="80" rx="10" fill="#181820" stroke="rgba(242,239,230,.15)"/>
+        <text x="36" y="78" font-family="Unbounded, sans-serif" font-size="14" font-weight="700" fill="#F2EFE6">Learner / Teacher</text>
+        <text x="36" y="100" font-family="DM Mono, monospace" font-size="11" fill="rgba(242,239,230,.7)">opas-student.html · opas-wizard.html</text>
+        <text x="36" y="118" font-family="DM Mono, monospace" font-size="11" fill="rgba(242,239,230,.5)">static html · vanilla js · no build step</text>
+
+        <!-- Skill YAML in the middle lane -->
+        <rect x="400" y="50" width="340" height="50" rx="10" fill="rgba(64,112,192,.08)" stroke="rgba(64,112,192,.45)"/>
+        <text x="416" y="73" font-family="Unbounded, sans-serif" font-size="13" font-weight="700" fill="#4070C0">Skill YAML (loaded from Supabase)</text>
+        <text x="416" y="90" font-family="DM Mono, monospace" font-size="11" fill="rgba(242,239,230,.7)">pedagogy · phases · probes · corpus</text>
+
+        <!-- Prompt assembler -->
+        <rect x="400" y="115" width="340" height="50" rx="10" fill="#181820" stroke="rgba(242,239,230,.15)"/>
+        <text x="416" y="138" font-family="Unbounded, sans-serif" font-size="13" font-weight="700" fill="#F2EFE6">prompt_assembler.py</text>
+        <text x="416" y="155" font-family="DM Mono, monospace" font-size="11" fill="rgba(242,239,230,.7)">12 sections — persona, objectives, corpus chunks…</text>
+
+        <!-- Soul ★ -->
+        <rect x="400" y="180" width="340" height="60" rx="10" fill="rgba(204,72,72,.10)" stroke="rgba(204,72,72,.6)"/>
+        <text x="416" y="206" font-family="Unbounded, sans-serif" font-size="13" font-weight="700" fill="#CC4848">Soul enforcer ★ always on</text>
+        <text x="416" y="224" font-family="DM Mono, monospace" font-size="11" fill="rgba(242,239,230,.7)">scans every learner_msg AND every agent_reply</text>
+
+        <!-- Model adapter -->
+        <rect x="400" y="255" width="340" height="50" rx="10" fill="#181820" stroke="rgba(242,239,230,.15)"/>
+        <text x="416" y="278" font-family="Unbounded, sans-serif" font-size="13" font-weight="700" fill="#F2EFE6">model_adapter.py</text>
+        <text x="416" y="295" font-family="DM Mono, monospace" font-size="11" fill="rgba(242,239,230,.7)">claude · openai · gemini — pluggable, one method</text>
+
+        <!-- LLM provider -->
+        <rect x="800" y="255" width="180" height="50" rx="10" fill="#181820" stroke="rgba(242,239,230,.15)"/>
+        <text x="816" y="278" font-family="Unbounded, sans-serif" font-size="13" font-weight="700" fill="#F2EFE6">Claude / GPT / Gemini</text>
+        <text x="816" y="295" font-family="DM Mono, monospace" font-size="11" fill="rgba(242,239,230,.5)">your choice</text>
+
+        <!-- Storage -->
+        <rect x="800" y="50" width="180" height="115" rx="10" fill="#181820" stroke="rgba(242,239,230,.15)"/>
+        <text x="816" y="73" font-family="Unbounded, sans-serif" font-size="13" font-weight="700" fill="#F2EFE6">Supabase</text>
+        <text x="816" y="93" font-family="DM Mono, monospace" font-size="11" fill="rgba(242,239,230,.7)">skills · sessions</text>
+        <text x="816" y="109" font-family="DM Mono, monospace" font-size="11" fill="rgba(242,239,230,.7)">corpus chunks</text>
+        <text x="816" y="125" font-family="DM Mono, monospace" font-size="11" fill="rgba(242,239,230,.7)">xAPI events</text>
+        <text x="816" y="141" font-family="DM Mono, monospace" font-size="11" fill="rgba(242,239,230,.7)">profiles</text>
+        <text x="816" y="157" font-family="DM Mono, monospace" font-size="11" fill="rgba(242,239,230,.5)">RLS-enforced</text>
+
+        <!-- Arrows -->
+        <defs>
+          <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(242,239,230,.45)"/>
+          </marker>
+        </defs>
+        <path d="M 350 90 L 400 90"   stroke="rgba(242,239,230,.30)" stroke-width="1.5" fill="none" marker-end="url(#a)"/>
+        <path d="M 740 280 L 800 280" stroke="rgba(242,239,230,.30)" stroke-width="1.5" fill="none" marker-end="url(#a)"/>
+        <path d="M 740 100 L 800 100" stroke="rgba(64,112,192,.40)"  stroke-width="1.5" fill="none" marker-end="url(#a)"/>
+      </svg>
+    </div>
+  </section>
+
+  <!-- Why two primitives -->
+  <section>
+    <h2>Why two primitives, one repo</h2>
+    <p>We built these together while shipping a tutoring product (Poppy) and noticed they're each useful in isolation.</p>
+    <p>OPAS solves <em>"how do I describe a tutoring skill in a way that survives the next model release?"</em> — by making the skill data, not code, and the LLM swappable.</p>
+    <p>The Soul solves <em>"how do I make a student-facing agent that doesn't fail catastrophically when the student is in crisis?"</em> — by adding a deterministic regex layer below the model.</p>
+    <p>You can adopt OPAS without the Soul (e.g., adult corporate L&amp;D where wellbeing intercepts aren't relevant), or the Soul without OPAS (e.g., you're already running your own tutoring stack and just want the safety layer). Both work standalone.</p>
+  </section>
+
+  <!-- Quickstart preview -->
+  <section>
+    <h2>Three commands to run it</h2>
+    <p>Full setup walkthrough lives at <a href="quickstart.html">/quickstart</a> — covers Supabase, env vars, and minting a learner token. The fast version:</p>
+<pre><code><span class="com"># 1. Clone</span>
+git clone https://github.com/kriziadelgado88/OPAS.git
+cd OPAS/agent && pip install -r requirements.txt
+
+<span class="com"># 2. Configure</span>
+cp .env.example .env  <span class="com"># fill in Supabase + Anthropic keys</span>
+
+<span class="com"># 3. Run</span>
+uvicorn app.main:app --reload --port 8001</code></pre>
+  </section>
+
+</main>
+
+<footer>
+  <span class="left">
+    <span class="opas-mark"><span class="stripe stripe-1"></span><span class="stripe stripe-2"></span><span class="stripe stripe-3"></span></span>
+    <span class="opas-word">OPAS</span>
+  </span>
+  <nav>
+    <a href="https://github.com/kriziadelgado88/OPAS">github</a>
+    <a href="https://github.com/kriziadelgado88/OPAS/blob/main/LICENSE">MIT license</a>
+    <a href="quickstart.html">quickstart</a>
+    <a href="architecture.html">architecture</a>
+  </nav>
+</footer>
+
+</body>
+</html>

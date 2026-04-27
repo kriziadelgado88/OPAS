@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Quickstart — OPAS</title>
+<meta name="description" content="Run OPAS locally end-to-end in about 30 minutes. Seven steps from clone to a working tutoring session.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <a href="index.html" class="brand">
+    <span class="opas-mark"><span class="stripe stripe-1"></span><span class="stripe stripe-2"></span><span class="stripe stripe-3"></span></span>
+    <span class="opas-word">OPAS</span>
+  </a>
+  <nav>
+    <a href="opas.html">protocol</a>
+    <a href="soul.html">soul</a>
+    <a href="quickstart.html" class="active">quickstart</a>
+    <a href="architecture.html" class="no-mobile">architecture</a>
+    <a href="https://github.com/kriziadelgado88/OPAS" class="cta">github</a>
+  </nav>
+</header>
+
+<main>
+
+  <div class="page-head">
+    <div class="breadcrumb">Quickstart</div>
+    <h1>Run it locally</h1>
+    <p class="lede">From clone to a working tutoring session in about 30 minutes. Seven steps. The first time you do it the Supabase setup takes most of the time; subsequent runs are seconds.</p>
+  </div>
+
+  <h2>Prerequisites</h2>
+  <ul>
+    <li>Python 3.11 or newer</li>
+    <li>A free <a href="https://supabase.com">Supabase</a> account (GitHub SSO works)</li>
+    <li>An <a href="https://console.anthropic.com">Anthropic API key</a> (Claude is the default model)</li>
+    <li>A terminal and a browser</li>
+  </ul>
+
+  <h2>The seven steps</h2>
+  <ol class="steps">
+    <li>
+      <h3>Clone and install</h3>
+      <p>Clone the repo and install the Python dependencies. We recommend a virtual environment.</p>
+<pre><code>git clone https://github.com/kriziadelgado88/OPAS.git
+cd OPAS/agent
+python -m venv .venv
+
+<span class="com"># macOS / Linux</span>
+source .venv/bin/activate
+<span class="com"># Windows</span>
+.venv\Scripts\activate
+
+pip install -r requirements.txt</code></pre>
+    </li>
+
+    <li>
+      <h3>Provision Supabase</h3>
+      <p>Follow the <a href="https://github.com/kriziadelgado88/OPAS/blob/main/deployment/supabase/runbook.md">runbook</a> at <code>deployment/supabase/runbook.md</code>. About 15 minutes — covers creating the project, copying credentials, applying the schema, and seeding the reference skill.</p>
+      <p>By the end you should have four values to paste into your <code>.env</code>:</p>
+      <ul>
+        <li><code>SUPABASE_URL</code></li>
+        <li><code>SUPABASE_ANON_KEY</code></li>
+        <li><code>SUPABASE_SERVICE_ROLE_KEY</code></li>
+        <li><code>SUPABASE_DB_PASSWORD</code></li>
+      </ul>
+    </li>
+
+    <li>
+      <h3>Configure environment</h3>
+      <p>Copy the template and fill in your keys.</p>
+<pre><code>cp .env.example .env
+<span class="com"># open .env in your editor and paste the four Supabase values + your Anthropic key</span></code></pre>
+      <div class="callout red">
+        <strong>Do not commit <code>.env</code>.</strong> It's gitignored at the repo root, but double-check before pushing if you've added it manually.
+      </div>
+    </li>
+
+    <li>
+      <h3>Mint a learner token</h3>
+      <p>The student client requires a bearer token. Mint one for yourself.</p>
+<pre><code><span class="com"># from agent/</span>
+python scripts/mint_learner_tokens.py --email you@example.com</code></pre>
+      <p>The script prints a token. Copy it — you'll paste it into the URL in step 7.</p>
+    </li>
+
+    <li>
+      <h3>Start the agent runtime</h3>
+<pre><code><span class="com"># from agent/</span>
+uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload</code></pre>
+      <p>Confirm it's up: <a href="http://localhost:8001/health"><code>http://localhost:8001/health</code></a> should return a JSON response with <code>"env": "dev"</code>.</p>
+    </li>
+
+    <li>
+      <h3>Serve the frontend</h3>
+      <p>In a second terminal, from the repo root:</p>
+<pre><code>cd app
+python -m http.server 8080</code></pre>
+    </li>
+
+    <li>
+      <h3>Open the demo</h3>
+      <p>The student client expects a <code>token=</code> query param the first time:</p>
+<pre><code>http://localhost:8080/opas-student.html
+  ?skill_id=hks.api318.unit1.thinking-probabilistically
+  &amp;token=&lt;your-token&gt;</code></pre>
+      <p>The token is cached to localStorage so subsequent loads don't need it.</p>
+
+      <p style="margin-top: 14px;"><strong>Demo mode</strong> (live YAML highlights — useful when showing how the protocol works):</p>
+<pre><code>http://localhost:8080/opas-student.html
+  ?skill_id=hks.api318.unit1.thinking-probabilistically
+  &amp;demo=1</code></pre>
+
+      <p style="margin-top: 14px;"><strong>Wizard</strong> (skill authoring): <a href="http://localhost:8080/opas-wizard.html">http://localhost:8080/opas-wizard.html</a></p>
+    </li>
+  </ol>
+
+  <h2>What to test</h2>
+  <p>Once you're in a session, the things to look for:</p>
+  <ul>
+    <li>Session starts with a Socratic question (not a lecture)</li>
+    <li>In demo mode: YAML pane populates on load; lines highlight after each turn</li>
+    <li>Citations appear in agent replies (<code>[source, §section]</code> format)</li>
+    <li>Off-topic questions get a polite refusal (the <code>refuse_if_ungrounded</code> rule fires)</li>
+    <li>"Just give me the answer" — agent stays Socratic</li>
+    <li>End session button works and writes session-end events to <code>xapi_events</code> in Supabase</li>
+    <li>Wizard can author a new skill and publish it (you should see it appear in <code>skills</code> table with <code>status='published'</code>)</li>
+  </ul>
+
+  <h2>Troubleshooting</h2>
+
+  <h3>"Missing required env var: SUPABASE_URL"</h3>
+  <p>Your <code>.env</code> isn't being read. Confirm it's at <code>agent/.env</code> (not <code>agent/app/.env</code>).</p>
+
+  <h3>Health check returns 500</h3>
+  <p>Usually means an env var is set but invalid. Check the uvicorn console for the specific error.</p>
+
+  <h3>Wizard can save drafts but publishing fails</h3>
+  <p>The row-level-security policies require an authenticated educator role. Make sure you ran the educator promotion step in the Supabase runbook.</p>
+
+  <h3>Student page returns 401</h3>
+  <p>Your bearer token is missing or expired. Mint a new one with <code>mint_learner_tokens.py</code>.</p>
+
+  <h3>Agent replies are slow / time out</h3>
+  <p>Anthropic API calls can take 5-30 seconds for long replies. If they're consistently timing out, check your API key is valid and your account has credit.</p>
+
+  <p style="margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--ink-15);">
+    <a class="btn btn-primary" href="opas.html">Read the protocol →</a>
+    <a class="btn btn-secondary" href="architecture.html" style="margin-left: 8px;">See the architecture →</a>
+  </p>
+
+</main>
+
+<footer>
+  <span class="left">
+    <span class="opas-mark"><span class="stripe stripe-1"></span><span class="stripe stripe-2"></span><span class="stripe stripe-3"></span></span>
+    <span class="opas-word">OPAS</span>
+  </span>
+  <nav>
+    <a href="https://github.com/kriziadelgado88/OPAS">github</a>
+    <a href="https://github.com/kriziadelgado88/OPAS/blob/main/LICENSE">MIT license</a>
+    <a href="opas.html">protocol</a>
+    <a href="soul.html">soul</a>
+  </nav>
+</footer>
+
+</body>
+</html>

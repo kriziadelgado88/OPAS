@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OPAS — Portable Tutoring Skills</title>
+<meta name="description" content="OPAS is a protocol for authoring AI tutoring skills as YAML and running them on any LLM.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <a href="index.html" class="brand">
+    <span class="opas-mark"><span class="stripe stripe-1"></span><span class="stripe stripe-2"></span><span class="stripe stripe-3"></span></span>
+    <span class="opas-word">OPAS</span>
+  </a>
+  <nav>
+    <a href="opas.html" class="active">protocol</a>
+    <a href="soul.html">soul</a>
+    <a href="quickstart.html">quickstart</a>
+    <a href="architecture.html" class="no-mobile">architecture</a>
+    <a href="https://github.com/kriziadelgado88/OPAS" class="cta">github</a>
+  </nav>
+</header>
+
+<main>
+
+  <div class="page-head">
+    <div class="breadcrumb">Protocol · OPAS</div>
+    <h1>Portable tutoring skills</h1>
+    <p class="lede">A protocol for authoring AI tutoring skills as YAML and running them on any LLM. The skill is data, not code. The LLM is swappable.</p>
+  </div>
+
+  <h2>The thesis</h2>
+  <p>Tutoring quality lives in the skill, not the prompt. A good skill encodes:</p>
+  <ul>
+    <li>A <strong>pedagogy template</strong> — Socratic, mastery-based, project-based, etc. (we ship four)</li>
+    <li>A <strong>persona</strong> — voice, register, disallowed phrases</li>
+    <li><strong>Phase objectives</strong> — what the learner should be able to do after each phase</li>
+    <li><strong>Probes</strong> — the questions the agent uses to assess understanding</li>
+    <li><strong>Corpus grounding</strong> — the materials every factual claim must cite back to</li>
+    <li><strong>Personalization rules</strong> — what may adapt per learner (interests, language) and what's hard-locked (objectives, citation rules)</li>
+  </ul>
+  <p>Every skill is portable. Switch from Claude to Gemini by changing one env var; the skill YAML doesn't change.</p>
+
+  <h2>Hello, world</h2>
+  <p>A minimal skill — the reference example at <code>skills/api-318-unit-1/skill.opas.yaml</code>:</p>
+<pre><code><span class="key">id:</span> hks.api318.unit1.thinking-probabilistically
+<span class="key">version:</span> <span class="str">"0.1.0"</span>
+<span class="key">name:</span> <span class="str">"Thinking Probabilistically"</span>
+
+<span class="key">constitution:</span> minerva.soul.v1   <span class="com"># the Soul layer — see /soul</span>
+
+<span class="key">pedagogy:</span>
+  <span class="key">template:</span> socratic_bayesian
+  <span class="key">instructional_model:</span>
+    <span class="key">description:</span> <span class="str">"Agent never lectures first. Probes the learner's prior,</span>
+<span class="str">                  then introduces evidence one piece at a time."</span>
+    <span class="key">forbidden_moves:</span>
+      - <span class="str">"Stating Bayes' formula before the learner has offered a prior."</span>
+      - <span class="str">"Accepting 'it depends' without pressing for a number."</span>
+
+<span class="key">persona:</span>
+  <span class="key">voice:</span> <span class="str">"warm Socratic tutor, curious not patronizing"</span>
+  <span class="key">register:</span> informal
+  <span class="key">disallowed_phrases:</span> [<span class="str">"good question"</span>, <span class="str">"let me explain"</span>]
+
+<span class="key">phases:</span>
+  - <span class="key">id:</span> intuition
+    <span class="key">objectives:</span>
+      - <span class="str">"Articulate probability as a degree of belief, not a frequency."</span>
+    <span class="key">probe_set:</span>
+      - <span class="key">id:</span> P1-prior
+        <span class="key">prompt:</span> <span class="str">"Give me a probability that the next coin flip is heads. Defend it."</span>
+
+<span class="key">corpus:</span>
+  <span class="key">sources:</span>
+    - <span class="key">drive_id:</span> 1XYZ...
+      <span class="key">title:</span> <span class="str">"Thinking Probabilistically — Unit 1"</span>
+  <span class="key">grounding_policy:</span>
+    <span class="key">require_citation:</span> <span class="kw">true</span>
+    <span class="key">citation_style:</span> <span class="str">"[Source, §section]"</span></code></pre>
+
+  <p>Drop this into Supabase (or load from disk for local dev), point a learner at it, and you have a tutoring agent. The runtime takes care of:</p>
+  <ul>
+    <li>Building the system prompt for each turn (12 sections — persona, forbidden moves, phase objectives, retrieved corpus chunks, probes, etc.)</li>
+    <li>Tracking phase progression as the learner answers probes correctly</li>
+    <li>Emitting xAPI events so you can analyze sessions later</li>
+    <li>Enforcing the constitution on every learner turn and every agent reply</li>
+    <li>Running the same skill against Claude, GPT-4, or Gemini (model adapter is one file)</li>
+  </ul>
+
+  <h2>Why this isn't just "a system prompt"</h2>
+  <p>Three things a system prompt can't give you that OPAS does:</p>
+  <ol>
+    <li><strong>Phase state.</strong> The agent knows what phase the learner is in and progresses based on probe outcomes — not just "here's the whole curriculum, figure it out."</li>
+    <li><strong>Citation enforcement.</strong> Every factual claim must cite a corpus chunk. Enforced in the prompt assembler + the response validator, not just hoped for.</li>
+    <li><strong>Personalization rules.</strong> What can adapt per learner is declared. The agent literally cannot adapt the assessment criteria — that's a hard-locked surface.</li>
+  </ol>
+  <p>These belong in the skill (data) so they survive prompt-engineering churn, not in the prompt (text) where they decay each time you tweak a phrase.</p>
+
+  <h2>The skill YAML schema</h2>
+  <p>A skill has these top-level sections:</p>
+  <table>
+    <thead>
+      <tr><th>section</th><th>required</th><th>purpose</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>id</code></td><td>yes</td><td>unique, dot-separated. The runtime keys off this.</td></tr>
+      <tr><td><code>version</code></td><td>yes</td><td>semver string. Bump when the skill changes.</td></tr>
+      <tr><td><code>name</code></td><td>yes</td><td>human-readable title.</td></tr>
+      <tr><td><code>constitution</code></td><td>recommended</td><td>references a constitution YAML (e.g. <code>minerva.soul.v1</code>).</td></tr>
+      <tr><td><code>pedagogy</code></td><td>yes</td><td>which template + the instructional model.</td></tr>
+      <tr><td><code>persona</code></td><td>yes</td><td>voice, register, disallowed phrases.</td></tr>
+      <tr><td><code>phases</code></td><td>yes</td><td>ordered list of teaching units, each with objectives + probes.</td></tr>
+      <tr><td><code>corpus</code></td><td>yes</td><td>source references + grounding policy.</td></tr>
+      <tr><td><code>personalization</code></td><td>optional</td><td>hard-locked vs allowed-to-adapt surfaces.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>The reference runtime</h2>
+  <p>Included: a FastAPI service that loads skills from Supabase, runs sessions, emits events, and serves a generic web client (<code>opas-student.html</code>) and authoring wizard (<code>opas-wizard.html</code>).</p>
+  <ul>
+    <li><strong>Default model adapter:</strong> Claude (<code>claude-sonnet-4-6</code>).</li>
+    <li><strong>Pluggable adapters:</strong> GPT-4 and Gemini ship as functional but less-tested.</li>
+    <li><strong>Auth:</strong> magic-link signup + bearer tokens. Production deployments should swap to OAuth.</li>
+    <li><strong>Storage:</strong> Supabase. Migrations in <code>deployment/supabase/</code>.</li>
+    <li><strong>Sample skill:</strong> the protocol example. The corpus content is not redistributed; you'll need to point at your own.</li>
+  </ul>
+
+  <p><a href="quickstart.html">→ Full setup walkthrough on the quickstart page</a></p>
+
+  <h2>The pedagogy catalogue</h2>
+  <p>Four templates ship in <code>agent/app/routers/pedagogies.py</code>:</p>
+  <ul>
+    <li><strong>Discovery Learning</strong> — Bruner-style. Heavy probes, direct instruction is a last resort.</li>
+    <li><strong>Socratic Method</strong> — every turn ends with a question. Used in the reference skill.</li>
+    <li><strong>Spiral Curriculum</strong> — same concept revisited at increasing depth across phases.</li>
+    <li><strong>Direct Instruction with Checks</strong> — explanation first, comprehension probe immediately after.</li>
+  </ul>
+  <p>Adding a fifth is small — see <a href="https://github.com/kriziadelgado88/OPAS/blob/main/CONTRIBUTING.md">contributing</a>.</p>
+
+  <h2>When to use OPAS vs. just a system prompt</h2>
+  <div class="callout green">
+    <strong>Use OPAS when:</strong> you're building multi-turn tutoring with phases and assessment; the same skill needs to run on multiple LLMs; multiple authors are creating skills; you need analytics (xAPI events).
+  </div>
+  <div class="callout">
+    <strong>Use a system prompt when:</strong> the session is single-turn; there's no curriculum, just a persona; you don't need citation enforcement or progress tracking.
+  </div>
+
+  <h2>What's production-ready vs. demo-quality</h2>
+  <p>The skill YAML schema, the prompt assembler, and the model-adapter contract are stable. Auth is magic-link + bearer (production should swap to OAuth). The wizard is functional but lacks versioning and review workflow. The Gemini and OpenAI adapters work but are less battle-tested than Claude. <a href="architecture.html">→ Full limitations on the architecture page</a></p>
+
+  <h2>Contributing</h2>
+  <p>Most-needed contributions, ranked: new pedagogy templates → new model adapters → sample skills in real domains → documentation. See <a href="https://github.com/kriziadelgado88/OPAS/blob/main/CONTRIBUTING.md"><code>CONTRIBUTING.md</code></a> in the repo.</p>
+
+  <p style="margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--ink-15);">
+    <a class="btn btn-primary" href="quickstart.html">Run it locally →</a>
+    <a class="btn btn-secondary" href="soul.html" style="margin-left: 8px;">Read about the Soul →</a>
+  </p>
+
+</main>
+
+<footer>
+  <span class="left">
+    <span class="opas-mark"><span class="stripe stripe-1"></span><span class="stripe stripe-2"></span><span class="stripe stripe-3"></span></span>
+    <span class="opas-word">OPAS</span>
+  </span>
+  <nav>
+    <a href="https://github.com/kriziadelgado88/OPAS">github</a>
+    <a href="https://github.com/kriziadelgado88/OPAS/blob/main/LICENSE">MIT license</a>
+    <a href="quickstart.html">quickstart</a>
+    <a href="architecture.html">architecture</a>
+  </nav>
+</footer>
+
+</body>
+</html>
