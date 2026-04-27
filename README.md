@@ -30,8 +30,8 @@ You'll need: Python 3.11+, a [Supabase](https://supabase.com) project (free tier
 **1. Clone and install**
 
 ```bash
-git clone https://github.com/<your-org>/opas.git
-cd opas/agent
+git clone https://github.com/kriziadelgado88/OPAS.git
+cd OPAS/agent
 pip install -r requirements.txt
 ```
 

@@ -9,8 +9,8 @@ Walkthrough for running OPAS end-to-end on your own machine. For the high-level 
 ## 1. Clone & install
 
 ```bash
-git clone https://github.com/<your-org>/opas.git
-cd opas/agent
+git clone https://github.com/kriziadelgado88/OPAS.git
+cd OPAS/agent
 
 python -m venv .venv
 # macOS / Linux
