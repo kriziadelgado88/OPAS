@@ -113,7 +113,7 @@ If you observe a phrasing the scanner missed — please [open an issue](#) or PR
 - **Anthropic's Constitutional AI** methodology — but narrower (5 rules, not dozens) and deterministic (regex, not LLM judge).
 - **Educational psychology + child-protection guidance** — the patterns and interventions are reviewed against published clinical recommendations, not vibes.
 
-Full grounding citations live in [`docs/the-soul.md`](../docs/the-soul.md) (TBD — coming in v0.2).
+A standalone deep-dive document with full grounding citations, the design rationale, and adoption guidance is on the v0.2 roadmap. For now, the runtime architecture (including how the enforcer wires into the session loop) is in [`../docs/architecture.md`](../docs/architecture.md), and the canonical Soul YAML at `agent/constitutions/minerva.soul.v1.yaml` is the source of truth for the rules and patterns.
 
 ---
 

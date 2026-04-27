@@ -98,7 +98,7 @@ A skill has these top-level sections:
 | `corpus` | yes | source references + grounding policy. |
 | `personalization` | optional | hard-locked vs allowed-to-adapt surfaces. |
 
-For the canonical schema with every field, validation rules, and examples, see [`docs/opas-protocol-spec.md`](../docs/opas-protocol-spec.md) (TBD — coming in v0.2).
+For deeper architectural context — how the prompt assembler composes the YAML, how the model adapter swaps providers, how the session loop works — see [`../docs/architecture.md`](../docs/architecture.md). The canonical YAML field-by-field spec is on the v0.2 roadmap; for now, the working schema lives in the example skill at `skills/api-318-unit-1/skill.opas.yaml` and in the prompt assembler's section logic.
 
 ---
 

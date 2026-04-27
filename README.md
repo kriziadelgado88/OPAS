@@ -25,23 +25,57 @@ You can adopt OPAS without the Soul (e.g., adult corporate L&D where wellbeing i
 
 ## 🚀 Quickstart
 
-You'll need: Python 3.11+, a Supabase project (free tier works), an Anthropic API key.
+You'll need: Python 3.11+, a [Supabase](https://supabase.com) project (free tier works), an [Anthropic API key](https://console.anthropic.com).
+
+**1. Clone and install**
 
 ```bash
 git clone https://github.com/<your-org>/opas.git
 cd opas/agent
 pip install -r requirements.txt
-cp .env.example .env        # fill in keys
-uvicorn app.main:app --reload --port 8001
+```
 
+**2. Set up Supabase**
+
+Follow the walkthrough at [`deployment/supabase/runbook.md`](deployment/supabase/runbook.md) — about 15 minutes. It covers creating the project, copying credentials, applying the schema, and seeding the reference skill.
+
+**3. Configure environment**
+
+```bash
+cp .env.example .env
+# Edit .env: paste in your Supabase URL + service-role key + Anthropic key
+```
+
+**4. Start the runtime**
+
+```bash
+uvicorn app.main:app --reload --port 8001
+```
+
+Confirm it's up at http://localhost:8001/health.
+
+**5. Mint a learner token (so you can log into the demo)**
+
+```bash
+python scripts/mint_learner_tokens.py --email you@example.com
+# copy the printed token
+```
+
+**6. Serve the frontend**
+
+```bash
 # in another terminal
 cd ../app
 python -m http.server 8080
-# Wizard:  http://localhost:8080/opas-wizard.html
-# Student: http://localhost:8080/opas-student.html
 ```
 
-For the full setup walkthrough, the protocol details, and the Soul integration guide, follow the per-primitive READMEs above.
+**7. Open the demo**
+
+- **Wizard** (author a skill): http://localhost:8080/opas-wizard.html
+- **Student** (run the reference skill): paste the token, then go to
+  `http://localhost:8080/opas-student.html?skill_id=hks.api318.unit1.thinking-probabilistically&token=<your-token>`
+
+For the protocol details and the Soul integration guide, see the per-primitive READMEs above. For deeper architecture and limitations, see [`docs/architecture.md`](docs/architecture.md) and [`docs/limitations.md`](docs/limitations.md).
 
 ## 🏗️ Project layout
 
