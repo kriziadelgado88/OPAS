@@ -1,4 +1,4 @@
-# The Soul — Constitutional Safety for Tutoring Agents
+# 🛡️ The Soul — Constitutional Safety for Tutoring Agents
 
 Two files. A YAML constitution defining five always-on rules + 16 distress patterns + 9 harm patterns. And a Python enforcer that scans every learner message and every agent reply against those patterns deterministically.
 
@@ -6,7 +6,7 @@ That's it.
 
 ---
 
-## The five rules
+## ⚖️ The five rules
 
 1. **Distress response** — if the learner expresses distress or frustration ("I can't do this", "I'm stupid"), stop teaching and respond with empathy first.
 2. **No shame** — never use shame, comparison to other students, or pressure as motivation. Frame struggle as growth, not failure.
@@ -18,7 +18,7 @@ These are not configurable per skill. That's the point: a tutoring agent that br
 
 ---
 
-## Why deterministic
+## 🎯 Why deterministic
 
 LLM-based safety judges are probabilistic. They might catch "I want to die" in 99% of phrasings and miss the 1%. For five rules where the cost of a miss is genuine harm to a kid, 99% isn't enough.
 
@@ -28,7 +28,7 @@ The model-level safety training (RLHF, constitutional AI, etc.) still runs above
 
 ---
 
-## The two canonical files
+## 📂 The two canonical files
 
 ```
 agent/app/constitutions/enforcer.py    # the regex scanner
@@ -39,7 +39,7 @@ Copy these two files into any agent project to get the Soul. They have no depend
 
 ---
 
-## Drop it into any agent in 5 lines
+## ⚡ Drop it into any agent in 5 lines
 
 ```python
 from soul import Soul
@@ -99,7 +99,7 @@ The pattern list is intentionally narrow. It catches explicit disclosure phrasin
 
 ---
 
-## Adding patterns over time
+## ➕ Adding patterns over time
 
 Edit `agent/constitutions/minerva.soul.v1.yaml`. The patterns are case-insensitive substring matches. Bump `version` (e.g. `minerva.soul.v1.1`) when you add patterns so consumers can pin a version if they want stability.
 
@@ -107,7 +107,7 @@ If you observe a phrasing the scanner missed — please [open an issue](#) or PR
 
 ---
 
-## What the Soul is grounded in
+## 📚 What the Soul is grounded in
 
 - **UN Convention on the Rights of the Child + UDHR** — the human-rights backbone for child-facing AI. Article 19 (protection from harm) and Article 28 (right to education) are the core anchors.
 - **Anthropic's Constitutional AI** methodology — but narrower (5 rules, not dozens) and deterministic (regex, not LLM judge).
@@ -117,7 +117,7 @@ Full grounding citations live in [`docs/the-soul.md`](../docs/the-soul.md) (TBD 
 
 ---
 
-## When NOT to use it
+## ⛔ When NOT to use it
 
 The Soul is tuned for student-facing tutoring. It's probably wrong for:
 
@@ -129,7 +129,7 @@ In those cases you want a **different constitution**, not no constitution. The g
 
 ---
 
-## Soul context extensions (proposal — v0.2)
+## 🌱 Soul context extensions (proposal — v0.2)
 
 The Soul is **additive-only**. Future context-specific extensions would add detection patterns and rules without removing any of the five core rules:
 
@@ -144,7 +144,7 @@ These ship as separate YAML files that compose with the core constitution. PR yo
 
 ---
 
-## Limitations
+## 🚧 Limitations
 
 - **English-only** in the current pattern lists. Multilingual patterns are a near-term priority.
 - **Substring matching** — won't catch creative misspellings or l33tspeak. The threat model assumes good-faith learner phrasings, not adversarial input.
@@ -152,7 +152,7 @@ These ship as separate YAML files that compose with the core constitution. PR yo
 
 ---
 
-## License
+## 📄 License
 
 MIT. See [`../LICENSE`](../LICENSE). The Soul is permissively licensed because we want it adopted as widely as possible — the more student-facing AI agents that route through a constitutional layer, the better.
 

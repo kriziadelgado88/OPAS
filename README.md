@@ -1,9 +1,9 @@
-# OPAS · The Soul
+# 🧱 OPAS · The Soul
 
 Two open-source primitives for safe, portable AI tutoring agents.
 
-- **[OPAS](opas/README.md)** — a protocol for authoring tutoring skills once and running them on any LLM.
-- **[The Soul](soul/README.md)** — a constitutional safety layer for any agent that talks to students.
+- 🎓 **[OPAS](opas/README.md)** — a protocol for authoring tutoring skills once and running them on any LLM.
+- 🛡️ **[The Soul](soul/README.md)** — a constitutional safety layer for any agent that talks to students.
 
 Each primitive has its own README. Use both, or use either independently.
 
@@ -14,7 +14,7 @@ Each primitive has its own README. Use both, or use either independently.
                                                   AND every agent reply
 ```
 
-## Why two primitives, one repo
+## ✨ Why two primitives, one repo
 
 We built these together while shipping a tutoring product (Poppy) and noticed they're each useful in isolation:
 
@@ -23,7 +23,7 @@ We built these together while shipping a tutoring product (Poppy) and noticed th
 
 You can adopt OPAS without the Soul (e.g., adult corporate L&D where wellbeing intercepts aren't relevant), or the Soul without OPAS (e.g., you're already running your own tutoring stack and just want the safety layer). Both work standalone.
 
-## Quickstart
+## 🚀 Quickstart
 
 You'll need: Python 3.11+, a Supabase project (free tier works), an Anthropic API key.
 
@@ -43,7 +43,7 @@ python -m http.server 8080
 
 For the full setup walkthrough, the protocol details, and the Soul integration guide, follow the per-primitive READMEs above.
 
-## Project layout
+## 🏗️ Project layout
 
 ```
 opas/
@@ -67,11 +67,11 @@ opas/
 └── README.md                         # you are here
 ```
 
-## License
+## 📄 License
 
 MIT. Copy freely, modify freely, ship freely. See [LICENSE](LICENSE).
 
-## Credits & acknowledgments
+## 🙌 Credits & acknowledgments
 
 Built as part of Project Minerva-Poppy by Lucas Kuziv and Krizia Delgado.
 

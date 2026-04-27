@@ -1,10 +1,10 @@
-# OPAS — Portable Tutoring Skills
+# 🎓 OPAS — Portable Tutoring Skills
 
 A protocol for authoring AI tutoring skills as YAML and running them on any LLM. The skill is data, not code. The LLM is swappable.
 
 ---
 
-## The thesis
+## 💡 The thesis
 
 Tutoring quality lives in the skill, not the prompt. A good skill encodes:
 
@@ -19,7 +19,7 @@ Every skill is portable. Switch from Claude to Gemini by changing one env var; t
 
 ---
 
-## Hello, world
+## 👋 Hello, world
 
 A minimal skill (`skills/api-318-unit-1/skill.opas.yaml` is the reference example):
 
@@ -70,7 +70,7 @@ Drop this into Supabase (or load from disk for local dev), point a learner at it
 
 ---
 
-## Why this isn't just "a system prompt"
+## 🤔 Why this isn't just "a system prompt"
 
 Three things a system prompt can't give you that OPAS does:
 
@@ -82,7 +82,7 @@ These belong in the skill (data) so they survive prompt-engineering churn, not i
 
 ---
 
-## The skill YAML schema (high level)
+## 📋 The skill YAML schema (high level)
 
 A skill has these top-level sections:
 
@@ -102,7 +102,7 @@ For the canonical schema with every field, validation rules, and examples, see [
 
 ---
 
-## The reference runtime
+## ⚙️ The reference runtime
 
 Included: a FastAPI service that loads skills from Supabase, runs sessions, emits events, and serves a generic web client (`opas-student.html`) and authoring wizard (`opas-wizard.html`).
 
@@ -112,7 +112,7 @@ Included: a FastAPI service that loads skills from Supabase, runs sessions, emit
 - **Storage:** Supabase. Migrations in `deployment/supabase/`.
 - **Sample skill:** `skills/api-318-unit-1/skill.opas.yaml` — the protocol example. The corpus content (HKS course materials) is not redistributed; you'll need to point at your own.
 
-### Running it
+### 🚀 Running it
 
 ```bash
 cd agent
@@ -130,7 +130,7 @@ Student client: http://localhost:8080/opas-student.html
 
 ---
 
-## The pedagogy catalogue
+## 📚 The pedagogy catalogue
 
 Four templates ship in `agent/app/routers/pedagogies.py`:
 
@@ -143,7 +143,7 @@ Adding a fifth is small — see [Contributing](#contributing).
 
 ---
 
-## When to use OPAS vs. just a system prompt
+## ✅ When to use OPAS vs. just a system prompt
 
 Use a system prompt when:
 
@@ -160,7 +160,7 @@ Use OPAS when:
 
 ---
 
-## What's production-ready vs. demo-quality
+## 🚧 What's production-ready vs. demo-quality
 
 **Production-ready**
 
@@ -182,7 +182,7 @@ Use OPAS when:
 
 ---
 
-## Contributing
+## 🤝 Contributing
 
 Most-needed contributions, ranked:
 
@@ -193,6 +193,6 @@ Most-needed contributions, ranked:
 
 ---
 
-## License
+## 📄 License
 
 MIT. See [`../LICENSE`](../LICENSE).
