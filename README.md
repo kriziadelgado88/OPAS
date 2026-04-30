@@ -141,6 +141,6 @@ The hosted **Poppy** product (the brand, the deployed service at our institution
 
 ## 🙌 Credits & acknowledgments
 
-Built as part of Project Minerva-Poppy by **Lucas Kuziv** and **Krizia Delgado** — SLAI Cohort 2026, Berkman Klein Center for Internet & Society.
+Built as part of MIT AI Studio Spring 2026 by **Lucas Kuziv** and **Krizia Delgado** 
 
 Standing on the shoulders of: Vygotsky's ZPD, Black & Wiliam's formative assessment work, the Anthropic Constitutional AI team, UNESCO's AI in Education guidance, and every teacher whose practice this is trying to formalize.
