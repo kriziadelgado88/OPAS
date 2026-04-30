@@ -3,33 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="opas-runtime" content="http://localhost:8001">
+<meta name="opas-runtime" content="https://opas-runtime.onrender.com">
 <title>OPAS — Onboarding</title>
+<link rel="stylesheet" href="poppy-theme.css">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --brand: #1a3a5c;
-    --brand-hover: #254f7a;
-    --brand-light: #e8f0f8;
-    --accent: #c8a951;
-    --bg: #f8fafc;
-    --card-bg: #fff;
-    --border: #dde3ea;
-    --border-strong: #c5cdd6;
-    --text: #1c2b3a;
-    --muted: #64748b;
-    --error-bg: #fef2f2;
-    --error-fg: #b42318;
-    --error-border: #fecaca;
+    --brand: var(--blue);
+    --brand-hover: var(--blue);
+    --brand-light: rgba(64,112,192,.12);
+    --accent: var(--gold);
+    --card-bg: var(--bg2);
+    --border: var(--ink-15);
+    --border-strong: var(--ink-30);
+    --text: var(--ink);
+    --muted: var(--ink-50);
+    --error-bg: rgba(204,72,72,.08);
+    --error-fg: var(--red);
+    --error-border: var(--red);
     --radius: 12px;
-    --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --font: var(--font-body);
   }
 
   body {
     font-family: var(--font);
     color: var(--text);
-    background: linear-gradient(180deg, #f8fafc 0%, #eef3f9 100%);
+    background: linear-gradient(180deg, var(--bg) 0%, #eef3f9 100%);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -38,7 +38,7 @@
   /* ── TOP BAR ─────────────────────────────────────────────── */
   #topbar {
     background: var(--brand);
-    color: #fff;
+    color: var(--bg2);
     padding: 0 20px;
     height: 52px;
     display: flex;
@@ -67,7 +67,7 @@
     padding: 4px 6px;
     border-radius: 6px;
   }
-  #topbar .skip-all:hover { color: #fff; background: rgba(255,255,255,0.12); }
+  #topbar .skip-all:hover { color: var(--bg2); background: rgba(255,255,255,0.12); }
 
   /* ── PAGE LAYOUT ─────────────────────────────────────────── */
   main {
@@ -151,12 +151,12 @@
   }
   .btn-primary {
     background: var(--brand);
-    color: #fff;
+    color: var(--bg2);
     border-color: var(--brand);
   }
   .btn-primary:hover:not(:disabled) { background: var(--brand-hover); border-color: var(--brand-hover); }
   .btn-secondary {
-    background: #fff;
+    background: var(--bg2);
     color: var(--brand);
     border-color: var(--border-strong);
   }
@@ -209,6 +209,8 @@
     padding: 9px 12px;
     font-family: var(--font);
     font-size: 14px;
+    color: var(--text);
+    background: var(--bg2);
     margin-top: 6px;
     outline: none;
     transition: border-color 0.15s;
@@ -227,7 +229,7 @@
     font-family: var(--font);
     font-size: 13.5px;
     font-weight: 500;
-    background: #fff;
+    background: var(--bg2);
     color: var(--text);
     border: 1px solid var(--border);
     border-radius: 999px;
@@ -239,7 +241,7 @@
   .chip:hover { border-color: var(--brand); }
   .chip.active {
     background: var(--brand);
-    color: #fff;
+    color: var(--bg2);
     border-color: var(--brand);
   }
   .chip.add {
@@ -260,6 +262,8 @@
     padding: 8px 12px;
     font-family: var(--font);
     font-size: 13.5px;
+    color: var(--text);
+    background: var(--bg2);
     outline: none;
     transition: border-color 0.15s;
   }
@@ -308,7 +312,7 @@
     appearance: none;
     width: 22px; height: 22px;
     border-radius: 50%;
-    background: #fff;
+    background: var(--bg2);
     border: 2px solid var(--brand);
     margin-top: -8px;
     box-shadow: 0 2px 6px rgba(26,58,92,0.18);
@@ -317,7 +321,7 @@
   input[type="range"].bw-slider::-moz-range-thumb {
     width: 22px; height: 22px;
     border-radius: 50%;
-    background: #fff;
+    background: var(--bg2);
     border: 2px solid var(--brand);
     box-shadow: 0 2px 6px rgba(26,58,92,0.18);
     cursor: pointer;
@@ -349,6 +353,7 @@
     font-family: var(--font);
     font-size: 14px;
     color: var(--text);
+    background: var(--bg2);
     outline: none;
     transition: border-color 0.15s;
   }
@@ -372,8 +377,8 @@
     width: 56px; height: 56px;
     margin: 4px auto 0;
     border-radius: 50%;
-    background: #ecfdf3;
-    color: #067647;
+    background: rgba(72,160,96,.08);
+    color: var(--green);
     font-size: 28px;
     font-weight: 700;
     line-height: 56px;
@@ -391,7 +396,15 @@
 <body>
 
 <header id="topbar">
-  <span class="logo">OPAS</span>
+  <span class="logo"><svg viewBox="0 0 60 50" width="40" height="34" aria-hidden="true">
+  <circle cx="14" cy="8"  r="8"   fill="#4070C0"/>
+  <circle cx="30" cy="3"  r="8"   fill="#D4B040"/>
+  <circle cx="46" cy="8"  r="8"   fill="#CC4848"/>
+  <circle cx="16" cy="8"  r="2.5" fill="#111"/>
+  <circle cx="44" cy="8"  r="2.5" fill="#111"/>
+  <circle cx="20" cy="28" r="6"   fill="#48A060"/>
+  <circle cx="40" cy="28" r="6"   fill="#D48040"/>
+</svg><span style="font-family:var(--font-display);font-weight:900;font-size:22px;text-transform:lowercase;letter-spacing:-0.04em;color:var(--ink);">poppy</span></span>
   <span class="accent-dot"></span>
   <span class="label">Welcome</span>
   <span class="spacer"></span>
@@ -399,7 +412,29 @@
 </header>
 
 <main>
-  <section class="card" aria-live="polite">
+
+  <!-- ── ROLE GATE: pre-onboarding step shown to everyone ───────────────── -->
+  <section class="card" id="role-gate" aria-live="polite">
+    <div class="step-title" style="text-align:center;font-size:24px;margin-bottom:8px">Welcome to OPAS</div>
+    <p class="step-sub" style="text-align:center;margin-bottom:32px">Tell us how you'll use the platform.</p>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center">
+      <button type="button" id="role-teacher-btn"
+        style="flex:1;min-width:220px;max-width:280px;padding:24px 20px;background:var(--bg2);border:2px solid var(--border);border-radius:12px;color:var(--text);cursor:pointer;font-family:var(--font);transition:border-color .15s,transform .1s;text-align:left">
+        <div style="font-size:32px;margin-bottom:8px">🧑‍🏫</div>
+        <div style="font-weight:700;font-size:17px;margin-bottom:4px">I'm a teacher</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.5">Build agents from your course materials and share them with students.</div>
+      </button>
+      <button type="button" id="role-student-btn"
+        style="flex:1;min-width:220px;max-width:280px;padding:24px 20px;background:var(--bg2);border:2px solid var(--border);border-radius:12px;color:var(--text);cursor:pointer;font-family:var(--font);transition:border-color .15s,transform .1s;text-align:left">
+        <div style="font-size:32px;margin-bottom:8px">🎓</div>
+        <div style="font-weight:700;font-size:17px;margin-bottom:4px">I'm a student</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.5">Learn with an AI tutor grounded in your course readings.</div>
+      </button>
+    </div>
+    <div id="role-error" style="display:none;color:var(--error-fg);font-size:13px;margin-top:14px;text-align:center"></div>
+  </section>
+
+  <section class="card" id="learner-onboarding" style="display:none" aria-live="polite">
 
     <!-- progress dots -->
     <div class="stepper" role="progressbar" aria-valuemin="1" aria-valuemax="3" aria-valuenow="1" id="stepper">
@@ -485,8 +520,35 @@
           <span id="bw-label-low">Concise</span>
           <span id="bw-label-high" class="end-active">Rich detail</span>
         </div>
-        <input type="range" class="bw-slider" id="bw-slider" min="0" max="1" step="1" value="1">
+        <input type="range" class="bw-slider" id="bw-slider" min="0" max="1" step="0.01" value="1">
         <div class="bw-readout" id="bw-readout">Your tutor will give <strong>rich, expansive</strong> answers.</div>
+      </div>
+
+      <div class="voice-row" style="margin-top:18px;">
+        <label style="display:block;font-family:var(--font-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-50);margin-bottom:8px;">Choose your tutor's voice</label>
+        <div id="voice-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;">
+          <label class="voice-option" style="display:flex;align-items:center;gap:6px;padding:10px;background:var(--bg2);border:1px solid var(--ink-15);border-radius:8px;cursor:pointer;font-size:13px;">
+            <input type="radio" name="voice" value="EXAVITQu4vr4xnSDxMaL" checked>
+            <span>Sarah</span>
+            <button type="button" data-voice-preview="EXAVITQu4vr4xnSDxMaL" title="Preview" style="margin-left:auto;background:transparent;border:1px solid var(--ink-30);color:var(--ink-70);font-family:var(--font-mono);font-size:10px;padding:3px 8px;border-radius:6px;cursor:pointer;">▶</button>
+          </label>
+          <label class="voice-option" style="display:flex;align-items:center;gap:6px;padding:10px;background:var(--bg2);border:1px solid var(--ink-15);border-radius:8px;cursor:pointer;font-size:13px;">
+            <input type="radio" name="voice" value="TX3LPaxmHKxFdv7VOQHJ">
+            <span>Liam</span>
+            <button type="button" data-voice-preview="TX3LPaxmHKxFdv7VOQHJ" title="Preview" style="margin-left:auto;background:transparent;border:1px solid var(--ink-30);color:var(--ink-70);font-family:var(--font-mono);font-size:10px;padding:3px 8px;border-radius:6px;cursor:pointer;">▶</button>
+          </label>
+          <label class="voice-option" style="display:flex;align-items:center;gap:6px;padding:10px;background:var(--bg2);border:1px solid var(--ink-15);border-radius:8px;cursor:pointer;font-size:13px;">
+            <input type="radio" name="voice" value="XB0fDUnXU5powFXDhCwa">
+            <span>Charlotte</span>
+            <button type="button" data-voice-preview="XB0fDUnXU5powFXDhCwa" title="Preview" style="margin-left:auto;background:transparent;border:1px solid var(--ink-30);color:var(--ink-70);font-family:var(--font-mono);font-size:10px;padding:3px 8px;border-radius:6px;cursor:pointer;">▶</button>
+          </label>
+          <label class="voice-option" style="display:flex;align-items:center;gap:6px;padding:10px;background:var(--bg2);border:1px solid var(--ink-15);border-radius:8px;cursor:pointer;font-size:13px;">
+            <input type="radio" name="voice" value="onwK4e9ZLuTAKqWW03F9">
+            <span>Daniel</span>
+            <button type="button" data-voice-preview="onwK4e9ZLuTAKqWW03F9" title="Preview" style="margin-left:auto;background:transparent;border:1px solid var(--ink-30);color:var(--ink-70);font-family:var(--font-mono);font-size:10px;padding:3px 8px;border-radius:6px;cursor:pointer;">▶</button>
+          </label>
+        </div>
+        <audio id="voice-preview-audio" style="display:none"></audio>
       </div>
 
       <div class="tz-row">
@@ -526,6 +588,88 @@
     return;
   }
   const authHeaders = (extra = {}) => ({ 'Authorization': 'Bearer ' + TOKEN, ...extra });
+
+  // ── Role gate (teacher | student) — runs before learner onboarding ──
+  const roleGateEl = document.getElementById('role-gate');
+  const learnerOnbEl = document.getElementById('learner-onboarding');
+  const roleErrEl = document.getElementById('role-error');
+  const roleTeacherBtn = document.getElementById('role-teacher-btn');
+  const roleStudentBtn = document.getElementById('role-student-btn');
+
+  // Visual hover affordance for the role buttons.
+  [roleTeacherBtn, roleStudentBtn].forEach((btn) => {
+    btn.addEventListener('mouseenter', () => { btn.style.borderColor = 'var(--brand)'; btn.style.transform = 'translateY(-2px)'; });
+    btn.addEventListener('mouseleave', () => { btn.style.borderColor = 'var(--border)'; btn.style.transform = 'none'; });
+  });
+
+  function showRoleError(msg) {
+    roleErrEl.textContent = msg;
+    roleErrEl.style.display = 'block';
+  }
+
+  // Teacher path: save defaults to profile_prefs (so they're not asked again),
+  // store role locally, and bounce straight to the agents catalogue.
+  roleTeacherBtn.addEventListener('click', async () => {
+    roleTeacherBtn.disabled = true; roleStudentBtn.disabled = true;
+    const originalText = roleTeacherBtn.querySelector('div:nth-child(2)').textContent;
+    roleTeacherBtn.querySelector('div:nth-child(2)').textContent = 'Setting up…';
+    try {
+      const res = await fetch(RUNTIME + '/me/profile_prefs', {
+        method: 'PUT',
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({
+          language: 'en',
+          interests: ['teaching'],
+          bandwidth: 'high',
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+        }),
+      });
+      if (res.status === 401) {
+        localStorage.removeItem('opas_learner_token');
+        window.location.replace('opas-signup.html');
+        return;
+      }
+      if (!res.ok) {
+        let detail = 'HTTP ' + res.status;
+        try { const j = await res.json(); if (j && j.detail) detail = j.detail; } catch {}
+        throw new Error(detail);
+      }
+      localStorage.setItem('opas_role', 'teacher');
+      // Send freshly-onboarded teachers straight to the Wizard (Studio).
+      // It's where the OPAS protocol is most visible — live YAML preview
+      // emerges as they fill fields. Lucas's testing surfaced that landing
+      // on the bare skills catalogue felt like an unfinished hand-off.
+      window.location.replace('opas-wizard.html');
+    } catch (err) {
+      roleTeacherBtn.disabled = false; roleStudentBtn.disabled = false;
+      roleTeacherBtn.querySelector('div:nth-child(2)').textContent = originalText;
+      showRoleError('Could not save: ' + (err.message || String(err)));
+    }
+  });
+
+  // Student path: hide the gate, show the existing onboarding flow.
+  roleStudentBtn.addEventListener('click', () => {
+    localStorage.setItem('opas_role', 'student');
+    roleGateEl.style.display = 'none';
+    learnerOnbEl.style.display = '';
+  });
+
+  // If the user has already chosen a role (returning visit, e.g. clicked
+  // "Edit profile"), skip the role-gate. Lucas reported that re-asking
+  // role on Edit Profile (and accidentally clicking Teacher again) wiped
+  // his previously-selected student preferences via the teacher fast-track
+  // PUT /me/profile_prefs with hardcoded defaults.
+  const cachedRole = localStorage.getItem('opas_role');
+  if (cachedRole === 'teacher') {
+    // Teachers don't see the student preference form — go straight to the
+    // catalogue. (Future: route to opas-wizard.html for the deeper studio.)
+    window.location.replace('opas-skills.html');
+  } else if (cachedRole === 'student') {
+    // Skip the gate; the existing preferences form will load with values
+    // pre-populated by preloadFromMe(), so prior choices aren't overwritten.
+    roleGateEl.style.display = 'none';
+    learnerOnbEl.style.display = '';
+  }
 
   // ── Return-target resolution ─────────────────────────────────
   // ?return=<page>  → safe whitelist of in-app pages we can bounce back to.
@@ -695,7 +839,7 @@
 
   // ── Step 3: bandwidth + timezone ─────────────────────────────
   function updateBwReadout() {
-    const isHigh = bwSlider.value === '1';
+    const isHigh = parseFloat(bwSlider.value) >= 0.5;
     state.bandwidth = isHigh ? 'high' : 'low';
     if (isHigh) {
       bwReadout.innerHTML = 'Your tutor will give <strong>rich, expansive</strong> answers.';
@@ -868,6 +1012,44 @@
         if (prefs.timezone !== browserTZ) tzHint.textContent = 'Custom timezone set.';
       }
     } catch (_) { /* best-effort */ }
+  })();
+
+  // ── Voice picker ─────────────────────────────────────────────────────────
+  // Persists selection to localStorage('opas_voice_id') on change. Preview
+  // hits the runtime's /voice/preview endpoint (added in voice.py) which
+  // streams ElevenLabs audio for the chosen voice.
+  (function initVoicePicker() {
+    const stored = localStorage.getItem('opas_voice_id');
+    const radios = document.querySelectorAll('input[name="voice"]');
+    if (stored) {
+      const match = Array.from(radios).find(r => r.value === stored);
+      if (match) match.checked = true;
+    }
+    radios.forEach(r => r.addEventListener('change', () => {
+      if (r.checked) localStorage.setItem('opas_voice_id', r.value);
+    }));
+
+    const audio = document.getElementById('voice-preview-audio');
+    document.querySelectorAll('[data-voice-preview]').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const voiceId = btn.getAttribute('data-voice-preview');
+        try {
+          const res = await fetch(
+            `${RUNTIME}/voice/preview?voice_id=${encodeURIComponent(voiceId)}`,
+            { headers: authHeaders() }
+          );
+          if (!res.ok) throw new Error('preview failed');
+          const blob = await res.blob();
+          audio.src = URL.createObjectURL(blob);
+          audio.play().catch(() => {});
+        } catch (err) {
+          // Fail quietly — preview is non-critical UX
+          console.warn('voice preview unavailable:', err.message);
+        }
+      });
+    });
   })();
 })();
 </script>

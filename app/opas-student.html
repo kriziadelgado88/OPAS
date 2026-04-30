@@ -3,31 +3,41 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="opas-runtime" content="http://localhost:8001">
-<title>OPAS — Thinking Probabilistically</title>
+<meta name="opas-runtime" content="https://opas-runtime.onrender.com">
+<title>poppy — Thinking Probabilistically</title>
+<link rel="stylesheet" href="poppy-theme.css">
+<!-- KaTeX: typeset math. -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<!-- Rough.js: chalk-style SVG. -->
+<script src="https://cdn.jsdelivr.net/npm/roughjs@4.6.6/bundled/rough.min.js"></script>
+<!-- Poppy blackboard module. -->
+<link rel="stylesheet" href="blackboard/blackboard.css">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+  /* Legacy local vars are now aliased to Poppy theme tokens. Existing rules
+     below keep working; the look becomes dark + chalk + signal-color. */
   :root {
-    --brand: #1a3a5c;
-    --brand-light: #e8f0f8;
-    --accent: #c8a951;
-    --agent-bg: #f0f4f8;
-    --user-bg: #1a3a5c;
-    --user-fg: #fff;
-    --border: #dde3ea;
-    --text: #1c2b3a;
-    --muted: #64748b;
-    --highlight: #ffe066;
-    --highlight-fade: rgba(255, 224, 102, 0);
-    --radius: 12px;
-    --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --brand:        var(--blue);
+    --brand-light:  var(--ink-15);
+    --accent:       var(--gold);
+    --agent-bg:     var(--bg2);
+    --user-bg:      var(--blue);
+    --user-fg:      var(--ink);
+    --border:       var(--ink-15);
+    --text:         var(--ink);
+    --muted:        var(--ink-50);
+    --highlight:    var(--gold);
+    --highlight-fade: rgba(212, 176, 64, 0);
+    --radius:       12px;
+    --font:         var(--font-body);
   }
 
   body {
-    font-family: var(--font);
-    color: var(--text);
-    background: #f8fafc;
+    font-family: var(--font-body);
+    color: var(--ink);
+    background: var(--bg);
     height: 100vh;
     display: flex;
     flex-direction: column;
@@ -36,18 +46,35 @@
 
   /* ── TOP BAR ─────────────────────────────────────────── */
   #topbar {
-    background: var(--brand);
-    color: #fff;
+    background: var(--bg);
+    color: var(--ink);
+    border-bottom: 1px solid var(--ink-15);
     padding: 0 20px;
-    height: 52px;
+    height: 56px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
     flex-shrink: 0;
     z-index: 10;
   }
-  #topbar .logo { font-weight: 700; font-size: 15px; letter-spacing: .04em; opacity: .9; }
-  #topbar .skill-name { font-size: 13px; opacity: .65; }
+  #topbar .logo {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 22px;
+    text-transform: lowercase;
+    letter-spacing: -0.04em;
+    color: var(--ink);
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+  #topbar .logo svg { display: block; }
+  #topbar .skill-name {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-50);
+    letter-spacing: .02em;
+  }
   #topbar .spacer { flex: 1; }
   #topbar .badge {
     font-size: 11px; font-weight: 600; letter-spacing: .06em;
@@ -72,11 +99,22 @@
   }
 
   /* ── CHAT PANE ───────────────────────────────────────── */
+  /* 4-pane layout is the default in BOTH bare URL and ?demo=1 mode.
+     The only difference between them is the right-most pane:
+       bare URL  → #concept-map (concept review)
+       ?demo=1   → #yaml-pane    (live YAML highlights) */
   #chat-pane {
-    flex: 1;
+    flex: 0 0 30%;
     display: flex;
     flex-direction: column;
+    min-width: 340px;
+    overflow-y: auto;
+    order: 1;
+  }
+  #blackboard-pane {
+    flex: 1 1 60%;
     min-width: 0;
+    order: 2;
   }
 
   #messages {
@@ -88,10 +126,6 @@
     gap: 16px;
     scroll-behavior: smooth;
   }
-
-  /* center messages in student mode */
-  body:not(.demo) #messages { align-items: center; }
-  body:not(.demo) .bubble-wrap { width: 100%; max-width: 720px; }
 
   .bubble-wrap { display: flex; flex-direction: column; gap: 4px; }
   .bubble-wrap.user { align-items: flex-end; }
@@ -106,11 +140,23 @@
     white-space: pre-wrap;
     word-break: break-word;
   }
-  .bubble.agent { background: var(--agent-bg); color: var(--text); border-bottom-left-radius: 4px; }
-  .bubble.user  { background: var(--user-bg);  color: var(--user-fg); border-bottom-right-radius: 4px; }
+  .bubble.agent { background: var(--bg2); color: var(--ink); border: 1px solid var(--ink-15); border-bottom-left-radius: 4px; }
+  /* Citation brackets [Source, §section] — small, italic, gold so they read
+     as a footnote-style anchor rather than ugly inline text. */
+  .bubble.agent .citation {
+    font-size: 11.5px;
+    font-style: italic;
+    color: var(--gold);
+    opacity: 0.75;
+    margin: 0 1px;
+    white-space: nowrap;
+  }
+  .bubble.agent strong { font-weight: 700; color: var(--ink); }
+  .bubble.agent em { font-style: italic; color: var(--ink); }
+  .bubble.user  { background: var(--blue); color: var(--ink); border-bottom-right-radius: 4px; }
   .bubble.system {
-    background: #fef9ec; border: 1px solid #f0dfa0;
-    color: #7a5c00; font-style: italic; font-size: 13px;
+    background: rgba(212,176,64,.08); border: 1px solid var(--gold);
+    color: var(--gold); font-style: italic; font-size: 13px;
     border-radius: 8px; padding: 10px 14px; max-width: 100%;
   }
 
@@ -131,59 +177,301 @@
   /* ── INPUT BAR ───────────────────────────────────────── */
   #input-area {
     padding: 12px 20px 16px;
-    background: #fff;
-    border-top: 1px solid var(--border);
+    background: var(--bg);
+    border-top: 1px solid var(--ink-15);
     display: flex;
     align-items: flex-end;
     gap: 10px;
   }
-  body:not(.demo) #input-area { justify-content: center; }
-  body:not(.demo) #input-inner { width: 100%; max-width: 720px; display: flex; gap: 10px; }
-  body.demo #input-area { flex-direction: row; }
-
   #input-inner { display: contents; }
 
   #user-input {
     flex: 1;
     resize: none;
-    border: 1px solid var(--border);
+    background: var(--bg2);
+    border: 1px solid var(--ink-15);
     border-radius: 10px;
     padding: 10px 14px;
     font-size: 15px;
-    font-family: var(--font);
+    font-family: var(--font-body);
     line-height: 1.5;
     outline: none;
     min-height: 44px;
     max-height: 160px;
     overflow-y: auto;
-    color: var(--text);
+    color: var(--ink);
     transition: border-color .15s;
   }
-  #user-input:focus { border-color: var(--brand); }
-  #user-input:disabled { background: #f5f5f5; cursor: not-allowed; }
+  #user-input::placeholder { color: var(--ink-30); }
+  #user-input:focus { border-color: var(--blue); }
+  #user-input:disabled { background: var(--bg2); opacity: .5; cursor: not-allowed; }
 
   #send-btn {
-    background: var(--brand); color: #fff;
+    background: var(--blue); color: var(--ink);
     border: none; border-radius: 10px;
     padding: 0 18px; height: 44px;
-    font-size: 14px; font-weight: 600;
-    cursor: pointer; transition: background .15s; flex-shrink: 0;
+    font-family: var(--font-display);
+    font-size: 13px; font-weight: 700;
+    text-transform: lowercase;
+    letter-spacing: 0.02em;
+    cursor: pointer; transition: filter .15s; flex-shrink: 0;
   }
-  #send-btn:hover { background: #254f7a; }
+  #send-btn:hover { filter: brightness(1.12); }
   #send-btn:disabled { opacity: .45; cursor: default; }
 
-  /* ── YAML PANE (demo mode only) ──────────────────────── */
+  /* ── YAML PANE (?demo=1 only — replaced by #concept-map on bare URL) ─── */
   #yaml-pane {
-    display: none;
-    width: 50%;
+    display: none;       /* hidden by default; body.demo override below shows it */
+    width: 360px;
     flex-shrink: 0;
-    border-left: 1px solid var(--border);
+    border-left: 1px solid var(--ink-15);
     background: #1e2433;
     overflow-y: auto;
-    padding: 20px;
+    padding: 14px;
+    order: 4;
   }
-  body.demo #yaml-pane { display: block; }
-  body.demo #chat-pane { width: 50%; flex: none; }
+  body.demo #yaml-pane    { display: block !important; visibility: visible !important; }
+  body.demo #yaml-content { display: block !important; visibility: visible !important; }
+  body.demo #yaml-pane h3 { font-size: 11px; margin-bottom: 10px; }
+  body.demo #yaml-content {
+    font-size: 11px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+  body.demo #yaml-content .yaml-line { white-space: pre-wrap; }
+
+  /* ── CONCEPT REVIEW PANE (bare URL — replaces YAML pane in production) ── */
+  #concept-map {
+    display: block;      /* visible by default; body.demo override hides it */
+    width: 360px;
+    flex-shrink: 0;
+    border-left: 1px solid var(--ink-15);
+    background: var(--bg);
+    overflow-y: auto;
+    padding: 14px;
+    order: 4;
+    font-family: var(--font-body);
+  }
+  body.demo #concept-map { display: none; }
+  #concept-map h3 {
+    color: var(--gold); font-size: 11px; font-weight: 600;
+    letter-spacing: .08em; text-transform: uppercase;
+    margin-bottom: 12px; font-family: var(--font-mono);
+  }
+  .cm-skill-name {
+    font-family: var(--font-display); font-weight: 700; font-size: 15px;
+    color: var(--ink); letter-spacing: -0.01em; margin-bottom: 14px;
+    line-height: 1.3;
+  }
+  .cm-slo-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+  .cm-slo {
+    padding: 10px 12px;
+    background: var(--bg2);
+    border: 1px solid var(--ink-15);
+    border-left: 3px solid var(--ink-30);
+    border-radius: 8px;
+    transition: all .25s;
+  }
+  .cm-slo .cm-slo-head {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; line-height: 1.4;
+  }
+  .cm-slo .cm-slo-mark {
+    width: 14px; height: 14px; flex-shrink: 0;
+    border-radius: 50%; border: 1.5px solid var(--ink-30);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 9px; color: transparent;
+  }
+  .cm-slo .cm-slo-id {
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--ink-50); letter-spacing: .04em;
+    flex-shrink: 0;
+  }
+  .cm-slo .cm-slo-text { color: var(--ink-70); }
+  .cm-slo.current {
+    border-left-color: var(--gold);
+    background: rgba(212,176,64,.06);
+  }
+  .cm-slo.current .cm-slo-mark { border-color: var(--gold); background: var(--gold); }
+  .cm-slo.current .cm-slo-text { color: var(--ink); font-weight: 500; }
+  .cm-slo.current .cm-slo-id { color: var(--gold); }
+  .cm-slo.covered {
+    border-left-color: var(--green);
+    opacity: 0.85;
+  }
+  .cm-slo.covered .cm-slo-mark {
+    border-color: var(--green); background: var(--green); color: var(--bg);
+  }
+  .cm-slo.covered .cm-slo-mark::after { content: '✓'; color: var(--bg); font-weight: 700; }
+  .cm-slo.covered .cm-slo-text { color: var(--ink-70); }
+  .cm-slo .cm-concepts {
+    display: none;
+    margin-top: 8px; padding-left: 22px;
+    flex-direction: column; gap: 4px;
+  }
+  .cm-slo.current .cm-concepts { display: flex; }
+  .cm-concept {
+    font-size: 11px; color: var(--ink-50);
+    padding-left: 8px; border-left: 1px dashed var(--ink-15);
+    line-height: 1.4;
+  }
+  .cm-concept.touched { color: var(--ink); }
+  .cm-concept.recent {
+    color: var(--gold);
+    animation: cm-glow 1.8s ease-out;
+  }
+  @keyframes cm-glow {
+    0%,30% { color: var(--gold); text-shadow: 0 0 12px rgba(212,176,64,.6); }
+    100%   { color: var(--ink); text-shadow: none; }
+  }
+  .cm-status {
+    margin-top: 16px;
+    padding: 10px 12px;
+    background: var(--bg2);
+    border: 1px solid var(--ink-15);
+    border-radius: 8px;
+    font-family: var(--font-mono);
+    font-size: 11px; color: var(--ink-70);
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .cm-status .cm-status-row { display: flex; justify-content: space-between; }
+  .cm-status .cm-status-label {
+    color: var(--ink-50); letter-spacing: .04em;
+    text-transform: uppercase; font-size: 10px;
+  }
+  .cm-status .cm-status-val { color: var(--ink); }
+
+  /* Layout-shared rules (apply to BOTH bare URL and ?demo=1) ───────────── */
+  #blackboard-pane .bb-map        { display: none; }
+  #blackboard-pane .bb-draw-area  { display: none; }
+  #blackboard-pane .bb-timeline   { display: none; }
+  #blackboard-pane .bb-rewards {
+    display: flex !important;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 14px;
+    border-top: 1px solid var(--ink-15, rgba(242,239,230,.15));
+    background: rgba(255,255,255,.02);
+  }
+  #blackboard-pane .bb-mastery-cluster { min-width: 200px; font-size: 11px; }
+  #blackboard-pane .bb-wins-strip { gap: 4px; flex: 1; }
+  #blackboard-pane .bb-win-chip {
+    font-size: 10.5px; padding: 2px 8px; border-radius: 10px;
+  }
+  #blackboard-pane.bb-pane {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "timeline"
+      "stage"
+      "rewards";
+  }
+
+  /* ── 'Topics covered' column — kept hidden in BOTH modes per earlier
+        feedback (running glossary is redundant when YAML + blackboard pills
+        + concept-map already show progression). Markup retained because
+        topic-rendering JS expects the elements to exist. ──────────────── */
+  #topics-col {
+    display: none;
+    width: 180px;
+    flex-shrink: 0;
+    border-left: 1px solid var(--ink-15);
+    background: var(--bg);
+    overflow-y: auto;
+    padding: 12px;
+    order: 3;
+  }
+  #topics-col h3 {
+    color: var(--gold); font-size: 10.5px; font-weight: 600;
+    letter-spacing: .08em; text-transform: uppercase;
+    margin-bottom: 10px; font-family: var(--font-mono);
+  }
+  #topics-list { display: flex; flex-direction: column; gap: 6px; }
+  .topic-item {
+    padding: 6px 9px;
+    background: var(--bg2);
+    border: 1px solid var(--ink-15);
+    border-radius: 8px;
+    font-size: 11.5px;
+    line-height: 1.35;
+    color: var(--ink);
+    transition: border-color .15s;
+  }
+  .topic-item.hero { border-color: var(--blue); background: rgba(64,112,192,.08); }
+  .topic-item .term { font-weight: 600; }
+  .topic-item .def { color: var(--ink-50); font-size: 10.5px; margin-top: 2px; display: block; }
+
+  /* Motivational toast (stretch zone + comeback) — slides in from the
+     top-right, holds ~5s, fades out. Distinct from the mastery toast
+     so multiple celebrations can coexist visually. */
+  .motiv-toast {
+    position: fixed;
+    top: 132px;
+    right: 18px;
+    width: 320px;
+    background: linear-gradient(180deg, rgba(64,160,96,.18) 0%, var(--bg2) 80%);
+    border: 1.5px solid var(--green, #48A060);
+    border-radius: 12px;
+    padding: 12px 16px;
+    box-shadow: 0 8px 28px rgba(0,0,0,.4), 0 0 24px rgba(64,160,96,.20);
+    color: var(--ink);
+    z-index: 60;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateX(20px);
+    transition: opacity .3s ease, transform .3s ease;
+  }
+  .motiv-toast.motiv-toast-visible {
+    opacity: 1;
+    transform: none;
+  }
+  .motiv-toast-label {
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--green, #48A060);
+    margin-bottom: 4px;
+    font-weight: 700;
+  }
+  .motiv-toast-body {
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--ink-70);
+  }
+
+  /* ── DEMO MODE: personalization strip ──────────────────────── */
+  #demo-personalization {
+    display: none;
+    padding: 8px 16px;
+    background: rgba(212,176,64,.05);
+    border-bottom: 1px solid var(--ink-15);
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+  }
+  /* The mid-session strip is now redundant — interests live on the start
+     screen. Keep the markup so existing dpInit/dpScheduleSave JS doesn't
+     break, just leave it hidden. */
+  /* body.demo #demo-personalization { display: flex; } */
+  .dp-label {
+    font-size: 11px; color: var(--gold);
+    font-family: var(--font-mono); letter-spacing: .06em;
+    text-transform: uppercase; flex-shrink: 0;
+  }
+  .dp-chips { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+  .dp-chip {
+    padding: 4px 10px; font-size: 12px;
+    background: var(--bg2); color: var(--ink-70);
+    border: 1px solid var(--ink-15); border-radius: 14px;
+    cursor: pointer; transition: all .15s;
+    font-family: var(--font);
+  }
+  .dp-chip:hover { border-color: var(--gold); color: var(--ink); }
+  .dp-chip.active { background: var(--gold); color: var(--bg); border-color: var(--gold); }
+  .dp-status { font-size: 11px; color: var(--ink-50); flex-shrink: 0; min-width: 80px; text-align: right; }
 
   #yaml-pane h3 {
     color: #8fb4d8; font-size: 12px; font-weight: 600;
@@ -223,31 +511,36 @@
     flex: 1;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;  /* was 'center' — content overflowed in 30%-wide demo chat pane */
     flex-direction: column;
     gap: 20px;
-    padding: 40px;
+    padding: 32px 24px 40px;
     text-align: center;
+    overflow-y: auto;             /* scroll within the chat pane when chip rows exceed height */
+    min-height: 0;                /* allow flex child to shrink below content height */
   }
-  #start-screen h2 { font-size: 22px; color: var(--brand); }
-  #start-screen p  { font-size: 15px; color: var(--muted); max-width: 480px; }
+  #start-screen h2 { font-family: var(--font-display); font-weight: 700; font-size: 28px; letter-spacing: -0.02em; color: var(--ink); }
+  #start-screen p  { font-size: 15px; color: var(--ink-70); max-width: 480px; line-height: 1.6; }
   #start-btn {
-    background: var(--brand); color: #fff;
+    background: var(--blue); color: var(--ink);
     border: none; border-radius: 10px;
-    padding: 12px 32px; font-size: 16px; font-weight: 600;
-    cursor: pointer; transition: background .15s;
+    padding: 12px 32px;
+    font-family: var(--font-display);
+    font-size: 14px; font-weight: 700;
+    text-transform: lowercase;
+    letter-spacing: 0.02em;
+    cursor: pointer; transition: filter .15s;
   }
-  #start-btn:hover { background: #254f7a; }
+  #start-btn:hover { filter: brightness(1.12); }
 
   /* ── MEMORY PANEL ───────────────────────────────────────── */
   #memory-panel {
-    border-top: 1px solid var(--border);
-    background: #f8fafc;
+    border-top: 1px solid var(--ink-15);
+    background: var(--bg2);
     flex-shrink: 0;
   }
-  body:not(.demo) #memory-panel { display: flex; flex-direction: column; align-items: center; }
-  body:not(.demo) #memory-panel-inner { width: 100%; max-width: 720px; }
-  body.demo #memory-panel { display: block; }
+  /* Memory panel uses the default block layout in both modes — was previously
+     center-aligned for the single-column non-demo layout. */
   #memory-panel-inner { width: 100%; }
 
   #memory-toggle {
@@ -291,11 +584,11 @@
     flex-shrink: 0;
     margin-top: 1px;
   }
-  .memory-tag.success     { background: #d1fae5; color: #065f46; }
-  .memory-tag.struggle    { background: #fee2e2; color: #991b1b; }
-  .memory-tag.breakthrough{ background: #dbeafe; color: #1e40af; }
-  .memory-tag.completion  { background: #ede9fe; color: #5b21b6; }
-  .memory-tag.interest    { background: #fef3c7; color: #92400e; }
+  .memory-tag.success     { background: rgba(72,160,96,.18);  color: var(--green); }
+  .memory-tag.struggle    { background: rgba(204,72,72,.18);  color: var(--red); }
+  .memory-tag.breakthrough{ background: rgba(64,112,192,.18); color: var(--blue); }
+  .memory-tag.completion  { background: rgba(212,176,64,.18); color: var(--gold); }
+  .memory-tag.interest    { background: rgba(212,128,64,.18); color: var(--orange); }
 
   /* ── TOKEN GATE ─────────────────────────────────────────── */
   #token-gate {
@@ -346,20 +639,20 @@
   #progress-wrap {
     display: none;
     flex-direction: column;
-    background: #fff;
-    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    border-bottom: 1px solid var(--ink-15);
     flex-shrink: 0;
   }
   #progress-wrap.show { display: flex; }
   #progress-bar {
     height: 4px;
-    background: #eef1f5;
+    background: var(--ink-15);
     overflow: hidden;
   }
   #progress-fill {
     height: 100%;
     width: 0;
-    background: linear-gradient(90deg, var(--brand) 0%, #3d6a99 100%);
+    background: linear-gradient(90deg, var(--gold) 0%, var(--orange) 100%);
     transition: width 0.6s ease-out;
   }
   #progress-meta {
@@ -399,29 +692,32 @@
     flex-wrap: wrap;
   }
   .chip {
-    font-family: var(--font);
-    font-size: 13px;
+    font-family: var(--font-mono);
+    font-size: 12px;
     font-weight: 500;
-    background: #fff;
-    color: var(--text);
-    border: 1px solid var(--border);
+    text-transform: lowercase;
+    letter-spacing: 0.04em;
+    background: var(--bg2);
+    color: var(--ink-70);
+    border: 1px solid var(--ink-15);
     border-radius: 999px;
     padding: 7px 14px;
     cursor: pointer;
     transition: background 0.15s, border-color 0.15s, color 0.15s;
     line-height: 1.2;
   }
-  .chip:hover { border-color: var(--brand); }
+  .chip:hover { border-color: var(--ink-30); color: var(--ink); }
   .chip.active {
-    background: var(--brand);
-    color: #fff;
-    border-color: var(--brand);
+    background: transparent;
+    color: var(--ink);
+    border-color: var(--ink);
   }
-  .chip:disabled { opacity: 0.55; cursor: default; }
+  .chip:disabled { opacity: 0.45; cursor: default; }
 
   @media (max-width: 480px) {
     #start-prefs { padding: 0 8px; }
   }
+
 </style>
 </head>
 <body>
@@ -429,11 +725,37 @@
 <!-- TOP BAR -->
 <div id="topbar">
   <a href="opas-skills.html" class="topbar-link" id="switch-agent-link" title="Back to my agents">&larr; <span class="full">Switch agent</span></a>
-  <span class="logo">OPAS</span>
+  <span class="logo" aria-label="poppy">
+    <svg viewBox="0 0 60 50" width="40" height="34" aria-hidden="true">
+      <circle cx="14" cy="8"  r="8"   fill="#4070C0"/>
+      <circle cx="30" cy="3"  r="8"   fill="#D4B040"/>
+      <circle cx="46" cy="8"  r="8"   fill="#CC4848"/>
+      <circle cx="16" cy="8"  r="2.5" fill="#111"/>
+      <circle cx="44" cy="8"  r="2.5" fill="#111"/>
+      <circle cx="20" cy="28" r="6"   fill="#48A060"/>
+      <circle cx="40" cy="28" r="6"   fill="#D48040"/>
+    </svg>
+    <span>poppy</span>
+  </span>
   <span class="skill-name" id="skill-label">Loading…</span>
   <span class="spacer"></span>
   <a href="opas-onboarding.html?return=opas-student.html" class="topbar-link" id="edit-profile-link" title="Edit profile preferences">&#9881; <span class="full">Edit profile</span></a>
   <span class="badge" id="demo-badge" style="display:none">DEMO MODE</span>
+  <button id="demo-info-btn" type="button" title="What is this demo showing?"
+          style="display:none;background:transparent;border:1px solid var(--ink-15);color:var(--ink-70);font-family:var(--font-mono);font-size:12px;padding:6px 10px;border-radius:8px;cursor:pointer;margin-right:6px;letter-spacing:.02em;"
+          aria-haspopup="dialog">ⓘ demo info</button>
+  <span id="streak-badge" title="Consecutive correct probes — keep the streak going!"
+        style="display:none;font-family:var(--font-mono);font-size:12px;background:rgba(212,128,64,.18);color:var(--orange,#D48040);padding:4px 10px;border-radius:10px;letter-spacing:.02em;border:1px solid rgba(212,128,64,.45);margin-right:6px;">
+    🔥 <span id="streak-count">0</span>-streak
+  </span>
+  <button id="speaker-toggle" type="button" title="Toggle voice"
+          style="background:transparent;border:1px solid var(--ink-15);color:var(--ink-70);font-family:var(--font-mono);font-size:12px;padding:6px 10px;border-radius:8px;cursor:pointer;margin-right:6px;"
+          aria-pressed="true">🔊 voice on</button>
+  <button id="handsfree-toggle" type="button"
+          title="Hands-free: agent speaks, you reply by voice (auto-detects when you finish speaking)"
+          style="background:transparent;border:1px solid var(--ink-15);color:var(--ink-70);font-family:var(--font-mono);font-size:12px;padding:6px 10px;border-radius:8px;cursor:pointer;margin-right:6px;"
+          aria-pressed="false">🎙️ hands-free off</button>
+  <audio id="speaker-audio" style="display:none"></audio>
   <button id="end-btn" disabled>End session</button>
 </div>
 
@@ -441,6 +763,24 @@
 <div id="progress-wrap">
   <div id="progress-bar"><div id="progress-fill"></div></div>
   <div id="progress-meta"></div>
+</div>
+
+<!-- DEMO PERSONALIZATION STRIP (visible only in demo mode via body.demo) -->
+<div id="demo-personalization" aria-label="Demo personalization controls">
+  <span class="dp-label">Adapt examples to:</span>
+  <div class="dp-chips" id="dp-chips">
+    <button type="button" class="dp-chip" data-interest="sports">sports</button>
+    <button type="button" class="dp-chip" data-interest="music">music</button>
+    <button type="button" class="dp-chip" data-interest="gaming">gaming</button>
+    <button type="button" class="dp-chip" data-interest="history">history</button>
+    <button type="button" class="dp-chip" data-interest="science">science</button>
+    <button type="button" class="dp-chip" data-interest="business">business</button>
+    <button type="button" class="dp-chip" data-interest="art">art</button>
+    <button type="button" class="dp-chip" data-interest="cooking">cooking</button>
+    <button type="button" class="dp-chip" data-interest="travel">travel</button>
+    <button type="button" class="dp-chip" data-interest="technology">technology</button>
+  </div>
+  <span class="dp-status" id="dp-status"></span>
 </div>
 
 <!-- MAIN -->
@@ -459,8 +799,7 @@
 
     <!-- Start screen (shown before session starts) -->
     <div id="start-screen">
-      <h2 id="start-title">Thinking Probabilistically</h2>
-      <p>An AI tutor guided by the OPAS pedagogy framework.<br>Socratic dialogue, grounded in your course materials.</p>
+      <h2 id="start-title">Demo class</h2>
 
       <div id="start-prefs">
         <div class="pref-group">
@@ -479,6 +818,34 @@
             <button type="button" class="chip active" data-mode="auto"   role="radio" aria-checked="true">Auto (recommended)</button>
             <button type="button" class="chip"        data-mode="review" role="radio" aria-checked="false">I&rsquo;ve read the materials</button>
             <button type="button" class="chip"        data-mode="teach"  role="radio" aria-checked="false">I haven&rsquo;t read them yet</button>
+          </div>
+        </div>
+        <div class="pref-group" id="pref-interests">
+          <div class="pref-label">Adapt examples to your interests <span style="color:var(--ink-50);font-weight:normal">(pick any)</span></div>
+          <div class="chip-row" id="interest-chips" role="group" aria-label="Interests">
+            <button type="button" class="chip" data-interest="sports">sports</button>
+            <button type="button" class="chip" data-interest="music">music</button>
+            <button type="button" class="chip" data-interest="gaming">gaming</button>
+            <button type="button" class="chip" data-interest="history">history</button>
+            <button type="button" class="chip" data-interest="science">science</button>
+            <button type="button" class="chip" data-interest="business">business</button>
+            <button type="button" class="chip" data-interest="art">art</button>
+            <button type="button" class="chip" data-interest="cooking">cooking</button>
+            <button type="button" class="chip" data-interest="travel">travel</button>
+            <button type="button" class="chip" data-interest="technology">technology</button>
+          </div>
+        </div>
+        <div class="pref-group" id="pref-pedagogy">
+          <div class="pref-label">Teaching style</div>
+          <div class="chip-row" id="pedagogy-chips" role="radiogroup" aria-label="Pedagogy">
+            <!-- chips populated from /pedagogies on load; Socratic Method gets pre-selected -->
+          </div>
+        </div>
+        <div class="pref-group" id="pref-soul">
+          <div class="pref-label">Soul <span style="color:var(--ink-50);font-weight:normal">(how the agent shows up when a learner struggles)</span></div>
+          <div class="chip-row" id="soul-chips" role="radiogroup" aria-label="Constitution">
+            <button type="button" class="chip active" data-soul="minerva.soul.v1" role="radio" aria-checked="true" title="Empathetic, conversational interventions. Standard distress patterns ('I'm stupid', 'I can't do this'). 60s cooldown.">Standard care</button>
+            <button type="button" class="chip" data-soul="minerva.soul.v1.accessible" role="radio" aria-checked="false" title="Plain language, short sentences, no idioms. Broader distress detection — covers neurodivergent expression and ESL phrasings. Longer cooldown gives processing time. Earlier struggle-tracker intervention.">Accessibility &amp; Neurodivergence</button>
           </div>
         </div>
       </div>
@@ -504,16 +871,46 @@
     <!-- Input bar (hidden until session starts) -->
     <div id="input-area" style="display:none">
       <div id="input-inner">
-        <textarea id="user-input" rows="1" placeholder="Type your response…" disabled></textarea>
+        <textarea id="user-input" rows="1" placeholder="Type your response… or click 🎤 to speak" disabled></textarea>
+        <button id="mic-btn" type="button" title="Record voice (click to start, click again to stop)"
+                style="background:var(--bg2,#222);color:var(--ink-70,#bbb);border:1px solid var(--ink-15,#333);
+                       border-radius:10px;padding:10px 14px;cursor:pointer;font-size:18px;line-height:1;
+                       min-width:50px;" disabled>🎤</button>
         <button id="send-btn" disabled>Send</button>
       </div>
     </div>
   </div>
 
-  <!-- YAML PANE (demo mode only) -->
+  <!-- YAML PANE (?demo=1 only — gated by body.demo CSS) -->
   <div id="yaml-pane">
     <h3>Skill YAML · Live highlights</h3>
     <div id="yaml-content"></div>
+  </div>
+
+  <!-- CONCEPT REVIEW PANE (bare URL — production student experience) -->
+  <div id="concept-map">
+    <h3>Where you are</h3>
+    <div class="cm-skill-name" id="cm-skill-name">Loading…</div>
+    <div class="cm-slo-list" id="cm-slo-list"></div>
+    <div class="cm-status" id="cm-status">
+      <div class="cm-status-row">
+        <span class="cm-status-label">Streak</span>
+        <span class="cm-status-val" id="cm-streak">0</span>
+      </div>
+      <div class="cm-status-row">
+        <span class="cm-status-label">Phase</span>
+        <span class="cm-status-val" id="cm-phase">— of —</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- BLACKBOARD PANE (Poppy signal renderer) -->
+  <div id="blackboard-pane"></div>
+
+  <!-- TOPICS COVERED column (demo mode only) — running list of all KEYWORDs -->
+  <div id="topics-col">
+    <h3>Topics covered</h3>
+    <div id="topics-list"></div>
   </div>
 
 </div>
@@ -522,7 +919,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Config
 // ─────────────────────────────────────────────────────────────────────────────
-const RUNTIME_URL = document.querySelector('meta[name="opas-runtime"]')?.content ?? 'http://localhost:8001';
+const RUNTIME_URL = document.querySelector('meta[name="opas-runtime"]')?.content ?? 'https://opas-runtime.onrender.com';
 
 const params    = new URLSearchParams(location.search);
 const DEMO      = params.has('demo');
@@ -534,6 +931,17 @@ const SKILL_ID  = params.get('skill_id') ?? 'hks.api318.unit1.thinking-probabili
 // ─────────────────────────────────────────────────────────────────────────────
 const LS_KEY = 'opas_learner_token';
 let BEARER = null;
+
+// Initialize the Poppy blackboard module — owns the right pane.
+import { initBlackboard } from './blackboard/blackboard.js';
+const bb = initBlackboard({
+  container:    document.getElementById('blackboard-pane'),
+  onChatText:   (role, text) => addBubble(role, text),
+  voiceEnabled: () => voiceOn,
+  getVoiceId:   () => localStorage.getItem('opas_voice_id') || 'EXAVITQu4vr4xnSDxMaL',
+  runtimeUrl:   RUNTIME_URL,
+  bearer:       () => BEARER,
+});
 
 function resolveToken() {
   // Step 1: URL ?token= param
@@ -589,10 +997,15 @@ const $progressFill  = document.getElementById('progress-fill');
 const $progressMeta  = document.getElementById('progress-meta');
 
 // ─── Session-start preferences (selected via chip rows) ──────────────────
-//   selectedTimeBudget: number | null   (null ⇒ omit time_budget_minutes from POST)
-//   selectedMode:       'auto' | 'review' | 'teach'   (default 'auto')
-let selectedTimeBudget = null;
-let selectedMode       = 'auto';
+//   selectedTimeBudget:   number | null   (null ⇒ omit time_budget_minutes from POST)
+//   selectedMode:         'auto' | 'review' | 'teach'   (default 'auto')
+//   selectedInterests:    Set<string>     (multi-select; saved to profile_prefs at start)
+//   selectedPedagogyId:   string | ''     (empty = use skill author's default)
+let selectedTimeBudget    = null;
+let selectedMode          = 'auto';
+const selectedInterests   = new Set();
+let selectedPedagogyId    = 'socratic';  // pre-selected to match the chip flagged active in loadPedagogyChips
+let selectedConstitutionId = 'minerva.soul.v1';  // matches the chip pre-selected with class="active"
 
 function wireChipGroup(container, onSelect) {
   if (!container) return;
@@ -609,6 +1022,17 @@ function wireChipGroup(container, onSelect) {
   });
 }
 
+// Multi-select variant for chip rows where N chips can be active at once.
+function wireMultiChipGroup(container, onToggle) {
+  if (!container) return;
+  container.addEventListener('click', (e) => {
+    const btn = e.target.closest('.chip');
+    if (!btn || btn.disabled) return;
+    btn.classList.toggle('active');
+    onToggle(btn, btn.classList.contains('active'));
+  });
+}
+
 wireChipGroup($timeChips, (btn) => {
   const v = btn.dataset.time;
   selectedTimeBudget = v === '' ? null : Number(v);
@@ -620,6 +1044,54 @@ if ($defaultTime) $defaultTime.classList.add('active');
 wireChipGroup($modeChips, (btn) => {
   selectedMode = btn.dataset.mode || 'auto';
 });
+
+// Interest chips on the start screen (multi-select).
+const $interestChips = document.getElementById('interest-chips');
+wireMultiChipGroup($interestChips, (btn, on) => {
+  const interest = btn.dataset.interest;
+  if (on) selectedInterests.add(interest);
+  else selectedInterests.delete(interest);
+});
+
+// Pedagogy chips on the start screen (single-select). The 'Default' chip
+// corresponds to data-pedagogy="" → no override sent. Other chips are
+// populated from /pedagogies on page load.
+const $pedagogyChips = document.getElementById('pedagogy-chips');
+wireChipGroup($pedagogyChips, (btn) => {
+  selectedPedagogyId = btn.dataset.pedagogy || '';
+});
+
+// Soul (constitution) chips on the start screen (single-select).
+// Default = "" → no override sent, skill's authored Soul applies.
+const $soulChips = document.getElementById('soul-chips');
+wireChipGroup($soulChips, (btn) => {
+  selectedConstitutionId = btn.dataset.soul || '';
+});
+
+async function loadPedagogyChips() {
+  try {
+    const res = await fetch(`${RUNTIME_URL}/pedagogies`);
+    if (!res.ok) return;
+    const list = await res.json();
+    if (!Array.isArray(list)) return;
+    list.forEach((p) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      // Pre-select Socratic Method as the default — matches selectedPedagogyId
+      // initialised above. Demo always sends a real pedagogy, never falls back
+      // to the skill author's default silently.
+      const isDefault = p.id === 'socratic';
+      btn.className = isDefault ? 'chip active' : 'chip';
+      btn.dataset.pedagogy = p.id;
+      btn.setAttribute('role', 'radio');
+      btn.setAttribute('aria-checked', isDefault ? 'true' : 'false');
+      btn.title = p.description || '';
+      btn.textContent = p.name || p.id;
+      $pedagogyChips.appendChild(btn);
+    });
+  } catch (_) { /* non-fatal — Default chip remains the only option */ }
+}
+loadPedagogyChips();
 
 if (DEMO) {
   $body.classList.add('demo');
@@ -667,12 +1139,134 @@ function acceptToken(token) {
   $tokenGate.style.display = 'none';
   $startScreen.style.display = 'flex';
   loadSkillMeta();
+  if (DEMO) dpInit();  // populate demo personalization chips now that we have a bearer
 }
 
 $tokenSubmit.addEventListener('click', () => acceptToken($tokenInput.value));
 $tokenInput.addEventListener('keydown', e => {
   if (e.key === 'Enter') acceptToken($tokenInput.value);
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Demo personalization strip — lets the demo viewer toggle interests live;
+// the change saves to profile_prefs and the agent adapts examples on the
+// next reply (prompt_assembler reads profile_prefs.interests every turn).
+// Only rendered when ?demo=1 is on the URL (CSS body.demo gates visibility).
+// ─────────────────────────────────────────────────────────────────────────────
+const $dpChips  = document.getElementById('dp-chips');
+const $dpStatus = document.getElementById('dp-status');
+let dpSaveTimer = null;
+let dpCurrentInterests = new Set();
+
+async function dpInit() {
+  if (!DEMO || !BEARER) return;
+  try {
+    const res = await fetch(`${RUNTIME_URL}/me`, {
+      headers: { 'Authorization': `Bearer ${BEARER}` },
+    });
+    if (!res.ok) return;
+    const me = await res.json();
+    const interests = (me.profile_prefs && Array.isArray(me.profile_prefs.interests))
+      ? me.profile_prefs.interests : [];
+    dpCurrentInterests = new Set(interests.map((s) => String(s).toLowerCase().trim()));
+    // Mark the matching chips active.
+    $dpChips.querySelectorAll('.dp-chip').forEach((btn) => {
+      if (dpCurrentInterests.has(btn.dataset.interest)) btn.classList.add('active');
+    });
+  } catch (_) { /* non-fatal */ }
+}
+
+function dpScheduleSave() {
+  if (dpSaveTimer) clearTimeout(dpSaveTimer);
+  $dpStatus.textContent = '…';
+  $dpStatus.style.color = 'var(--ink-50)';
+  dpSaveTimer = setTimeout(async () => {
+    try {
+      const interests = Array.from(dpCurrentInterests);
+      const body = {
+        language: 'en',
+        interests: interests,
+        bandwidth: 'high',
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+      };
+      const res = await fetch(`${RUNTIME_URL}/me/profile_prefs`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BEARER}` },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error('save failed');
+      $dpStatus.textContent = '✓ saved';
+      $dpStatus.style.color = 'var(--green, #48A060)';
+      setTimeout(() => { if ($dpStatus.textContent === '✓ saved') $dpStatus.textContent = ''; }, 1800);
+    } catch (err) {
+      $dpStatus.textContent = '✗ save failed';
+      $dpStatus.style.color = 'var(--red, #CC4848)';
+    }
+  }, 400);
+}
+
+$dpChips.addEventListener('click', (e) => {
+  const btn = e.target.closest('.dp-chip');
+  if (!btn) return;
+  const interest = btn.dataset.interest;
+  if (dpCurrentInterests.has(interest)) {
+    dpCurrentInterests.delete(interest);
+    btn.classList.remove('active');
+  } else {
+    dpCurrentInterests.add(interest);
+    btn.classList.add('active');
+  }
+  dpScheduleSave();
+});
+
+// Initialize once BEARER is resolved (resolveToken ran above; for token-gate
+// flow, dpInit runs again from acceptToken via loadSkillMeta side effects).
+if (DEMO && BEARER) dpInit();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Topics-covered column (demo mode) — running list of every KEYWORD
+// the agent emits, dedup'd by term, with hero pills marked. Mirrors what the
+// blackboard module renders, but persists across beats so the learner sees
+// their growing vocabulary.
+// ─────────────────────────────────────────────────────────────────────────────
+const TOPIC_KW_RE = /\[(KEYWORD)(!)?:([^\]]+)\]/gi;
+const $topicsList = document.getElementById('topics-list');
+const seenTopics  = new Map();  // lowercased term → DOM element
+
+function extractTopicsFromReply(text) {
+  if (!text || !$topicsList) return;
+  let m;
+  TOPIC_KW_RE.lastIndex = 0;
+  while ((m = TOPIC_KW_RE.exec(String(text))) !== null) {
+    const isHero = !!m[2];
+    const payload = (m[3] || '').trim();
+    const [rawTerm, ...rest] = payload.split('|').map((s) => s.trim());
+    if (!rawTerm) continue;
+    const term = rawTerm;
+    const def  = rest.join(' | ');
+    const key  = term.toLowerCase();
+    let el = seenTopics.get(key);
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'topic-item' + (isHero ? ' hero' : '');
+      const termEl = document.createElement('span');
+      termEl.className = 'term';
+      termEl.textContent = term;
+      el.appendChild(termEl);
+      if (def) {
+        const defEl = document.createElement('span');
+        defEl.className = 'def';
+        defEl.textContent = def;
+        el.appendChild(defEl);
+      }
+      $topicsList.appendChild(el);
+      seenTopics.set(key, el);
+    } else if (isHero && !el.classList.contains('hero')) {
+      // Promote to hero if a later mention upgrades it.
+      el.classList.add('hero');
+    }
+  }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Runtime API helpers
@@ -795,16 +1389,261 @@ function highlightPaths(yamlRefs) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Chat UI
 // ─────────────────────────────────────────────────────────────────────────────
+// Strip backend artifacts (probe tags) and style citation brackets so chat
+// reads as natural prose rather than raw protocol output.
+const PROBE_TAG_RE_FE = /<probe\s+id=["'][^"']+["']\s*\/?\s*>/gi;
+const CITATION_RE = /\[([^\]]{2,80})\]/g;
+function htmlEscape(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
+function renderAgentText(text) {
+  // 1. Strip <probe id='...'/> if it slipped through (backend strips it
+  //    in extract_probe_tag, this is defense-in-depth).
+  let cleaned = String(text || '').replace(PROBE_TAG_RE_FE, '').trim();
+  // 2. Strip citation-shaped brackets entirely. Per Krizia's feedback: the
+  //    bracketed legends like '[Handout 1, §Calibration Exercise]' clutter
+  //    student-facing chat. The agent's natural in-prose references
+  //    ('As Tetlock argues in Ch. 5...') still come through.
+  cleaned = cleaned.replace(CITATION_RE, (m, inner) => {
+    if (/§|ch\.|chapter|handout|maxim|tetlock|kahneman|allison|class\s*\d/i.test(inner)) {
+      return '';
+    }
+    return m;
+  }).replace(/[ \t]{2,}/g, ' ').replace(/[ \t]+([.,;:!?])/g, '$1').trim();
+  // 3. HTML-escape everything before reintroducing safe markup.
+  cleaned = htmlEscape(cleaned);
+  // 4. Bold **markdown** → <strong> (the agent uses ** for emphasis).
+  cleaned = cleaned.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  // 5. *italic* → <em>
+  cleaned = cleaned.replace(/(^|\s)\*([^*\s][^*]*)\*(?=\s|[.,!?:;]|$)/g, '$1<em>$2</em>');
+  return cleaned;
+}
+
+// Motivational gamification helpers — used by the turn-response handler.
+const $streakBadge = document.getElementById('streak-badge');
+const $streakCount = document.getElementById('streak-count');
+function updateStreakBadge(n) {
+  if (!$streakBadge || !$streakCount) return;
+  if (n > 0) {
+    $streakCount.textContent = n;
+    $streakBadge.style.display = '';
+  } else {
+    $streakBadge.style.display = 'none';
+  }
+}
+
+function showMotivationalToast(label, body) {
+  const el = document.createElement('div');
+  el.className = 'motiv-toast';
+  el.innerHTML =
+    '<div class="motiv-toast-label">★ ' + label + '</div>' +
+    '<div class="motiv-toast-body">' + String(body || '').replace(/[<>]/g, '') + '</div>';
+  document.body.appendChild(el);
+  // Animate in, hold, fade out, remove.
+  requestAnimationFrame(() => el.classList.add('motiv-toast-visible'));
+  setTimeout(() => el.classList.remove('motiv-toast-visible'), 5200);
+  setTimeout(() => el.remove(), 5800);
+}
+
 function addBubble(role, text) {
   const wrap = document.createElement('div');
   wrap.className = `bubble-wrap ${role}`;
   const bub = document.createElement('div');
   bub.className = `bubble ${role}`;
-  bub.textContent = text;
+  if (role === 'agent') {
+    bub.innerHTML = renderAgentText(text);
+  } else {
+    bub.textContent = text;
+  }
   wrap.appendChild(bub);
   $messages.appendChild(wrap);
   $messages.scrollTop = $messages.scrollHeight;
   return bub;
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Speaker toggle — when voice is on, every agent reply is streamed through
+// /voice/tts using the voice the learner picked at onboarding.
+// ─────────────────────────────────────────────────────────────────────────────
+let voiceOn = true;  // demo default — agent speaks every reply (Browser autoplay policy is satisfied because the user clicked Start session before any audio fires)
+const $speakerBtn = document.getElementById('speaker-toggle');
+const $speakerAudio = document.getElementById('speaker-audio');
+
+$speakerBtn?.addEventListener('click', () => {
+  voiceOn = !voiceOn;
+  $speakerBtn.setAttribute('aria-pressed', voiceOn ? 'true' : 'false');
+  $speakerBtn.textContent = voiceOn ? '🔊 voice on' : '🔇 voice off';
+  $speakerBtn.style.borderColor = voiceOn ? 'var(--green)' : 'var(--ink-15)';
+  $speakerBtn.style.color       = voiceOn ? 'var(--green)' : 'var(--ink-70)';
+  if (!voiceOn) { try { $speakerAudio.pause(); } catch (_) {} }
+});
+
+async function speakText(text) {
+  if (!text) return;
+  const voiceId = localStorage.getItem('opas_voice_id') || 'EXAVITQu4vr4xnSDxMaL';
+  try {
+    const res = await fetch(`${RUNTIME_URL}/voice/tts`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${BEARER}`,
+      },
+      body: JSON.stringify({ text, voice_id: voiceId }),
+    });
+    if (!res.ok) return;
+    const blob = await res.blob();
+    $speakerAudio.src = URL.createObjectURL(blob);
+    $speakerAudio.play().catch(() => {});
+  } catch (_) { /* silent fail — voice is non-critical */ }
+}
+
+// ── Hands-free mode ─────────────────────────────────────────────────────
+// Toggle that turns the chat into a hands-free voice loop:
+//   agent speaks (TTS) → mic auto-arms → you speak → silence detected → auto-send
+let handsFreeOn = false;
+let vadAudioCtx = null;
+let vadSourceNode = null;
+let vadAnalyser = null;
+let vadSilenceStart = null;
+const VAD_SILENCE_THRESHOLD = 0.015;   // RMS threshold below which we treat as silence
+const VAD_SILENCE_DURATION_MS = 1500;  // need this much continuous silence to auto-stop
+const VAD_MIN_SPEECH_MS = 600;         // require at least this much voice before allowing auto-stop
+let vadSpeechStartedAt = null;
+
+const $handsfreeBtn = document.getElementById('handsfree-toggle');
+$handsfreeBtn?.addEventListener('click', () => {
+  handsFreeOn = !handsFreeOn;
+  $handsfreeBtn.setAttribute('aria-pressed', handsFreeOn ? 'true' : 'false');
+  $handsfreeBtn.textContent = handsFreeOn ? '🎙️ hands-free on' : '🎙️ hands-free off';
+  $handsfreeBtn.style.borderColor = handsFreeOn ? 'var(--green)' : 'var(--ink-15)';
+  $handsfreeBtn.style.color       = handsFreeOn ? 'var(--green)' : 'var(--ink-70)';
+  // Hands-free implies voice on. Force the speaker toggle if the user just enabled HF.
+  if (handsFreeOn && !voiceOn) $speakerBtn?.click();
+});
+
+// When the agent's TTS finishes, if hands-free is on, start listening immediately.
+document.getElementById('speaker-audio')?.addEventListener('ended', () => {
+  if (handsFreeOn && !isRecording && !$input.disabled) {
+    startRecordingHandsFree();
+  }
+});
+
+async function startRecordingHandsFree() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    recordedChunks = [];
+    const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus'
+      : (MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '');
+    mediaRecorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+    mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+    mediaRecorder.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      stopVadMonitor();
+      const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+      await transcribeAndAutoSend(blob);
+    };
+    mediaRecorder.start();
+    isRecording = true;
+    const $mic = document.getElementById('mic-btn');
+    if ($mic) {
+      $mic.textContent = '🎙';
+      $mic.title = 'Listening… speak now';
+      $mic.style.background = 'var(--green, #16a34a)';
+      $mic.style.color = '#fff';
+    }
+    // Start VAD silence monitor on this stream.
+    startVadMonitor(stream);
+  } catch (err) {
+    isRecording = false;
+    handsFreeOn = false;
+    $handsfreeBtn.textContent = '🎙️ hands-free off';
+    $handsfreeBtn.setAttribute('aria-pressed', 'false');
+    alert('Microphone permission denied. Hands-free disabled. ' + (err.message || ''));
+  }
+}
+
+function startVadMonitor(stream) {
+  try {
+    vadAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    vadSourceNode = vadAudioCtx.createMediaStreamSource(stream);
+    vadAnalyser = vadAudioCtx.createAnalyser();
+    vadAnalyser.fftSize = 512;
+    vadSourceNode.connect(vadAnalyser);
+    vadSilenceStart = null;
+    vadSpeechStartedAt = null;
+    requestAnimationFrame(vadTick);
+  } catch (e) { /* AudioContext unavailable; user can still click ⏹ */ }
+}
+
+function stopVadMonitor() {
+  try { vadSourceNode?.disconnect(); } catch(_) {}
+  try { vadAudioCtx?.close(); } catch(_) {}
+  vadAudioCtx = null;
+  vadSourceNode = null;
+  vadAnalyser = null;
+  vadSilenceStart = null;
+  vadSpeechStartedAt = null;
+}
+
+function vadTick() {
+  if (!vadAnalyser || !isRecording) return;
+  const buf = new Uint8Array(vadAnalyser.fftSize);
+  vadAnalyser.getByteTimeDomainData(buf);
+  // RMS over the time-domain buffer (centered around 128)
+  let sum = 0;
+  for (let i = 0; i < buf.length; i++) {
+    const v = (buf[i] - 128) / 128;
+    sum += v * v;
+  }
+  const rms = Math.sqrt(sum / buf.length);
+  const now = performance.now();
+  if (rms > VAD_SILENCE_THRESHOLD) {
+    if (!vadSpeechStartedAt) vadSpeechStartedAt = now;
+    vadSilenceStart = null;
+  } else {
+    if (vadSpeechStartedAt && (now - vadSpeechStartedAt) >= VAD_MIN_SPEECH_MS) {
+      if (!vadSilenceStart) vadSilenceStart = now;
+      else if ((now - vadSilenceStart) >= VAD_SILENCE_DURATION_MS) {
+        // Silence threshold crossed → auto-stop the recording.
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+        isRecording = false;
+        const $mic = document.getElementById('mic-btn');
+        if ($mic) { $mic.textContent = '⏳'; $mic.title = 'Transcribing…'; $mic.style.background = ''; $mic.style.color = ''; }
+        return;
+      }
+    }
+  }
+  requestAnimationFrame(vadTick);
+}
+
+async function transcribeAndAutoSend(blob) {
+  const $mic = document.getElementById('mic-btn');
+  try {
+    const fd = new FormData();
+    fd.append('audio', blob, 'recording.webm');
+    const res = await fetch(`${RUNTIME_URL}/voice/transcribe`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${BEARER}` },
+      body: fd,
+    });
+    const data = res.ok ? await res.json() : null;
+    const text = (data && data.text || '').trim();
+    if ($mic) { $mic.textContent = '🎤'; $mic.title = 'Record voice'; $mic.disabled = $input.disabled; }
+    if (!text) {
+      // Heard nothing. If still in HF, just rearm after a short pause.
+      if (handsFreeOn && !$input.disabled) setTimeout(() => startRecordingHandsFree(), 400);
+      return;
+    }
+    $input.value = text;
+    // Auto-send in hands-free mode.
+    sendTurn();
+  } catch (err) {
+    if ($mic) { $mic.textContent = '🎤'; $mic.title = 'Record voice'; $mic.disabled = $input.disabled; }
+  }
 }
 
 function addSystem(text) {
@@ -834,7 +1673,94 @@ function removeTyping() {
 function setInputEnabled(enabled) {
   $input.disabled    = !enabled;
   $sendBtn.disabled  = !enabled;
+  const $mic = document.getElementById('mic-btn');
+  if ($mic) $mic.disabled = !enabled || isRecording;
 }
+
+// ── Microphone: record → ElevenLabs Scribe → fill input ───────────────────
+let mediaRecorder = null;
+let recordedChunks = [];
+let isRecording = false;
+
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    recordedChunks = [];
+    // Pick a mime the browser supports; ElevenLabs accepts webm/ogg/mp3/mp4/wav.
+    const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus'
+      : (MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : '');
+    mediaRecorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+    mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+    mediaRecorder.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+      await transcribeAndFill(blob);
+    };
+    mediaRecorder.start();
+    isRecording = true;
+    const $mic = document.getElementById('mic-btn');
+    $mic.textContent = '⏹';
+    $mic.title = 'Stop recording';
+    $mic.style.background = 'var(--red, #c0392b)';
+    $mic.style.color = '#fff';
+  } catch (err) {
+    alert('Microphone permission denied or unavailable. ' + (err.message || ''));
+    isRecording = false;
+  }
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+  }
+  isRecording = false;
+  const $mic = document.getElementById('mic-btn');
+  $mic.textContent = '⏳';
+  $mic.title = 'Transcribing…';
+  $mic.disabled = true;
+  $mic.style.background = '';
+  $mic.style.color = '';
+}
+
+async function transcribeAndFill(blob) {
+  const $mic = document.getElementById('mic-btn');
+  try {
+    const fd = new FormData();
+    fd.append('audio', blob, 'recording.webm');
+    const res = await fetch(`${RUNTIME_URL}/voice/transcribe`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${BEARER}` },
+      body: fd,
+    });
+    if (!res.ok) {
+      const txt = await res.text();
+      alert('Transcription failed: ' + txt.slice(0, 200));
+      return;
+    }
+    const data = await res.json();
+    const text = (data.text || '').trim();
+    if (text) {
+      // Append to whatever's already in the input (so the user can dictate
+      // multiple chunks, then edit, then send).
+      $input.value = ($input.value ? $input.value + ' ' : '') + text;
+      $input.style.height = 'auto';
+      $input.style.height = Math.min($input.scrollHeight, 160) + 'px';
+      $input.focus();
+    }
+  } catch (err) {
+    alert('Transcription error: ' + (err.message || err));
+  } finally {
+    $mic.textContent = '🎤';
+    $mic.title = 'Record voice (click to start, click again to stop)';
+    $mic.disabled = $input.disabled;
+  }
+}
+
+document.getElementById('mic-btn')?.addEventListener('click', () => {
+  if (isRecording) stopRecording();
+  else startRecording();
+});
 
 // Auto-resize textarea
 $input.addEventListener('input', () => {
@@ -851,6 +1777,24 @@ async function startSession() {
   $messages.style.display = 'flex';
   $inputArea.style.display = 'flex';
 
+  // If the learner picked any interests on the start screen, persist them to
+  // profile_prefs BEFORE starting the session, so the prompt assembler picks
+  // them up on the very first turn (it reads profile_prefs from the DB).
+  if (selectedInterests.size > 0) {
+    try {
+      await fetch(`${RUNTIME_URL}/me/profile_prefs`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BEARER}` },
+        body: JSON.stringify({
+          language: 'en',
+          interests: Array.from(selectedInterests),
+          bandwidth: 'high',
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+        }),
+      });
+    } catch (_) { /* non-fatal — agent will use whatever's in profile_prefs already */ }
+  }
+
   // Build session-start payload. Only include time_budget_minutes when the
   // learner picked one — omitted ⇒ "as long as it takes".
   const payload = {
@@ -859,13 +1803,37 @@ async function startSession() {
     // learner_id resolved from Bearer token server-side
   };
   if (selectedTimeBudget != null) payload.time_budget_minutes = selectedTimeBudget;
+  if (selectedPedagogyId)         payload.pedagogy_override   = selectedPedagogyId;
+  if (selectedConstitutionId)     payload.constitution_override = selectedConstitutionId;
+
+  // Static welcome bubble — sets the stage before the agent's first reply.
+  // Confirms the learner's choices so the demo viewer sees the platform
+  // honouring their selections.
+  const skillName = ($skillLabel.textContent || '').trim() || 'Thinking Analytically in an Uncertain World';
+  const activePedChip = $pedagogyChips?.querySelector('.chip.active');
+  const pedagogyName = activePedChip ? activePedChip.textContent.trim() : 'Socratic Method';
+  const soulMap = {
+    'minerva.soul.v1':            'Standard care',
+    'minerva.soul.v1.accessible': 'Accessibility & Neurodivergence',
+  };
+  const soulName = soulMap[selectedConstitutionId] || 'Standard care';
+  const interests = Array.from(selectedInterests);
+  const interestsBit = interests.length
+    ? ` with examples adapted to ${interests.join(', ')}`
+    : '';
+  const welcomeMsg =
+    `Welcome to Dan Levy's API-318 — ${skillName}. ` +
+    `You picked the ${pedagogyName} style${interestsBit}, ` +
+    `and ${soulName} as the safety layer. Let's begin.`;
+  addBubble('system', welcomeMsg);
 
   showTyping();
   try {
     const data = await runtimePost('/session/start', payload);
     sessionId = data.session_id;
     removeTyping();
-    addBubble('agent', data.opening_turn);
+    bb.handleAgentReply(data.opening_turn);
+    if (DEMO) extractTopicsFromReply(data.opening_turn);
     if (DEMO) highlightPaths(data.yaml_refs);
     renderMemories(data.memory_context);
     setInputEnabled(true);
@@ -927,12 +1895,162 @@ function renderProgress(p) {
     (i === 0 ? '' : '<span class="sep">&middot;</span> ') + escapeText(t)
   ).join(' ');
   $progressWrap.classList.add('show');
+
+  // Concept review map (bare URL only) — track phase advancement
+  if (!DEMO) cmUpdateFromProgress(p);
 }
 
 function formatMinutes(m) {
   if (!Number.isFinite(m)) return '—';
   if (m < 1) return '<1 min';
   return Math.round(m) + ' min';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Concept Review Map (bare URL only — replaces YAML pane in production)
+// Auto-built from skill YAML so it works for any skill the wizard authors.
+// State per SLO: ○ upcoming · ● current (gold, expanded) · ✓ covered (green)
+// ─────────────────────────────────────────────────────────────────────────────
+let cmSkillYaml = null;
+let cmCurrentPhaseIdx = 0;
+let cmCoveredSlos = new Set();
+let cmTouchedConcepts = new Map();   // SLO id → Set of concept names touched
+let cmRecentConcept = null;          // concept that should glow on next render
+
+const $cmSkillName = document.getElementById('cm-skill-name');
+const $cmSloList   = document.getElementById('cm-slo-list');
+const $cmStreak    = document.getElementById('cm-streak');
+const $cmPhase     = document.getElementById('cm-phase');
+
+function cmGetSlos() {
+  if (!cmSkillYaml) return [];
+  const lo = cmSkillYaml.learning_objectives;
+  if (!lo) return [];
+  // sub_objectives is the canonical list. Older skills may use a flat array.
+  const subs = Array.isArray(lo.sub_objectives) ? lo.sub_objectives
+             : Array.isArray(lo) ? lo : [];
+  return subs.filter(Boolean).map((s, i) => ({
+    id: s.id || `SLO-${i+1}`,
+    text: s.statement || s.text || s.name || `Sub-objective ${i+1}`,
+  }));
+}
+
+function cmGetPhases() {
+  if (!cmSkillYaml || !Array.isArray(cmSkillYaml.phases)) return [];
+  return cmSkillYaml.phases;
+}
+
+function cmCurrentSlosForPhase() {
+  const phases = cmGetPhases();
+  const phase = phases[cmCurrentPhaseIdx];
+  if (!phase) return new Set();
+  // slos_covered may be on the phase, or the phase may map by other keys.
+  const ids = Array.isArray(phase.slos_covered) ? phase.slos_covered
+            : Array.isArray(phase.objectives)   ? phase.objectives
+            : [];
+  return new Set(ids);
+}
+
+function cmCurrentConceptsForPhase() {
+  const phases = cmGetPhases();
+  const phase = phases[cmCurrentPhaseIdx];
+  if (!phase) return [];
+  const concepts = Array.isArray(phase.key_concepts) ? phase.key_concepts
+                 : Array.isArray(phase.concepts)     ? phase.concepts
+                 : [];
+  return concepts.filter(Boolean).map(c => typeof c === 'string' ? c : (c.name || c.id || ''));
+}
+
+function renderConceptMap() {
+  if (!cmSkillYaml || !$cmSloList) return;
+  const skillName = (cmSkillYaml.skill && cmSkillYaml.skill.name) || cmSkillYaml.name || '—';
+  $cmSkillName.textContent = skillName;
+
+  const slos = cmGetSlos();
+  const currentSet = cmCurrentSlosForPhase();
+  const currentConcepts = cmCurrentConceptsForPhase();
+  const touchedSet = cmTouchedConcepts.get([...currentSet][0]) || new Set();
+
+  // Clear and rebuild
+  $cmSloList.innerHTML = '';
+  slos.forEach(slo => {
+    const li = document.createElement('div');
+    li.className = 'cm-slo';
+    if (cmCoveredSlos.has(slo.id))         li.classList.add('covered');
+    else if (currentSet.has(slo.id))       li.classList.add('current');
+    else                                   li.classList.add('upcoming');
+
+    const head = document.createElement('div');
+    head.className = 'cm-slo-head';
+    head.innerHTML = `
+      <span class="cm-slo-mark"></span>
+      <span class="cm-slo-id">${escapeText(slo.id)}</span>
+      <span class="cm-slo-text">${escapeText(slo.text)}</span>
+    `;
+    li.appendChild(head);
+
+    if (currentSet.has(slo.id) && !cmCoveredSlos.has(slo.id) && currentConcepts.length) {
+      const concepts = document.createElement('div');
+      concepts.className = 'cm-concepts';
+      currentConcepts.forEach(c => {
+        const row = document.createElement('div');
+        row.className = 'cm-concept';
+        if (touchedSet.has(c.toLowerCase())) row.classList.add('touched');
+        if (cmRecentConcept && c.toLowerCase() === cmRecentConcept.toLowerCase()) {
+          row.classList.add('recent');
+        }
+        row.textContent = c;
+        concepts.appendChild(row);
+      });
+      li.appendChild(concepts);
+    }
+
+    $cmSloList.appendChild(li);
+  });
+
+  // Phase counter
+  const total = cmGetPhases().length || 1;
+  $cmPhase.textContent = `${cmCurrentPhaseIdx + 1} of ${total}`;
+
+  cmRecentConcept = null;   // glow only fires once
+}
+
+function cmUpdateFromTurn(turnData) {
+  if (!cmSkillYaml) return;
+  // Streak from turn response
+  if ($cmStreak) $cmStreak.textContent = (turnData.streak ?? 0);
+
+  // If mastery_met fired, mark all current-phase SLOs as covered.
+  if (turnData.mastery_met) {
+    cmCurrentSlosForPhase().forEach(id => cmCoveredSlos.add(id));
+  }
+
+  // Try to detect "concept just touched" from the agent reply text.
+  const reply = (turnData.agent_reply || '').toLowerCase();
+  cmCurrentSlosForPhase().forEach(id => {
+    if (!cmTouchedConcepts.has(id)) cmTouchedConcepts.set(id, new Set());
+  });
+  cmCurrentConceptsForPhase().forEach(c => {
+    if (!c) return;
+    const needle = c.toLowerCase();
+    if (reply.includes(needle)) {
+      cmCurrentSlosForPhase().forEach(id => cmTouchedConcepts.get(id)?.add(needle));
+      cmRecentConcept = c;
+    }
+  });
+
+  renderConceptMap();
+}
+
+function cmUpdateFromProgress(p) {
+  if (!cmSkillYaml) return;
+  const newIdx = p.current_phase_index ?? 0;
+  if (newIdx !== cmCurrentPhaseIdx) {
+    // Phase advanced — mark previous phase's SLOs as covered (agent moved on).
+    cmCurrentSlosForPhase().forEach(id => cmCoveredSlos.add(id));
+    cmCurrentPhaseIdx = newIdx;
+  }
+  renderConceptMap();
 }
 
 function escapeText(s) {
@@ -969,8 +2087,16 @@ async function sendTurn() {
       learner_msg: msg,
     });
     removeTyping();
-    addBubble('agent', data.agent_reply);
+    bb.handleAgentReply(data.agent_reply);
+    if (DEMO) extractTopicsFromReply(data.agent_reply);
     if (DEMO) highlightPaths(data.yaml_refs);
+    if (!DEMO) cmUpdateFromTurn(data);
+    // Motivational gamification — streak counter + stretch-zone + comeback toasts.
+    updateStreakBadge(data.streak || 0);
+    if (data.stretch_zone_triggered) showMotivationalToast('STRETCH ZONE',
+      "You're working at the edge of what you know — this is where learning sticks. Let me try a fresh angle.");
+    if (data.comeback_triggered) showMotivationalToast('COMEBACK +25',
+      "That's how learning sticks. Welcome back.");
     setInputEnabled(true);
     $input.focus();
     // Refresh progress immediately after each agent turn — phase or probe count
@@ -1008,12 +2134,17 @@ async function loadSkillMeta() {
     const data = await res.json();
 
     $skillLabel.textContent = data.name;
-    $startTitle.textContent = data.name;
+    // Start-screen H1 is now a static "Demo class" header — skill name still
+    // shows in the topbar (#skill-label) and the document title.
     document.title = `OPAS — ${data.name}`;
 
     if (DEMO) {
       const yamlText = jsonToYaml(data.yaml, 0);
       buildYamlPane(yamlText);
+    } else {
+      // Concept review map (production student experience)
+      cmSkillYaml = data.yaml || null;
+      renderConceptMap();
     }
   } catch (_) { /* non-fatal */ }
 }
@@ -1096,6 +2227,56 @@ if (BEARER) {
 } else {
   showTokenGate();
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Demo info modal — only wired in ?demo=1 mode (button hidden otherwise).
+// Opens an explainer panel that used to live as inline text on the start screen.
+// ─────────────────────────────────────────────────────────────────────────────
+const $demoInfoBtn   = document.getElementById('demo-info-btn');
+const $demoInfoModal = document.getElementById('demo-info-modal');
+const $demoInfoClose = document.getElementById('demo-info-close');
+if (DEMO && $demoInfoBtn) {
+  $demoInfoBtn.style.display = '';
+  $demoInfoBtn.addEventListener('click', () => {
+    if ($demoInfoModal) $demoInfoModal.style.display = 'flex';
+  });
+}
+if ($demoInfoClose) {
+  $demoInfoClose.addEventListener('click', () => {
+    $demoInfoModal.style.display = 'none';
+  });
+}
+if ($demoInfoModal) {
+  $demoInfoModal.addEventListener('click', (e) => {
+    if (e.target === $demoInfoModal) $demoInfoModal.style.display = 'none';
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && $demoInfoModal.style.display === 'flex') {
+      $demoInfoModal.style.display = 'none';
+    }
+  });
+}
 </script>
+
+<!-- ─── DEMO INFO MODAL (opens from topbar button when ?demo=1) ───────────── -->
+<div id="demo-info-modal" role="dialog" aria-modal="true" aria-labelledby="demo-info-title"
+     style="display:none;position:fixed;inset:0;background:rgba(8,8,8,0.78);align-items:center;justify-content:center;z-index:1000;padding:24px;">
+  <div style="max-width:560px;width:100%;background:var(--bg2);border:1px solid var(--ink-15);border-radius:14px;padding:28px 28px 22px;font-family:var(--font-body);color:var(--ink);box-shadow:0 24px 60px rgba(0,0,0,.55);">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+      <span style="font-family:var(--font-mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);background:rgba(212,176,64,.12);padding:3px 9px;border-radius:6px;">Demo</span>
+      <h2 id="demo-info-title" style="font-family:var(--font-display);font-weight:800;font-size:20px;letter-spacing:-.02em;color:var(--ink);margin:0;">What you're looking at</h2>
+    </div>
+    <p style="font-size:14.5px;line-height:1.6;color:var(--ink-70);margin:0 0 12px;">
+      This is a working demo of an AI tutor built on the <strong style="color:var(--ink);">OPAS protocol</strong> — pedagogy as YAML, swappable LLMs, configurable safety. The agent grounds every reply in <strong style="color:var(--ink);">Dan Levy's API-318 course materials</strong> on probabilistic thinking.
+    </p>
+    <p style="font-size:13.5px;line-height:1.6;color:var(--ink-70);margin:0 0 18px;">
+      Pick your interests, teaching style, and Soul on the start screen — the agent will adapt. Watch the <strong style="color:var(--ink);">YAML pane on the right</strong> highlight live as the agent navigates the spec, and the <strong style="color:var(--ink);">blackboard in the middle</strong> render concept pills as they're introduced. Voice is on by default.
+    </p>
+    <div style="display:flex;justify-content:flex-end;">
+      <button id="demo-info-close" type="button"
+              style="background:var(--blue);color:var(--ink);border:none;border-radius:8px;padding:9px 18px;font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:lowercase;letter-spacing:.02em;cursor:pointer;">got it</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

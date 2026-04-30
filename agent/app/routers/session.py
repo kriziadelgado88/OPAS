@@ -126,9 +126,45 @@ def session_start(
     skill = row["yaml"]
     version = row["version"]
 
+    # Pedagogy override — when the demo start screen passes a pedagogy_id,
+    # swap the skill's instructional_model with the catalogue entry so the
+    # next system prompt teaches in that style. Other pedagogy fields
+    # (theoretical_basis, etc.) are preserved.
+    if req.pedagogy_override:
+        from .pedagogies import _CATALOGUE  # local import to avoid cycles
+        ped = next((p for p in _CATALOGUE if p["id"] == req.pedagogy_override), None)
+        if ped:
+            skill = dict(skill)
+            ped_block = dict(skill.get("pedagogy", {}))
+            im = dict(ped_block.get("instructional_model", {}))
+            im["primary"] = ped["id"]
+            im["name"] = ped["name"]
+            im["description"] = ped["description"]
+            im["techniques"] = ped.get("techniques", [])
+            # opener_guidance — when set, the prompt assembler uses it
+            # instead of the skill's authored opening_prompt. This makes
+            # demos visibly different per pedagogy: Discovery poses a
+            # puzzle, Direct states the goal, Inquiry asks the learner's
+            # question, etc.
+            if ped.get("opener_guidance"):
+                im["opener_guidance"] = ped["opener_guidance"]
+            ped_block["instructional_model"] = im
+            skill["pedagogy"] = ped_block
+
     # Constitution load — fail fast with 409 if declared but missing.
+    # Override from the session-start request (demo lets the learner pick
+    # a Soul variant per session) takes precedence over the skill YAML.
     constitution = None
-    constitution_id = skill.get("constitution")
+    constitution_id = req.constitution_override
+    if not constitution_id:
+        # Skill YAML may declare a constitution as either 'constitution' (single
+        # string) or 'constitutions' (list). Handle both — Lucas's earlier wiring
+        # used the singular form here while the YAML schema uses the plural list.
+        constitution_id = skill.get("constitution")
+        if not constitution_id:
+            consts = skill.get("constitutions") or []
+            if isinstance(consts, list) and consts:
+                constitution_id = consts[0]
     if constitution_id:
         try:
             constitution = load_constitution(constitution_id)
@@ -268,6 +304,13 @@ def session_turn(req: SessionTurnRequest) -> SessionTurnResponse:
     current_phase_id = _phase_id(current_phase, state.current_phase_index)
     grounding_policy = skill.get("corpus", {}).get("grounding_policy", {})
 
+    # Track which YAML paths the demo's right-pane should pulse for THIS turn,
+    # in addition to the structural refs build_system_prompt returns.
+    dynamic_refs: list[str] = []
+    # Motivational gamification flags reported back to the demo UI.
+    stretch_zone_triggered: bool = False
+    comeback_triggered: bool = False
+
     # Pre-turn constitution scan — before retrieval, per spec.
     if state.constitution:
         scan_result, new_cooldown = scan_message(
@@ -291,6 +334,12 @@ def session_turn(req: SessionTurnRequest) -> SessionTurnResponse:
                     result={},
                     supabase=supabase,
                 )
+            # Highlight the skill YAML's constitution reference so the demo
+            # right-pane visibly pulses when the Soul kicks in. Both 'constitution'
+            # (singular string) and 'constitutions' (plural list) are supported
+            # by the skill schema; we ref both so the highlighter matches whichever.
+            dynamic_refs.append("constitution")
+            dynamic_refs.append("constitutions")
 
     state.messages.append({"role": "user", "content": req.learner_msg})
 
@@ -316,10 +365,17 @@ def session_turn(req: SessionTurnRequest) -> SessionTurnResponse:
               context={"phase_id": current_phase_id, "turn_index": state.phase_turn_index, "off_corpus": True},
               result={}, supabase=supabase)
         set_state(req.session_id, state)
+        # Merge dynamic_refs (e.g. ["constitution", "constitutions"] from the
+        # pre-turn distress scan) so the demo's YAML highlight pulses the Soul
+        # rules when a learner says "I'm frustrated/stupid" on an off-corpus
+        # turn — not just the refuse_if_ungrounded line. Also preserve streak
+        # so the badge doesn't reset on every off-corpus aside.
         return SessionTurnResponse(
             agent_reply=agent_reply, phase_id=current_phase_id,
             phase_turn_index=state.phase_turn_index, mastery_met=False,
-            yaml_refs=refusal_refs, citations=[],
+            yaml_refs=dynamic_refs + refusal_refs, citations=[],
+            resolved_mode=state.resolved_mode,
+            streak=state.streak,
         )
 
     _emit(verb="responded", actor_id=state.learner_id,
@@ -351,9 +407,20 @@ def session_turn(req: SessionTurnRequest) -> SessionTurnResponse:
         if state.mode == "auto" and state.resolved_mode is None and probe_result["score"] is not None:
             state.resolved_mode = "review" if float(probe_result["score"]) >= 0.5 else "teach"
 
-        # Track consecutive failures for struggle_tracker.
-        if probe_result["score"] is not None and float(probe_result["score"]) >= 0.5:
+        # Track streak (consecutive correct) + comeback (correct after stretch zone)
+        # + consecutive_failures (drives stretch_zone trigger).
+        probe_passed = (
+            probe_result["score"] is not None
+            and float(probe_result["score"]) >= 0.5
+        )
+        if probe_passed:
             state.consecutive_failures = 0
+            state.streak += 1
+            # If we WERE in stretch zone (the previous turn(s) flagged struggle),
+            # this correct answer is a comeback. Celebrate it.
+            if state.in_stretch_zone:
+                comeback_triggered = True
+                state.in_stretch_zone = False
             _write_memory(
                 learner_id=state.learner_id, skill_id=state.skill_id,
                 session_id=req.session_id, category="success",
@@ -366,16 +433,22 @@ def session_turn(req: SessionTurnRequest) -> SessionTurnResponse:
             )
         else:
             state.consecutive_failures += 1
+            state.streak = 0  # broken streak
 
-        # Struggle injection fires at threshold; counter resets so it doesn't re-fire every turn.
+        # Stretch-zone trigger (re-uses the constitution's struggle_tracker
+        # threshold, but reframed positively for the learner). The agent
+        # still gets the helpful injection (smaller piece, fresh angle);
+        # the UI just calls it 'stretch zone' instead of 'struggle'.
         if state.constitution:
             inj = struggle_injection(state.constitution, state.consecutive_failures)
             if inj:
+                stretch_zone_triggered = True
+                state.in_stretch_zone = True
                 _write_memory(
                     learner_id=state.learner_id, skill_id=state.skill_id,
                     session_id=req.session_id, category="struggle",
                     memory_text=(
-                        f"Struggled with {current_phase_id}.{probe_result['probe_id']}"
+                        f"Stretch zone in {current_phase_id}.{probe_result['probe_id']}"
                         f" — {state.consecutive_failures} consecutive below-threshold attempts"
                     ),
                     supabase=supabase,
@@ -502,7 +575,10 @@ def session_turn(req: SessionTurnRequest) -> SessionTurnResponse:
     return SessionTurnResponse(
         agent_reply=agent_reply, phase_id=current_phase_id,
         phase_turn_index=state.phase_turn_index, mastery_met=mastery_met,
-        yaml_refs=yaml_refs, citations=citations,
+        yaml_refs=yaml_refs + dynamic_refs, citations=citations,
+        streak=state.streak,
+        stretch_zone_triggered=stretch_zone_triggered,
+        comeback_triggered=comeback_triggered,
         resolved_mode=state.resolved_mode,
     )
 

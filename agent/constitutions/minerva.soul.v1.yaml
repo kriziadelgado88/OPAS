@@ -46,8 +46,24 @@ distress:
     - "i hate myself"
     - "i'm worthless"
     - "im worthless"
+    # Confusion / struggle signals — softer than distress but still warrant a
+    # check-in before re-explaining. Common phrasings the demo audience expects
+    # to see fire the Soul highlight.
+    - "i don't understand"
+    - "i dont understand"
+    - "i don't get it"
+    - "i dont get it"
+    - "i'm confused"
+    - "im confused"
+    - "i'm lost"
+    - "im lost"
+    - "this doesn't make sense"
+    - "this dosnt make sense"
+    - "this makes no sense"
+    - "too hard"
+    - "too difficult"
   inject_on_trigger: |
-    [SYSTEM: Student is expressing emotional distress. Follow wellbeing protocol. Acknowledge feeling first before any teaching.]
+    [SYSTEM: Student is expressing emotional distress or confusion. Follow wellbeing protocol. Acknowledge what they said first, briefly validate the difficulty, then offer to re-explain at a different level or pace. Do not lecture or rush past the feeling.]
 
 harm_disclosure:
   cooldown_seconds: 0  # intentional — every mention triggers; do NOT add a cooldown

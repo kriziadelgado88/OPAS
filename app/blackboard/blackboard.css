@@ -1,0 +1,545 @@
+/* poppy-blackboard v1.0
+ * Module stylesheet — every selector starts with .bb- so it can't leak.
+ * Expects the host page's poppy-theme.css to define the CSS custom properties
+ * (--blue, --red, --green, --gold, --orange, --bg, --bg2, --ink, ink alphas,
+ * --font-display, --font-mono, --font-body). Falls back to system fonts /
+ * sensible colors if those vars aren't present.
+ */
+
+/* ── Pane layout ──────────────────────────────────────────────────────── */
+.bb-pane {
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(64,112,192,.04), transparent 60%),
+    radial-gradient(ellipse at 80% 80%, rgba(212,176,64,.04), transparent 60%),
+    var(--bg, #080808);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  grid-template-columns: 1fr 280px;
+  grid-template-areas:
+    "timeline timeline"
+    "stage    map"
+    "rewards  rewards";
+  gap: 14px;
+  padding: 16px 18px;
+  overflow: hidden;
+  color: var(--ink, #F2EFE6);
+}
+@media (max-width: 760px) {
+  .bb-pane {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "timeline"
+      "stage"
+      "map"
+      "rewards";
+  }
+}
+
+/* ── Beat timeline ────────────────────────────────────────────────────── */
+.bb-timeline {
+  grid-area: timeline;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 6px 4px;
+  border-bottom: 1px solid rgba(242,239,230,.08);
+}
+.bb-pip {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--ink-15, rgba(242,239,230,.15));
+  background: var(--bg2, #111116);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: var(--ink-50, rgba(242,239,230,.5));
+  cursor: pointer;
+  transition: all .2s;
+  animation: bb-fade-in .35s ease-out;
+}
+.bb-pip-num { color: var(--ink-30, rgba(242,239,230,.3)); }
+.bb-pip.active {
+  background: var(--bg2, #111116);
+  border-color: var(--gold, #D4B040);
+  color: var(--ink, #F2EFE6);
+  box-shadow: 0 0 0 3px rgba(212,176,64,.10);
+}
+.bb-pip.active .bb-pip-num { color: var(--gold, #D4B040); }
+.bb-pip.done { background: transparent; }
+
+/* ── Stage (active beat) ─────────────────────────────────────────────── */
+.bb-stage {
+  grid-area: stage;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.02), transparent 30%),
+    var(--bg2, #111116);
+  border: 1px solid var(--ink-15, rgba(242,239,230,.15));
+  border-radius: 14px;
+  padding: 22px 24px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+  isolation: isolate;
+}
+.bb-stage-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: opacity .3s;
+}
+.bb-stage-content.bb-dimmed { opacity: 0.45; }
+
+.bb-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--ink-30, rgba(242,239,230,.3));
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 12px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  padding: 40px;
+  text-align: center;
+}
+.bb-empty-sub { font-size: 10px; opacity: .6; text-transform: none; letter-spacing: .04em; }
+
+.bb-beat-label {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold, #D4B040);
+}
+.bb-beat-headline {
+  font-family: var(--font-display, ui-monospace, monospace);
+  font-weight: 800;
+  font-size: 26px;
+  color: var(--ink, #F2EFE6);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  padding-bottom: 10px;
+  border-bottom: 2px solid rgba(212,176,64,.45);  /* gold accent ties beat to gamification colour */
+  margin-bottom: 4px;
+}
+
+/* ── Keyword cluster ─────────────────────────────────────────────────── */
+.bb-kw-cluster { display: flex; flex-wrap: wrap; gap: 8px; }
+.bb-kw {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 14px;
+  background: rgba(64,112,192,.10);
+  border: 1px solid rgba(64,112,192,.45);
+  border-radius: 12px;
+  max-width: 320px;
+  position: relative;
+  animation: bb-pop .45s cubic-bezier(.2,.8,.2,1);
+}
+/* Hero KEYWORD — the takeaway from this beat. Visually distinct from
+   regular keyword pills: gold accent, term larger than definition,
+   '★ KEY CONCEPT' label above. */
+.bb-kw-hero {
+  background: linear-gradient(135deg, rgba(212,176,64,.16), rgba(212,128,64,.10));
+  border-color: rgba(212,176,64,.85);
+  padding: 16px 22px 14px;
+  box-shadow: 0 0 0 4px rgba(212,176,64,.14), 0 0 24px rgba(212,176,64,.12);
+  position: relative;
+  margin-top: 18px;  /* room for the floating label */
+}
+.bb-kw-hero::before {
+  content: '★ KEY CONCEPT';
+  position: absolute;
+  top: -10px;
+  left: 14px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  background: var(--bg, #080808);
+  color: var(--gold, #D4B040);
+  padding: 2px 8px;
+  border: 1px solid rgba(212,176,64,.85);
+  border-radius: 8px;
+  font-weight: 700;
+}
+.bb-kw-hero .bb-term { font-size: 18px; font-weight: 700; color: var(--gold, #D4B040); }
+.bb-kw-hero .bb-def  { font-size: 13px; line-height: 1.45; margin-top: 6px; }
+.bb-kw-hero .bb-cite { background: var(--gold, #D4B040); color: var(--bg, #080808); }
+.bb-kw .bb-cite {
+  position: absolute;
+  top: -6px; right: -6px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--blue, #4070C0);
+  color: var(--ink, #F2EFE6);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 10px;
+  display: flex; align-items: center; justify-content: center;
+}
+.bb-kw .bb-term {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 12px;
+  color: var(--blue, #4070C0);
+  letter-spacing: 0.02em;
+}
+.bb-kw .bb-def {
+  font-size: 13px;
+  color: var(--ink-70, rgba(242,239,230,.7));
+  line-height: 1.4;
+}
+.bb-kw.bb-pointed { animation: bb-point 1.6s ease-out; }
+
+/* ── Draw cards ──────────────────────────────────────────────────────── */
+.bb-draw-area { display: flex; flex-direction: column; gap: 12px; }
+.bb-draw {
+  background: var(--bg, #080808);
+  border: 1px solid var(--ink-15, rgba(242,239,230,.15));
+  border-radius: 12px;
+  padding: 16px 18px;
+  animation: bb-pop .5s cubic-bezier(.2,.8,.2,1);
+}
+.bb-draw-hero {
+  border-color: rgba(64,112,192,.55);
+  box-shadow: 0 0 0 4px rgba(64,112,192,.10);
+}
+.bb-draw-label {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-50, rgba(242,239,230,.5));
+  margin-bottom: 10px;
+}
+
+/* Formula — KaTeX path with chalk-reveal animation */
+.bb-formula-katex {
+  text-align: center;
+  padding: 18px 8px;
+  color: var(--gold, #D4B040);
+  clip-path: inset(0 100% 0 0);
+  animation: bb-chalk-reveal 1.4s ease-out forwards;
+}
+.bb-draw-hero .bb-formula-katex { padding: 24px 8px; }
+.bb-formula-katex .katex { font-size: 1.6em; color: var(--gold, #D4B040); }
+.bb-draw-hero .bb-formula-katex .katex { font-size: 2.0em; }
+.bb-formula-katex .katex,
+.bb-formula-katex .katex .mord,
+.bb-formula-katex .katex .mop,
+.bb-formula-katex .katex .mrel,
+.bb-formula-katex .katex .mbin,
+.bb-formula-katex .katex .mopen,
+.bb-formula-katex .katex .mclose,
+.bb-formula-katex .katex .minner,
+.bb-formula-katex .katex .mpunct { color: var(--gold, #D4B040); }
+.bb-formula-katex .katex .frac-line { border-bottom-color: var(--gold, #D4B040) !important; }
+/* Fallback typewriter for when KaTeX hasn't loaded */
+.bb-formula-text {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 22px;
+  color: var(--gold, #D4B040);
+  text-align: center;
+  padding: 14px 0;
+}
+
+/* Compare card */
+.bb-compare-grid {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 14px;
+  align-items: stretch;
+}
+.bb-compare-col {
+  background: var(--bg, #080808);
+  border: 1px solid var(--ink-15, rgba(242,239,230,.15));
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.bb-compare-col h5 {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-50, rgba(242,239,230,.5));
+  margin: 0 0 6px;
+}
+.bb-compare-col p { font-size: 14px; color: var(--ink, #F2EFE6); margin: 0; line-height: 1.5; }
+.bb-compare-left  { border-left: 3px solid var(--blue, #4070C0); }
+.bb-compare-right { border-left: 3px solid var(--orange, #D48040); }
+.bb-compare-vs {
+  align-self: center;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  color: var(--ink-50, rgba(242,239,230,.5));
+  letter-spacing: 0.16em;
+}
+
+/* Steps */
+.bb-steps {
+  list-style: none; counter-reset: bb-step;
+  padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.bb-steps li {
+  counter-increment: bb-step;
+  display: flex; gap: 10px; align-items: flex-start;
+  font-size: 13.5px; color: var(--ink, #F2EFE6);
+}
+.bb-steps li::before {
+  content: counter(bb-step);
+  flex-shrink: 0;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--green, #48A060);
+  color: var(--ink, #F2EFE6);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 12px; font-weight: 600;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+
+/* Tree */
+.bb-tree ul { list-style: none; padding-left: 16px; border-left: 2px solid var(--ink-15, rgba(242,239,230,.15)); margin: 0; }
+.bb-tree > ul { padding-left: 0; border-left: none; }
+.bb-tree li { font-size: 13.5px; color: var(--ink, #F2EFE6); margin: 4px 0; }
+.bb-tree li > strong { color: var(--gold, #D4B040); font-weight: 600; }
+
+/* Curve */
+.bb-curve-svg { width: 100%; height: 160px; display: block; }
+
+/* ── Concept map (right column) ─────────────────────────────────────── */
+.bb-map {
+  grid-area: map;
+  background: var(--bg2, #111116);
+  border: 1px solid var(--ink-15, rgba(242,239,230,.15));
+  border-radius: 14px;
+  padding: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.bb-map h4 {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-50, rgba(242,239,230,.5));
+  margin: 0 0 10px;
+}
+.bb-map svg { width: 100%; height: 100%; flex: 1; }
+.bb-map-node-g {
+  opacity: 0;
+  animation: bb-fade-in .5s ease-out forwards;
+  animation-delay: .1s;
+}
+.bb-map-pulse {
+  animation: bb-map-pulse 1.4s ease-out;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+/* ── Rewards strip ──────────────────────────────────────────────────── */
+.bb-rewards {
+  grid-area: rewards;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  background: var(--bg2, #111116);
+  border: 1px solid var(--ink-15, rgba(242,239,230,.15));
+  border-radius: 12px;
+}
+.bb-wins-strip { display: flex; gap: 6px; flex: 1; min-width: 0; overflow-x: auto; }
+.bb-win-chip {
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; gap: 6px;
+  background: linear-gradient(135deg, rgba(212,176,64,.18), rgba(212,128,64,.14));
+  border: 1px solid rgba(212,176,64,.6);
+  color: var(--gold, #D4B040);
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  animation: bb-win-shine .9s ease-out;
+  font-weight: 600;
+}
+.bb-win-chip::before { content: '★'; }
+
+.bb-mastery-cluster { display: flex; align-items: center; gap: 10px; min-width: 220px; }
+.bb-lbl {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-50, rgba(242,239,230,.5));
+}
+.bb-mastery-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--ink-15, rgba(242,239,230,.15));
+  border-radius: 3px;
+  overflow: hidden;
+}
+.bb-mastery-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--gold, #D4B040), var(--orange, #D48040));
+  transition: width .9s cubic-bezier(.2,.8,.2,1);
+}
+.bb-mastery-pct {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  color: var(--ink, #F2EFE6);
+  width: 36px;
+  text-align: right;
+}
+
+/* ── HERO WIN moment (centered overlay over the stage) ──────────────── */
+.bb-hero-win {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 5;
+  background: radial-gradient(ellipse at center, rgba(212,176,64,.10), transparent 70%);
+}
+.bb-hero-win.bb-visible { display: flex; animation: bb-hero-fade 5.0s ease-out; }  /* was 2.4s — too fast to read */
+.bb-hero-win-card {
+  background: linear-gradient(135deg, rgba(212,176,64,.20), rgba(212,128,64,.14));
+  border: 1.5px solid var(--gold, #D4B040);
+  border-radius: 14px;
+  padding: 18px 30px;
+  color: var(--ink, #F2EFE6);
+  font-weight: 700;
+  font-size: 17px;
+  display: flex; align-items: center; gap: 12px;
+  box-shadow: 0 0 60px rgba(212,176,64,.25);
+  animation: bb-hero-pop .5s cubic-bezier(.2,.8,.2,1);
+}
+.bb-hero-win-card::before { content: '★'; font-size: 26px; color: var(--gold, #D4B040); }
+
+/* ── Beat-end toast ────────────────────────────────────────────────── */
+.bb-toast {
+  position: absolute;
+  top: 16px; left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  background: var(--bg2, #111116);
+  border: 1px solid var(--gold, #D4B040);
+  color: var(--ink, #F2EFE6);
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 6;
+  transition: all .3s;
+}
+.bb-toast.bb-visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+.bb-toast-accent { color: var(--gold, #D4B040); margin-right: 4px; }
+
+/* ── Milestone toast (top-right corner; was a fullscreen burst that
+       blocked the beat content for 3.2s — Lucas's testing showed beats
+       appearing 'overlaid'. Now it's a small slide-in toast that doesn't
+       cover the stage.) ─────────────────────────────────────────────── */
+.bb-milestone-burst {
+  position: fixed;
+  top: 76px;          /* below topbar + progress-wrap, doesn't cover content */
+  right: 18px;
+  inset: auto;
+  display: none;
+  width: 280px;
+  pointer-events: none;
+  z-index: 50;
+}
+.bb-milestone-burst.bb-visible {
+  display: block;
+  animation: bb-toast-slide 4.0s ease-out;  /* was 1.6s — Krizia's feedback: too fast to read */
+}
+.bb-ring { display: none; }  /* the rings were a fullscreen flourish; not needed in toast form */
+.bb-banner {
+  background: var(--bg2, #111116);
+  border: 1.5px solid var(--gold, #D4B040);
+  border-radius: 12px;
+  padding: 12px 16px;
+  text-align: left;
+  box-shadow: 0 8px 28px rgba(0,0,0,.4), 0 0 24px rgba(212,176,64,.18);
+}
+.bb-banner-label {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold, #D4B040);
+  margin-bottom: 2px;
+}
+.bb-banner-title {
+  font-family: var(--font-display, ui-monospace, monospace);
+  font-weight: 800;
+  font-size: 18px;
+  color: var(--ink, #F2EFE6);
+  letter-spacing: -0.01em;
+  display: inline;
+}
+.bb-banner-sub {
+  color: var(--ink-70, rgba(242,239,230,.7));
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.bb-pane.bb-celebrate { animation: bb-board-celebrate 1.4s ease-out; }
+
+/* Typewriter caret */
+.bb-typing::after {
+  content: '▋';
+  color: var(--ink-50, rgba(242,239,230,.5));
+  margin-left: 1px;
+  animation: bb-caret 0.7s steps(2) infinite;
+}
+
+/* ── Animations ──────────────────────────────────────────────────────── */
+@keyframes bb-fade-in   { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@keyframes bb-pop       { 0% { opacity: 0; transform: scale(.9) translateY(6px); } 100% { opacity: 1; transform: none; } }
+@keyframes bb-point     {
+  0%   { box-shadow: 0 0 0 0 rgba(212,176,64,0); }
+  25%  { box-shadow: 0 0 0 6px rgba(212,176,64,.45); }
+  100% { box-shadow: 0 0 0 0 rgba(212,176,64,0); }
+}
+@keyframes bb-win-shine { 0% { transform: scale(.9); opacity: 0; } 50% { transform: scale(1.05); } 100% { transform: scale(1); opacity: 1; } }
+@keyframes bb-hero-fade {
+  0% { opacity: 0; } 5% { opacity: 1; } 90% { opacity: 1; } 100% { opacity: 0; }
+}
+@keyframes bb-hero-pop  { 0% { transform: scale(.7); } 60% { transform: scale(1.04); } 100% { transform: scale(1); } }
+@keyframes bb-chalk-reveal { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes bb-milestone-fade {
+  0% { opacity: 0; } 10% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; }
+}
+@keyframes bb-toast-slide {
+  0%   { opacity: 0; transform: translateX(20px); }
+  6%   { opacity: 1; transform: none; }
+  92%  { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translateX(20px); }
+}
+@keyframes bb-ring {
+  0%   { width: 100px; height: 100px; opacity: .9; }
+  100% { width: 600px; height: 600px; opacity: 0; }
+}
+@keyframes bb-board-celebrate {
+  0%   { box-shadow: inset 0 0 0 0 rgba(212,176,64,0); }
+  30%  { box-shadow: inset 0 0 120px 0 rgba(212,176,64,.18); }
+  100% { box-shadow: inset 0 0 0 0 rgba(212,176,64,0); }
+}
+@keyframes bb-caret { 50% { opacity: 0; } }
+@keyframes bb-map-pulse { 0% { transform: scale(1); } 40% { transform: scale(1.6); } 100% { transform: scale(1); } }

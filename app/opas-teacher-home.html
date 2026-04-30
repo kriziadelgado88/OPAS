@@ -3,43 +3,44 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="opas-runtime" content="http://localhost:8001">
+<meta name="opas-runtime" content="https://opas-runtime.onrender.com">
 <title>OPAS — Teacher Home</title>
+<link rel="stylesheet" href="poppy-theme.css">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --brand: #1a3a5c;
-  --accent: #c8a951;
-  --border: #dde3ea;
-  --text: #1c2b3a;
-  --muted: #64748b;
-  --bg: #f8fafc;
-  --surface: #fff;
+  --brand: var(--blue);
+  --accent: var(--gold);
+  --border: var(--ink-15);
+  --text: var(--ink);
+  --muted: var(--ink-50);
+  --surface: var(--bg2);
   --radius: 10px;
-  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font: var(--font-body);
 }
 
 body { font-family: var(--font); color: var(--text); background: var(--bg); min-height: 100vh; display: flex; flex-direction: column; }
 
 #topbar {
-  background: var(--brand); color: #fff;
-  padding: 0 24px; height: 52px;
+  background: var(--bg); color: var(--ink);
+  border-bottom: 1px solid var(--ink-15);
+  padding: 0 24px; height: 56px;
   display: flex; align-items: center; gap: 14px; flex-shrink: 0;
 }
-#topbar .logo  { font-weight: 700; font-size: 15px; letter-spacing: .04em; }
-#topbar .title { font-size: 13px; opacity: .65; }
+#topbar .logo  { font-family: var(--font-display); font-weight: 900; font-size: 20px; text-transform: lowercase; letter-spacing: -0.04em; color: var(--ink); display: inline-flex; align-items: center; gap: 10px; line-height: 1; }
+#topbar .title { font-size: 13px; opacity: .7; }
 #topbar .spacer { flex: 1; }
 #topbar .badge {
   font-size: 11px; font-weight: 600; letter-spacing: .06em;
   background: var(--accent); color: #1a1a1a;
-  padding: 3px 9px; border-radius: 20px;
+  padding: 4px 12px; border-radius: 20px; font-family: var(--font-mono);
 }
 #topbar .signout {
-  background: rgba(255,255,255,.08); color: #fff; border: 1px solid rgba(255,255,255,.18);
+  background: var(--bg2); color: var(--ink); border: 1px solid var(--ink-15);
   border-radius: 6px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
 }
-#topbar .signout:hover { background: rgba(255,255,255,.16); }
+#topbar .signout:hover { border-color: var(--ink-30); }
 
 #main {
   flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 24px;
@@ -108,7 +109,18 @@ body { font-family: var(--font); color: var(--text); background: var(--bg); min-
 <body>
 
 <div id="topbar">
-  <span class="logo">OPAS</span>
+  <span class="logo" aria-label="poppy">
+    <svg viewBox="0 0 60 50" width="40" height="34" aria-hidden="true">
+      <circle cx="14" cy="8"  r="8"   fill="#4070C0"/>
+      <circle cx="30" cy="3"  r="8"   fill="#D4B040"/>
+      <circle cx="46" cy="8"  r="8"   fill="#CC4848"/>
+      <circle cx="16" cy="8"  r="2.5" fill="#111"/>
+      <circle cx="44" cy="8"  r="2.5" fill="#111"/>
+      <circle cx="20" cy="28" r="6"   fill="#48A060"/>
+      <circle cx="40" cy="28" r="6"   fill="#D48040"/>
+    </svg>
+    <span>poppy</span>
+  </span>
   <span class="title">Teacher Home</span>
   <span class="spacer"></span>
   <span class="badge">TEACHER</span>

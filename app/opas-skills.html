@@ -3,38 +3,38 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="opas-runtime" content="http://localhost:8001">
+<meta name="opas-runtime" content="https://opas-runtime.onrender.com">
 <title>OPAS — My Agents</title>
+<link rel="stylesheet" href="poppy-theme.css">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --brand: #1a3a5c;
-    --brand-hover: #254f7a;
-    --brand-light: #e8f0f8;
-    --accent: #c8a951;
-    --bg: #f8fafc;
-    --card-bg: #fff;
-    --border: #dde3ea;
-    --border-strong: #c5cdd6;
-    --text: #1c2b3a;
-    --muted: #64748b;
-    --error-bg: #fef2f2;
-    --error-fg: #b42318;
-    --error-border: #fecaca;
-    --success-bg: #ecfdf3;
-    --success-fg: #067647;
-    --success-border: #abefc6;
-    --pill-private: #eef1f5;
-    --pill-private-fg: #3a4a5c;
-    --pill-group:   #fff4d6;
-    --pill-group-fg: #7a5c00;
-    --pill-pilot:    #e8f0f8;
-    --pill-pilot-fg: #1a3a5c;
-    --pill-published-bg: #ecfdf3;
-    --pill-published-fg: #067647;
+    --brand: var(--blue);
+    --brand-hover: var(--blue);
+    --brand-light: rgba(64,112,192,.12);
+    --accent: var(--gold);
+    --card-bg: var(--bg2);
+    --border: var(--ink-15);
+    --border-strong: var(--ink-30);
+    --text: var(--ink);
+    --muted: var(--ink-50);
+    --error-bg: rgba(204,72,72,.08);
+    --error-fg: var(--red);
+    --error-border: var(--red);
+    --success-bg: rgba(72,160,96,.08);
+    --success-fg: var(--green);
+    --success-border: var(--green);
+    --pill-private: var(--ink-15);
+    --pill-private-fg: var(--ink-70);
+    --pill-group:   rgba(212,176,64,.14);
+    --pill-group-fg: var(--gold);
+    --pill-pilot:    rgba(64,112,192,.12);
+    --pill-pilot-fg: var(--blue);
+    --pill-published-bg: rgba(72,160,96,.08);
+    --pill-published-fg: var(--green);
     --radius: 12px;
-    --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --font: var(--font-body);
   }
 
   body {
@@ -49,7 +49,7 @@
   /* ── TOP BAR (matches opas-student.html) ─────────────────────── */
   #topbar {
     background: var(--brand);
-    color: #fff;
+    color: var(--bg2);
     padding: 0 20px;
     height: 52px;
     display: flex;
@@ -78,7 +78,7 @@
   }
   .profile-trigger {
     background: rgba(255,255,255,0.15);
-    color: #fff;
+    color: var(--bg2);
     border: 1px solid rgba(255,255,255,0.3);
     border-radius: 6px;
     padding: 5px 12px;
@@ -101,7 +101,7 @@
     position: absolute;
     right: 0;
     top: calc(100% + 6px);
-    background: #fff;
+    background: var(--bg2);
     border: 1px solid var(--border);
     border-radius: 10px;
     box-shadow: 0 8px 24px rgba(26, 58, 92, 0.18);
@@ -133,7 +133,7 @@
     font-size: 13px;
     font-family: var(--font);
     color: var(--text);
-    background: #fff;
+    background: var(--bg2);
     border: none;
     text-align: left;
     text-decoration: none;
@@ -190,12 +190,12 @@
   }
   .btn-primary {
     background: var(--brand);
-    color: #fff;
+    color: var(--bg2);
     border-color: var(--brand);
   }
   .btn-primary:hover:not(:disabled) { background: var(--brand-hover); border-color: var(--brand-hover); }
   .btn-secondary {
-    background: #fff;
+    background: var(--bg2);
     color: var(--brand);
     border-color: var(--border-strong);
   }
@@ -208,14 +208,14 @@
   }
   .btn-ghost:hover:not(:disabled) { background: var(--brand-light); }
   .btn-danger {
-    background: #fff;
+    background: var(--bg2);
     color: var(--error-fg);
     border-color: var(--error-border);
   }
   .btn-danger:hover:not(:disabled) { background: var(--error-bg); }
   .btn-danger-solid {
     background: var(--error-fg);
-    color: #fff;
+    color: var(--bg2);
     border-color: var(--error-fg);
   }
   .btn-danger-solid:hover:not(:disabled) { background: #971a13; border-color: #971a13; }
@@ -327,7 +327,7 @@
   }
   .drawer-tab.active {
     background: var(--brand);
-    color: #fff;
+    color: var(--bg2);
     border-color: var(--brand);
   }
   .drawer textarea {
@@ -339,6 +339,7 @@
     font-family: var(--font);
     font-size: 13px;
     color: var(--text);
+    background: var(--bg2);
     resize: vertical;
     outline: none;
   }
@@ -409,7 +410,7 @@
     left: 50%;
     transform: translateX(-50%);
     background: var(--text);
-    color: #fff;
+    color: var(--bg2);
     padding: 10px 18px;
     border-radius: 8px;
     font-size: 13px;
@@ -440,7 +441,7 @@
     max-width: 540px;
     max-height: calc(100vh - 40px);
     overflow-y: auto;
-    background: #fff;
+    background: var(--bg2);
     border-radius: 14px;
     padding: 26px 26px 22px;
     box-shadow: 0 18px 50px rgba(0,0,0,0.25);
@@ -474,6 +475,7 @@
     font-size: 14px;
     font-family: var(--font);
     color: var(--text);
+    background: var(--bg2);
     outline: none;
     transition: border-color 0.15s;
   }
@@ -547,12 +549,28 @@
     .modal { padding: 22px 18px 18px; }
   }
 </style>
+<!-- PDF.js for in-browser PDF text extraction (Create-agent modal upload). -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  if (window.pdfjsLib) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+</script>
 </head>
 <body>
 
 <!-- ─── TOP BAR ─────────────────────────────────────────────── -->
 <header id="topbar">
-  <span class="logo">OPAS</span>
+  <span class="logo"><svg viewBox="0 0 60 50" width="40" height="34" aria-hidden="true">
+  <circle cx="14" cy="8"  r="8"   fill="#4070C0"/>
+  <circle cx="30" cy="3"  r="8"   fill="#D4B040"/>
+  <circle cx="46" cy="8"  r="8"   fill="#CC4848"/>
+  <circle cx="16" cy="8"  r="2.5" fill="#111"/>
+  <circle cx="44" cy="8"  r="2.5" fill="#111"/>
+  <circle cx="20" cy="28" r="6"   fill="#48A060"/>
+  <circle cx="40" cy="28" r="6"   fill="#D48040"/>
+</svg><span style="font-family:var(--font-display);font-weight:900;font-size:22px;text-transform:lowercase;letter-spacing:-0.04em;color:var(--ink);">poppy</span></span>
   <span class="accent-dot"></span>
   <span class="spacer"></span>
   <div class="profile">
@@ -651,7 +669,23 @@
     </div>
 
     <label for="create-materials" style="margin-top:14px">Materials</label>
+    <p style="font-size:11.5px;color:var(--muted);margin:-4px 0 8px 0;line-height:1.4">
+      For new skills only — existing skills (like API-318 Thinking Analytically) come with their corpus pre-loaded.
+    </p>
     <textarea id="create-materials" placeholder="Paste lecture notes, a chapter, a problem set&hellip; The more text, the better the agent."></textarea>
+    <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap">
+      <label for="create-pdf" class="btn btn-ghost" style="font-size:13px;padding:6px 12px;cursor:pointer;margin:0">
+        📄 Upload PDFs
+      </label>
+      <input type="file" id="create-pdf" accept="application/pdf,text/plain" multiple style="display:none">
+      <button type="button" id="create-drive" class="btn btn-ghost" disabled
+        style="font-size:13px;padding:6px 12px;margin:0;opacity:0.5;cursor:not-allowed"
+        title="Google Drive folder integration is the v2 connector. PDF upload above works today.">
+        🗂 Connect Google Drive (coming soon)
+      </button>
+      <span id="create-pdf-status" style="font-size:12px;color:var(--muted)"></span>
+    </div>
+    <div id="create-pdf-files" style="display:none;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
 
     <div class="modal-error" id="create-error"></div>
 
@@ -1053,6 +1087,126 @@
   const createGroup    = document.getElementById('create-group');
   const createError    = document.getElementById('create-error');
   const createSubmit   = document.getElementById('create-submit');
+  const createPdfInput = document.getElementById('create-pdf');
+  const createPdfStatus= document.getElementById('create-pdf-status');
+  const createPdfFiles = document.getElementById('create-pdf-files');
+
+  // Tracks which files have been ingested so we can render chips and remove
+  // their contribution from the textarea when the user clicks ×.
+  // Each entry: { name, size, chars, marker } — marker is the '--- name ---'
+  // separator string we inserted into the textarea, used as a removal anchor.
+  const createPdfQueue = [];
+
+  // ── PDF upload — extracts text in-browser and appends to textarea ────
+  async function extractPdfText(file) {
+    if (!window.pdfjsLib) throw new Error('PDF.js failed to load — check your network.');
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    const parts = [];
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const tc = await page.getTextContent();
+      parts.push(tc.items.map((it) => it.str).join(' '));
+    }
+    return parts.join('\n\n');
+  }
+
+  function renderPdfChips() {
+    if (!createPdfQueue.length) {
+      createPdfFiles.style.display = 'none';
+      createPdfFiles.innerHTML = '';
+      return;
+    }
+    createPdfFiles.style.display = 'flex';
+    const totalChars = createPdfQueue.reduce((n, q) => n + q.chars, 0);
+    createPdfFiles.innerHTML = createPdfQueue.map((q, idx) => `
+      <span style="
+        display:inline-flex; align-items:center; gap:6px;
+        padding:4px 8px; border-radius:14px;
+        background:var(--bg2); border:1px solid var(--ink-15);
+        font-size:11.5px; color:var(--text); font-family:var(--font);
+      ">
+        📄 <span>${escapeHtmlPdf(q.name)}</span>
+        <span style="color:var(--muted); font-size:10px;">${q.chars.toLocaleString()} chars</span>
+        <button type="button" data-pdf-remove="${idx}" style="
+          background:none; border:none; color:var(--muted); cursor:pointer;
+          padding:0 2px; font-size:14px; line-height:1;
+        " title="Remove this file's contents from the materials">×</button>
+      </span>
+    `).join('') + `
+      <span style="font-size:11px; color:var(--muted); align-self:center; margin-left:4px;">
+        ${createPdfQueue.length} file${createPdfQueue.length !== 1 ? 's' : ''} · ${totalChars.toLocaleString()} chars total
+      </span>
+    `;
+    createPdfFiles.querySelectorAll('[data-pdf-remove]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const i = +btn.dataset.pdfRemove;
+        const removed = createPdfQueue.splice(i, 1)[0];
+        if (removed && removed.marker) {
+          // Strip the file's block from the textarea: the marker line plus everything
+          // until the next marker (or end of string).
+          const text = createMaterials.value || '';
+          const startIdx = text.indexOf(removed.marker);
+          if (startIdx !== -1) {
+            const afterStart = startIdx + removed.marker.length;
+            const nextMarker = text.indexOf('\n\n--- ', afterStart);
+            const endIdx = nextMarker === -1 ? text.length : nextMarker;
+            createMaterials.value = (text.slice(0, startIdx) + text.slice(endIdx)).replace(/^\s+|\s+$/g, '');
+          }
+        }
+        renderPdfChips();
+      });
+    });
+  }
+
+  function escapeHtmlPdf(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    }[c]));
+  }
+
+  createPdfInput.addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    let processed = 0;
+    let failed = 0;
+    for (const file of files) {
+      createPdfStatus.textContent = `Reading ${file.name} (${processed + 1}/${files.length})…`;
+      createPdfStatus.style.color = 'var(--muted)';
+      try {
+        let text;
+        if (file.type === 'text/plain' || file.name.toLowerCase().endsWith('.txt')) {
+          text = await file.text();
+        } else {
+          text = await extractPdfText(file);
+        }
+        const trimmed = (text || '').trim();
+        if (!trimmed) throw new Error('No text extracted');
+        // Insert with a unique marker so we can strip it back out on remove.
+        const marker = `\n\n--- ${file.name} ---\n`;
+        const existing = (createMaterials.value || '').trim();
+        createMaterials.value = existing ? `${existing}${marker}${trimmed}` : `${marker.trim()}\n${trimmed}`.trim();
+        createPdfQueue.push({ name: file.name, size: file.size, chars: trimmed.length, marker });
+        processed++;
+      } catch (err) {
+        failed++;
+        console.warn(`PDF ${file.name} failed:`, err);
+      }
+    }
+    renderPdfChips();
+    if (failed === 0) {
+      createPdfStatus.textContent = `✓ Added ${processed} file${processed !== 1 ? 's' : ''}.`;
+      createPdfStatus.style.color = 'var(--success-fg)';
+    } else if (processed === 0) {
+      createPdfStatus.textContent = `✗ Couldn't read any of those files. Scanned PDFs need OCR — paste manually.`;
+      createPdfStatus.style.color = 'var(--error-fg)';
+    } else {
+      createPdfStatus.textContent = `✓ Added ${processed} of ${files.length} (${failed} failed — scanned PDFs need OCR).`;
+      createPdfStatus.style.color = 'var(--success-fg)';
+    }
+    // Reset so re-uploading the same file (or another batch) fires the change event again.
+    createPdfInput.value = '';
+  });
 
   function openCreateModal() {
     // Pedagogy options
