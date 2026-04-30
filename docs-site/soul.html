@@ -31,6 +31,46 @@
     <p class="lede">Two files. A YAML constitution defining five always-on rules + 16 distress patterns + 9 harm patterns. And a Python enforcer that scans every learner message and every agent reply against those patterns deterministically. That's it.</p>
   </div>
 
+  <h2>Three always-on guarantees, nested like armor</h2>
+  <p>The Soul is structured as three concentric rings. No teacher — and no LLM swap — can switch them off.</p>
+  <div class="soul-shield-wrap">
+    <svg viewBox="0 0 280 320" role="img" aria-label="Three concentric rings: outer rights, middle constitutional AI, inner wellbeing">
+      <!-- Outer ring: Rights -->
+      <path d="M 140 12 C 60 12, 20 90, 20 180 C 20 260, 80 308, 140 308 C 200 308, 260 260, 260 180 C 260 90, 220 12, 140 12 Z"
+            fill="none" stroke="#4070C0" stroke-width="2.5"/>
+      <!-- Middle ring: Constitutional AI -->
+      <path d="M 140 44 C 78 44, 50 110, 50 180 C 50 244, 92 282, 140 282 C 188 282, 230 244, 230 180 C 230 110, 202 44, 140 44 Z"
+            fill="rgba(212,176,64,0.04)" stroke="#D4B040" stroke-width="2.5"/>
+      <!-- Inner ring: Wellbeing -->
+      <path d="M 140 76 C 96 76, 80 130, 80 180 C 80 228, 110 256, 140 256 C 170 256, 200 228, 200 180 C 200 130, 184 76, 140 76 Z"
+            fill="rgba(204,72,72,0.10)" stroke="#CC4848" stroke-width="2.5"/>
+      <!-- Heart -->
+      <path d="M 140 200 C 132 188, 116 188, 116 174 C 116 162, 130 156, 140 168 C 150 156, 164 162, 164 174 C 164 188, 148 188, 140 200 Z"
+            fill="#CC4848"/>
+      <!-- Ring labels -->
+      <text x="140" y="32" font-family="DM Mono, monospace" font-size="9" letter-spacing="1.5" text-anchor="middle" fill="#4070C0">HUMAN RIGHTS</text>
+      <text x="140" y="64" font-family="DM Mono, monospace" font-size="9" letter-spacing="1.5" text-anchor="middle" fill="#D4B040">CONSTITUTIONAL AI</text>
+      <text x="140" y="96" font-family="DM Mono, monospace" font-size="9" letter-spacing="1.5" text-anchor="middle" fill="#CC4848">STUDENT WELLBEING</text>
+    </svg>
+    <div class="soul-shield-legend">
+      <div class="soul-ring ring-outer">
+        <span class="r-tag">Outer · Rights</span>
+        <h4>Human-rights backbone</h4>
+        <p>UNESCO AI Framework · UN Convention on the Rights of the Child · Universal Declaration of Human Rights. The non-negotiable floor.</p>
+      </div>
+      <div class="soul-ring ring-mid">
+        <span class="r-tag">Middle · Constitutional AI</span>
+        <h4>Epistemic guardrails</h4>
+        <p>Epistemic honesty · no harm · transparency. The agent's commitments about how it reasons and what it admits.</p>
+      </div>
+      <div class="soul-ring ring-inner">
+        <span class="r-tag">Inner · Wellbeing</span>
+        <h4>Student-care protocols</h4>
+        <p>No shame · distress response · break respect · effort recognition · struggle normalization. The deterministic interventions you can verify in tests.</p>
+      </div>
+    </div>
+  </div>
+
   <h2>The five rules</h2>
   <ol>
     <li><strong>Distress response</strong> — if the learner expresses distress or frustration ("I can't do this", "I'm stupid"), stop teaching and respond with empathy first.</li>
@@ -170,6 +210,7 @@ soul = Soul.load(<span class="str">"constitutions/minerva.soul.v1.yaml"</span>)
     <a href="quickstart.html">quickstart</a>
     <a href="architecture.html">architecture</a>
   </nav>
+  <div class="credits">Built by Lucas Kuziv &amp; Krizia Delgado · SLAI Cohort 2026 · Berkman Klein Center for Internet &amp; Society</div>
 </footer>
 
 </body>

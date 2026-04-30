@@ -31,6 +31,77 @@
     <p class="lede">A protocol for authoring AI tutoring skills as YAML and running them on any LLM. The skill is data, not code. The LLM is swappable.</p>
   </div>
 
+  <h2>The four principles</h2>
+  <div class="principles-row">
+    <div class="principle p-gold">
+      <span class="p-dot"></span>
+      <div>
+        <h4>Decoupled Intelligence</h4>
+        <p>AI provides reasoning. OPAS provides pedagogy. Swap models freely without touching the skill.</p>
+      </div>
+    </div>
+    <div class="principle p-blue">
+      <span class="p-dot"></span>
+      <div>
+        <h4>Interoperability</h4>
+        <p>xAPI 2.0 · LTI 1.3 · UNESCO AI Framework · Bloom's taxonomy. Plays with the standards your institution already runs.</p>
+      </div>
+    </div>
+    <div class="principle p-green">
+      <span class="p-dot"></span>
+      <div>
+        <h4>Sovereignty</h4>
+        <p>Institutions own the teaching logic. No foreign model dependency. The skill YAML is yours.</p>
+      </div>
+    </div>
+    <div class="principle p-red">
+      <span class="p-dot"></span>
+      <div>
+        <h4>Evidence-Based</h4>
+        <p>Retrieval practice · spaced repetition · ZPD scaffolding · adaptive learning. Pedagogy without grounding is rejected at parse time.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>The four-layer stack</h2>
+  <p>Every OPAS skill is assembled from four conceptual layers. Higher layers depend on lower layers. You can swap any single layer without rebuilding the system.</p>
+  <div class="layer-stack">
+    <div class="layer layer-l4">
+      <div class="l-tag">L4</div>
+      <div>
+        <div class="l-name">Localisation</div>
+        <div class="l-fields">language · device · runtime</div>
+      </div>
+      <span class="l-status roadmap">Roadmap</span>
+    </div>
+    <div class="layer layer-l3">
+      <div class="l-tag">L3</div>
+      <div>
+        <div class="l-name">Contextual Modifiers</div>
+        <div class="l-fields">connectivity · cohort · locale</div>
+      </div>
+      <span class="l-status roadmap">Roadmap</span>
+    </div>
+    <div class="layer layer-l2">
+      <div class="l-tag">L2</div>
+      <div>
+        <div class="l-name">Pedagogical Engine</div>
+        <div class="l-fields">approach · techniques · modalities</div>
+      </div>
+      <span class="l-status live">Live</span>
+    </div>
+    <div class="layer layer-l1">
+      <div class="l-tag">L1</div>
+      <div>
+        <div class="l-name">Learning Science</div>
+        <div class="l-fields">evidence-based floor — always-on</div>
+      </div>
+      <span class="l-status live">Live</span>
+    </div>
+    <div class="layer-stack-cap">↑ ASSEMBLY DIRECTION · ONE AGENT · ONE YAML FILE</div>
+  </div>
+  <p>L1 and L2 are fully implemented in v0.2. L3 and L4 are reserved in the schema; they're the next milestone. See <a href="https://github.com/kriziadelgado88/OPAS/blob/main/SPEC.md"><code>SPEC.md</code></a> for the formal definition.</p>
+
   <h2>The thesis</h2>
   <p>Tutoring quality lives in the skill, not the prompt. A good skill encodes:</p>
   <ul>
@@ -131,14 +202,19 @@
   <p><a href="quickstart.html">→ Full setup walkthrough on the quickstart page</a></p>
 
   <h2>The pedagogy catalogue</h2>
-  <p>Four templates ship in <code>agent/app/routers/pedagogies.py</code>:</p>
+  <p>Nine templates ship in <code>agent/app/routers/pedagogies.py</code>. The skill author picks one as <code>instructional_model.primary</code>; the runtime exposes the full catalogue via the <code>/pedagogies</code> API endpoint.</p>
   <ul>
     <li><strong>Discovery Learning</strong> — Bruner-style. Heavy probes, direct instruction is a last resort.</li>
     <li><strong>Socratic Method</strong> — every turn ends with a question. Used in the reference skill.</li>
     <li><strong>Spiral Curriculum</strong> — same concept revisited at increasing depth across phases.</li>
     <li><strong>Direct Instruction with Checks</strong> — explanation first, comprehension probe immediately after.</li>
+    <li><strong>Backward Design</strong> — start from the assessment; work back to the lesson.</li>
+    <li><strong>Mastery-Based</strong> — no advancement without demonstrated competency.</li>
+    <li><strong>Inquiry-Based</strong> — learner-driven question generation.</li>
+    <li><strong>Project-Based</strong> — sustained authentic problem as the spine.</li>
+    <li><strong>Flipped Classroom</strong> — first exposure outside class, practice in.</li>
   </ul>
-  <p>Adding a fifth is small — see <a href="https://github.com/kriziadelgado88/OPAS/blob/main/CONTRIBUTING.md">contributing</a>.</p>
+  <p>Adding a tenth is small — drop a YAML in <code>opas/pedagogies/</code> and PR. See <a href="https://github.com/kriziadelgado88/OPAS/blob/main/CONTRIBUTING.md">contributing</a>.</p>
 
   <h2>When to use OPAS vs. just a system prompt</h2>
   <div class="callout green">
@@ -172,6 +248,7 @@
     <a href="quickstart.html">quickstart</a>
     <a href="architecture.html">architecture</a>
   </nav>
+  <div class="credits">Built by Lucas Kuziv &amp; Krizia Delgado · SLAI Cohort 2026 · Berkman Klein Center for Internet &amp; Society</div>
 </footer>
 
 </body>

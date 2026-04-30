@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>OPAS · Two open protocols for safe, portable AI tutoring</title>
-<meta name="description" content="OPAS is a protocol for authoring tutoring skills as YAML and running them on any LLM. The Soul is a constitutional safety layer for any agent that talks to students. Both MIT-licensed.">
+<title>OPAS · Democratizing agentic AI tutoring for all</title>
+<meta name="description" content="OPAS is a protocol for authoring tutoring skills as YAML and running them on any LLM. The Soul is a constitutional safety layer for any agent that talks to students. Both MIT-licensed. Built by Lucas Kuziv & Krizia Delgado · SLAI Cohort 2026 · Berkman Klein Center.">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -34,14 +34,61 @@
       </span>
       <span class="opas-word">OPAS</span>
     </div>
-    <h1>Two open protocols for safe, portable AI tutoring.</h1>
-    <p class="lede">A protocol for authoring tutoring skills once and running them on any LLM. Plus a constitutional safety layer for any agent that talks to students. Both MIT-licensed. Both usable independently.</p>
+    <h1>Democratizing agentic AI&nbsp;tutoring for&nbsp;all.</h1>
+    <p class="lede">Two open protocols and a reference tutor. <strong>OPAS</strong> lets educators author tutoring skills as YAML once and run them on any LLM. <strong>The Soul</strong> is a constitutional safety layer for any agent that talks to students. Both MIT-licensed. Both usable independently.</p>
     <div class="ctas">
       <a class="btn btn-primary" href="opas.html">Read the OPAS docs →</a>
       <a class="btn btn-soul" href="soul.html">Read the Soul docs →</a>
     </div>
     <div class="gh-row">
       <a href="https://github.com/kriziadelgado88/OPAS">github.com/kriziadelgado88/OPAS</a>
+      <span class="byline"> · Built by <strong>Lucas Kuziv</strong> &amp; <strong>Krizia Delgado</strong> · SLAI Cohort 2026 · Berkman Klein Center for Internet &amp; Society</span>
+    </div>
+  </section>
+
+  <!-- The gap (lifted from poster) -->
+  <section class="gap-stats">
+    <h2>Why tutoring breaks at scale</h2>
+    <div class="stats-row">
+      <div class="stat-card stat-red">
+        <div class="stat-num">1.4B</div>
+        <div class="stat-label">students globally lack access to quality tutoring</div>
+      </div>
+      <div class="stat-card stat-red">
+        <div class="stat-num">83%</div>
+        <div class="stat-label">of teachers can't personalize instruction at scale</div>
+      </div>
+      <div class="stat-card stat-red">
+        <div class="stat-num">$50B</div>
+        <div class="stat-label">tutoring market inaccessible to most families</div>
+      </div>
+    </div>
+    <p class="stats-note">Pedagogy is locked inside proprietary models. OPAS separates teaching logic from the AI model so educators own the pedagogy, models stay swappable, and any institution can run its own tutor.</p>
+  </section>
+
+  <!-- One platform · three agents (lifted from poster) -->
+  <section class="personas">
+    <h2>One platform · three agents</h2>
+    <p>The reference implementation serves three personas, each with a dedicated agent and a purpose-built dashboard.</p>
+    <div class="personas-row">
+      <div class="persona-card persona-blue">
+        <span class="persona-label">Persona 01 · the protagonist</span>
+        <h3>Learner</h3>
+        <p>Private tutor. Personalises to style, pace, and interests. Spawns subject sub-agents that inherit how this learner learns. Durable memory across sessions.</p>
+        <span class="persona-dash">Dashboard · My Progress · Goals & Habits · Achievements · Learning Path</span>
+      </div>
+      <div class="persona-card persona-green">
+        <span class="persona-label">Persona 02 · the amplifier</span>
+        <h3>Teacher</h3>
+        <p>Authors pedagogy without code. Aggregates anonymous signals from student agents and proposes interventions. Skill author and classroom co-pilot.</p>
+        <span class="persona-dash">Dashboard · Daily Briefing · Mastery Map · Student Profiles · Effectiveness · Reports</span>
+      </div>
+      <div class="persona-card persona-gold">
+        <span class="persona-label">Persona 03 · the ally</span>
+        <h3>Parent</h3>
+        <p>Age-appropriate summaries, never raw transcripts. Answers "how do I help at home?" Pull-based and consent-gated. COPPA 2.0 / FERPA / GDPR compliant.</p>
+        <span class="persona-dash">Dashboard · What my child is learning · Academic socialisation framing</span>
+      </div>
     </div>
   </section>
 
@@ -167,6 +214,7 @@ uvicorn app.main:app --reload --port 8001</code></pre>
     <a href="quickstart.html">quickstart</a>
     <a href="architecture.html">architecture</a>
   </nav>
+  <div class="credits">Built by Lucas Kuziv &amp; Krizia Delgado · SLAI Cohort 2026 · Berkman Klein Center for Internet &amp; Society</div>
 </footer>
 
 </body>
