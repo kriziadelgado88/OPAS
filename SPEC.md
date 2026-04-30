@@ -181,4 +181,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). The fastest way to contribute:
 
 ---
 
-*Specification authored by Lucas Kuziv & Krizia Delgado · SLAI Cohort 2026 · Berkman Klein Center for Internet & Society. MIT-licensed; copy and adapt freely.*
+*Specification authored by Lucas Kuziv & Krizia Delgado · MIT AI Studio Spring 2026. MIT-licensed; copy and adapt freely.*
