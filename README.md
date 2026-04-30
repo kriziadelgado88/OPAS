@@ -2,7 +2,7 @@
 
 > **Democratizing agentic AI tutoring for all.**
 >
-> Built by **Lucas Kuziv** & **Krizia Delgado** · SLAI Cohort 2026 · Berkman Klein Center · Internet & Society
+> Built by **Lucas Kuziv** & **Krizia Delgado** · MIT AI STUDIO Spring 2026 
 
 Two open-source primitives for safe, portable AI tutoring agents — and a reference implementation (Poppy) you can fork.
 
