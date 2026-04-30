@@ -2,7 +2,7 @@
 
 > **Democratizing agentic AI tutoring for all.**
 >
-> Built by **Lucas Kuziv** & **Krizia Delgado** · SLAI Cohort 2026 · Berkman Klein Center · Internet & Society
+> Built by **Lucas Kuziv** & **Krizia Delgado** · MIT AI STUDIO Spring 2026 
 
 Two open-source primitives for safe, portable AI tutoring agents — and a reference implementation (Poppy) you can fork.
 
@@ -141,6 +141,6 @@ The hosted **Poppy** product (the brand, the deployed service at our institution
 
 ## 🙌 Credits & acknowledgments
 
-Built as part of Project Minerva-Poppy by **Lucas Kuziv** and **Krizia Delgado** — SLAI Cohort 2026, Berkman Klein Center for Internet & Society.
+Built as part of MIT AI Studio Spring 2026 by **Lucas Kuziv** and **Krizia Delgado** 
 
 Standing on the shoulders of: Vygotsky's ZPD, Black & Wiliam's formative assessment work, the Anthropic Constitutional AI team, UNESCO's AI in Education guidance, and every teacher whose practice this is trying to formalize.
