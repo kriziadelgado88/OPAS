@@ -96,6 +96,130 @@ def _query_memories(learner_id: str, skill_id: str, supabase) -> list[dict]:
     return combined[:5]
 
 
+def _extract_memories_from_session(state, supabase, settings) -> int:
+    """Generate 1-3 durable learner memories from the just-ended session.
+
+    Calls the LLM with a tight summarization prompt, parses the JSON response,
+    and writes each bullet to learner_memories via _save_memory. Returns the
+    count of memories written. Failures are non-fatal — session_end completes
+    regardless.
+
+    The categories returned to the table:
+      interest        — domain/topic the learner connected with
+      mastery         — concept the learner now grasps confidently
+      struggle        — concept the learner found difficult
+      pace            — how the learner prefers to be paced
+      case_resonance  — case/example that landed for them
+      style           — how they prefer the agent to engage them
+    """
+    import json as _json
+    skill = state.skill
+    skill_name = skill.get("name") or state.skill_id
+
+    # Use the last ~16 turns. Each role takes one entry; cap to keep prompt small.
+    recent = state.messages[-32:] if len(state.messages) > 32 else state.messages
+    convo_lines = []
+    for m in recent:
+        role = m.get("role", "?")
+        content = (m.get("content") or "").strip()
+        if not content:
+            continue
+        # Skip system-injected messages (constitution interventions etc.)
+        if content.startswith("[SYSTEM:"):
+            continue
+        speaker = "Learner" if role == "user" else "Agent"
+        convo_lines.append(f"{speaker}: {content[:400]}")
+    if len(convo_lines) < 2:
+        return 0   # nothing to summarize
+
+    convo_text = "\n".join(convo_lines)
+
+    system_prompt = (
+        "You are summarizing a tutoring session for the learner's long-term "
+        "memory profile. Your output will be loaded into the agent's prompt "
+        "the next time this learner returns, so it must be CRISP and TRUE — "
+        "do not invent details that aren't in the conversation.\n\n"
+        f"Skill: {skill_name}\n"
+        f"Turns: {sum(1 for m in state.messages if m.get('role') == 'user')}\n\n"
+        "Generate up to 3 short memory bullets in JSON. Each bullet has:\n"
+        '  "category": one of [interest, mastery, struggle, pace, case_resonance, style]\n'
+        '  "memory_text": ONE sentence (max 18 words) the agent should know next time\n\n'
+        "Categories:\n"
+        "  interest        — domain/topic the learner connected with\n"
+        "  mastery         — a specific concept the learner now grasps confidently\n"
+        "  struggle        — a specific concept the learner found difficult\n"
+        "  pace            — how the learner prefers to be paced\n"
+        "  case_resonance  — a Levy case or example that landed for them\n"
+        "  style           — how they prefer the agent to engage them\n\n"
+        "Return ONLY a JSON array, no surrounding prose. Examples:\n"
+        '  [{"category":"mastery","memory_text":"Confident with expected value as a weighted average of outcomes."},'
+        ' {"category":"interest","memory_text":"Domain-anchored examples in sports landed best."}]\n\n'
+        "If you can't determine 3 distinct memories, return fewer (or [] if "
+        "nothing is notable enough to remember). Bullets should be specific "
+        "to THIS learner, not generic."
+    )
+
+    extraction_message = [{
+        "role": "user",
+        "content": f"SESSION TRANSCRIPT (last {len(convo_lines)} entries):\n\n{convo_text}",
+    }]
+
+    try:
+        raw = call_model(
+            system=system_prompt,
+            messages=extraction_message,
+            skill=skill,
+            settings=settings,
+        )
+    except Exception as exc:
+        print(f"[memory] extraction LLM call failed: {exc}")
+        return 0
+
+    # The model sometimes wraps JSON in ```json fences; strip them defensively.
+    raw = (raw or "").strip()
+    if raw.startswith("```"):
+        raw = raw.strip("`")
+        if raw.lower().startswith("json"):
+            raw = raw[4:]
+        raw = raw.strip()
+    try:
+        bullets = _json.loads(raw)
+    except Exception as exc:
+        print(f"[memory] could not parse extraction JSON: {exc} | raw={raw[:200]}")
+        return 0
+    if not isinstance(bullets, list):
+        return 0
+
+    valid_categories = {
+        "interest", "mastery", "struggle", "pace", "case_resonance", "style",
+    }
+    written = 0
+    for b in bullets[:3]:
+        if not isinstance(b, dict):
+            continue
+        cat = str(b.get("category", "")).strip().lower()
+        text = str(b.get("memory_text", "")).strip()
+        if cat not in valid_categories or not text:
+            continue
+        # Cap at ~20 words / 200 chars defensively.
+        if len(text) > 200:
+            text = text[:200].rstrip() + "…"
+        try:
+            _save_memory(
+                learner_id=state.learner_id,
+                skill_id=state.skill_id,
+                session_id=state.session_db_id,
+                category=cat,
+                memory_text=text,
+                supabase=supabase,
+                group_id=state.skill_group_id,
+            )
+            written += 1
+        except Exception as exc:
+            print(f"[memory] _save_memory failed for cat={cat}: {exc}")
+    return written
+
+
 def _phase_id(phase: dict, index: int) -> str:
     return phase.get("id") or f"phase-{index + 1}"
 
@@ -618,6 +742,20 @@ def session_end(session_id: str = Body(..., embed=True)) -> SessionEndResponse:
         supabase=supabase,
         group_id=state.skill_group_id,
     )
+
+    # Phase 1 of the durable-memory build: extract specific learner-shaped
+    # memories from the conversation transcript and persist them. These get
+    # auto-loaded on the next session via _query_memories, and the agent
+    # references them in its opening turn — that's the "Poppy remembers me"
+    # moment. Wrapped in try/except because session-end MUST always succeed
+    # for the user even if extraction has a hiccup.
+    try:
+        settings = get_settings()
+        n_memories = _extract_memories_from_session(state, supabase, settings)
+        if n_memories:
+            print(f"[memory] wrote {n_memories} memories for learner={state.learner_id} skill={state.skill_id}")
+    except Exception as exc:
+        print(f"[memory] extraction wrapper failed (non-fatal): {exc}")
 
     return SessionEndResponse(session_id=session_id, ended_at=ended_at, turn_count=turn_count)
 

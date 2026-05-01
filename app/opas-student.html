@@ -270,7 +270,7 @@
     padding: 10px 12px;
     background: var(--bg2);
     border: 1px solid var(--ink-15);
-    border-left: 3px solid var(--ink-30);
+    border-left: 3px solid rgba(64,112,192,.35);  /* upcoming = soft blue (HEAD layer — yet to be principled) */
     border-radius: 8px;
     transition: all .25s;
   }
@@ -306,6 +306,16 @@
   }
   .cm-slo.covered .cm-slo-mark::after { content: '✓'; color: var(--bg); font-weight: 700; }
   .cm-slo.covered .cm-slo-text { color: var(--ink-70); }
+  /* Phase-advance celebration — the SLO that just flipped to covered briefly
+     glows green so the student sees the moment, not just the end-state. */
+  .cm-slo.just-flipped {
+    animation: cm-flip-glow 1.6s ease-out;
+  }
+  @keyframes cm-flip-glow {
+    0%   { box-shadow: 0 0 0 0 rgba(72,160,96,.55), 0 0 18px rgba(72,160,96,.35); transform: scale(1); }
+    35%  { box-shadow: 0 0 0 6px rgba(72,160,96,.32), 0 0 28px rgba(72,160,96,.45); transform: scale(1.015); }
+    100% { box-shadow: none; transform: scale(1); }
+  }
   .cm-slo .cm-concepts {
     display: none;
     margin-top: 8px; padding-left: 22px;
@@ -511,16 +521,57 @@
     flex: 1;
     display: flex;
     align-items: center;
-    justify-content: flex-start;  /* was 'center' — content overflowed in 30%-wide demo chat pane */
+    justify-content: flex-start;
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
     padding: 32px 24px 40px;
     text-align: center;
-    overflow-y: auto;             /* scroll within the chat pane when chip rows exceed height */
-    min-height: 0;                /* allow flex child to shrink below content height */
+    overflow-y: auto;
+    min-height: 0;
+    position: relative;          /* anchors the polka-dot pseudo-element */
   }
+  /* Poppy polka-dot scatter — the brand's signature decoration. Sits
+     UNDER the chip content (z-index: 0) at low opacity so it never competes
+     with the actual UI. Same 5-color radial-gradient pattern as the docs
+     site cover. */
+  #start-screen::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: .14;
+    background-image:
+      radial-gradient(circle at  6%  8%, var(--blue)   6px, transparent 7px),
+      radial-gradient(circle at 94% 12%, var(--red)    5px, transparent 6px),
+      radial-gradient(circle at  9% 38%, var(--gold)   4px, transparent 5px),
+      radial-gradient(circle at 96% 32%, var(--green)  7px, transparent 8px),
+      radial-gradient(circle at  4% 65%, var(--orange) 5px, transparent 6px),
+      radial-gradient(circle at 95% 60%, var(--blue)   4px, transparent 5px),
+      radial-gradient(circle at  7% 88%, var(--red)    6px, transparent 7px),
+      radial-gradient(circle at 94% 86%, var(--gold)   5px, transparent 6px),
+      radial-gradient(circle at 22%  4%, var(--gold)   3px, transparent 4px),
+      radial-gradient(circle at 78% 96%, var(--blue)   3px, transparent 4px),
+      radial-gradient(circle at 50%  4%, var(--red)    3px, transparent 4px),
+      radial-gradient(circle at 50% 96%, var(--green)  3px, transparent 4px);
+  }
+  #start-screen > * { position: relative; z-index: 1; }
   #start-screen h2 { font-family: var(--font-display); font-weight: 700; font-size: 28px; letter-spacing: -0.02em; color: var(--ink); }
   #start-screen p  { font-size: 15px; color: var(--ink-70); max-width: 480px; line-height: 1.6; }
+  /* Subhead between H1 and the chip rows — bridges the typographic jump
+     from 28px display to 11.5px uppercase mono labels, and gives the start
+     screen an inviting human voice. */
+  #start-screen .start-subhead {
+    font-family: var(--font-body);
+    font-size: 14.5px;
+    font-weight: 500;
+    color: var(--ink-70);
+    letter-spacing: 0;
+    text-transform: none;
+    margin-top: -8px;
+    margin-bottom: 8px;
+    max-width: 480px;
+  }
   #start-btn {
     background: var(--blue); color: var(--ink);
     border: none; border-radius: 10px;
@@ -703,20 +754,328 @@
     border-radius: 999px;
     padding: 7px 14px;
     cursor: pointer;
-    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    transition: background .15s, border-color .15s, color .15s, transform .12s, box-shadow .15s;
     line-height: 1.2;
   }
-  .chip:hover { border-color: var(--ink-30); color: var(--ink); }
+  .chip:hover {
+    border-color: var(--ink-30); color: var(--ink);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,.25);
+  }
+  .chip:active { transform: translateY(0); box-shadow: 0 1px 4px rgba(0,0,0,.2); }
   .chip.active {
-    background: transparent;
-    color: var(--ink);
+    background: var(--ink);
+    color: var(--bg);
     border-color: var(--ink);
   }
   .chip:disabled { opacity: 0.45; cursor: default; }
+  .chip:disabled:hover { transform: none; box-shadow: none; }
+
+  /* Semantic-color active states per pref group — maps each chip row to its
+     Poppy anatomy layer (HEAD blue → CHEST gold → FEET orange → HANDS green
+     → HEART red). Subliminally reinforces the protocol's body-part metaphor
+     from the poster. Higher specificity than the base .chip.active rule. */
+  #time-chips     .chip.active { background: var(--blue);   border-color: var(--blue);   color: var(--ink); }
+  #mode-chips     .chip.active { background: var(--gold);   border-color: var(--gold);   color: var(--bg); }
+  #interest-chips .chip.active { background: var(--orange); border-color: var(--orange); color: var(--ink); }
+  #pedagogy-chips .chip.active { background: var(--green);  border-color: var(--green);  color: var(--ink); }
+  #soul-chips     .chip.active { background: var(--red);    border-color: var(--red);    color: var(--ink); }
 
   @media (max-width: 480px) {
     #start-prefs { padding: 0 8px; }
   }
+
+  /* ── AVATAR BUILDER (start screen — Phase 2 of personalization) ───── */
+  #pref-avatar { display: flex; flex-direction: column; gap: 8px; }
+  .av-toggle {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: transparent; border: 1px dashed var(--ink-30);
+    border-radius: 10px; padding: 8px 14px;
+    color: var(--ink-70); font-family: var(--font-mono); font-size: 12px;
+    cursor: pointer; transition: all .15s; align-self: flex-start;
+  }
+  .av-toggle:hover { border-color: var(--gold); color: var(--gold); transform: translateY(-1px); }
+  .av-toggle .av-toggle-icon { font-size: 16px; line-height: 1; }
+  .av-builder { display: none; flex-direction: column; gap: 12px; margin-top: 4px; }
+  .av-builder.show { display: flex; }
+  .av-builder-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; }
+  /* Grid — 8×8 cells, each clickable + drag-paintable */
+  .av-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    gap: 1px;
+    width: 192px; height: 192px;
+    background: var(--ink-15);
+    border-radius: 8px; padding: 1px;
+    user-select: none; touch-action: none;
+    flex-shrink: 0;
+  }
+  .av-cell {
+    background: var(--bg2);
+    cursor: crosshair;
+    transition: filter .08s;
+  }
+  .av-cell:hover { filter: brightness(1.4); }
+  /* Palette + tools — vertical stack to the right of the grid */
+  .av-tools { display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 180px; }
+  .av-palette { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .av-swatch {
+    width: 100%; aspect-ratio: 1;
+    border-radius: 8px; border: 2px solid transparent;
+    cursor: pointer; transition: transform .12s, border-color .12s, box-shadow .12s;
+    position: relative;
+  }
+  .av-swatch:hover { transform: translateY(-2px); }
+  .av-swatch.active {
+    border-color: var(--ink);
+    box-shadow: 0 0 0 2px var(--gold), 0 4px 12px rgba(0,0,0,.4);
+  }
+  .av-swatch.eraser {
+    background: var(--bg2); border: 2px dashed var(--ink-30);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; color: var(--ink-50);
+  }
+  .av-swatch.eraser.active {
+    border-color: var(--gold); border-style: solid; color: var(--gold);
+  }
+  .av-presets { display: flex; gap: 6px; flex-wrap: wrap; }
+  .av-preset {
+    background: var(--bg2); border: 1px solid var(--ink-15);
+    border-radius: 6px; padding: 4px 8px;
+    font-family: var(--font-mono); font-size: 11px; color: var(--ink-70);
+    cursor: pointer; transition: all .12s;
+  }
+  .av-preset:hover { border-color: var(--gold); color: var(--ink); transform: translateY(-1px); }
+  .av-actions { display: flex; gap: 6px; }
+  .av-action-btn {
+    background: transparent; border: 1px solid var(--ink-15);
+    color: var(--ink-70); border-radius: 6px;
+    padding: 5px 10px; font-size: 11px; font-family: var(--font-mono);
+    cursor: pointer; transition: all .12s;
+  }
+  .av-action-btn:hover { border-color: var(--ink-50); color: var(--ink); }
+  .av-hint {
+    font-size: 11px; color: var(--ink-50); font-family: var(--font-mono);
+    line-height: 1.4;
+  }
+  /* Live preview — shows what the avatar will look like in the topbar */
+  .av-preview-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; border-radius: 8px;
+    background: var(--bg); border: 1px solid var(--ink-15);
+    font-family: var(--font-mono); font-size: 11px; color: var(--ink-50);
+  }
+  .av-preview-row svg { flex-shrink: 0; }
+  /* Topbar avatar — replaces the 🤖 emoji in #agent-name-badge when set */
+  #agent-name-badge svg.agent-avatar {
+    width: 18px; height: 18px;
+    border-radius: 4px; display: inline-block;
+    background: var(--bg2);
+    vertical-align: middle;
+  }
+
+  /* ── VOICE PICKER (Phase 3 of personalization) ─────────────────────── */
+  .voice-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  @media (max-width: 480px) { .voice-grid { grid-template-columns: 1fr; } }
+  .voice-card {
+    background: var(--bg2);
+    border: 1px solid var(--ink-15);
+    border-left: 3px solid var(--ink-30);
+    border-radius: 10px;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: all .15s;
+    display: flex; align-items: center; gap: 10px;
+    text-align: left;
+    font-family: var(--font-body);
+  }
+  .voice-card:hover {
+    border-color: var(--ink-30);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,.25);
+  }
+  .voice-card.active {
+    border-left-color: var(--gold);
+    background: rgba(212,176,64,.06);
+  }
+  .voice-card.active .voice-name { color: var(--gold); }
+  .voice-emoji {
+    font-size: 22px; line-height: 1; flex-shrink: 0;
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--bg); border-radius: 50%;
+  }
+  .voice-info { flex: 1; min-width: 0; }
+  .voice-name {
+    font-family: var(--font-display); font-weight: 700; font-size: 14px;
+    color: var(--ink); letter-spacing: -0.01em; line-height: 1.2;
+  }
+  .voice-meta {
+    font-family: var(--font-mono); font-size: 10.5px;
+    color: var(--ink-50); letter-spacing: .04em; margin-top: 2px;
+  }
+  .voice-play {
+    background: transparent;
+    border: 1px solid var(--ink-15);
+    color: var(--ink-70);
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    font-size: 11px;
+    cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s;
+  }
+  .voice-play:hover { border-color: var(--gold); color: var(--gold); }
+  .voice-play.loading { opacity: .6; cursor: progress; }
+  .voice-play.playing {
+    background: var(--gold); color: var(--bg);
+    border-color: var(--gold);
+  }
+
+  /* ── REVEAL SCREEN (Phase 4 of personalization) ────────────────────── */
+  /* Plays for ~3.5s between Start session click and the chat appearing,
+     IF the learner personalised at least one thing (name, face, voice).
+     Skipped entirely otherwise — no penalty for skipping personalization. */
+  #reveal-screen {
+    position: fixed; inset: 0;
+    display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    background: var(--bg);
+    z-index: 80;
+    padding: 32px 20px;
+    text-align: center;
+    overflow: hidden;
+  }
+  #reveal-screen.show { display: flex; }
+  #reveal-screen::before {
+    /* Radial gradient emanating from the agent's interest-derived color */
+    content: '';
+    position: absolute;
+    inset: -20%;
+    background: radial-gradient(circle at center,
+      var(--reveal-color, var(--gold)) 0%,
+      transparent 55%);
+    opacity: .14;
+    pointer-events: none;
+    z-index: 0;
+    animation: reveal-bg-pulse 3.5s ease-out;
+  }
+  @keyframes reveal-bg-pulse {
+    0%   { transform: scale(.7); opacity: 0; }
+    25%  { opacity: .18; }
+    100% { transform: scale(1); opacity: .14; }
+  }
+  .reveal-content {
+    position: relative; z-index: 1;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 20px;
+    max-width: 520px;
+    animation: reveal-content-in .9s cubic-bezier(.2,.8,.2,1) both;
+  }
+  @keyframes reveal-content-in {
+    0%   { opacity: 0; transform: translateY(14px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  .reveal-orb {
+    width: 152px; height: 152px;
+    border-radius: 50%;
+    background: var(--bg2);
+    border: 4px solid var(--reveal-color, var(--gold));
+    box-shadow:
+      0 0 0 10px rgba(var(--reveal-rgb, 212,176,64), .14),
+      0 0 60px rgba(var(--reveal-rgb, 212,176,64), .35),
+      0 12px 40px rgba(0,0,0,.45);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    animation: reveal-orb-in 1.0s cubic-bezier(.2,.8,.2,1) both;
+  }
+  @keyframes reveal-orb-in {
+    0%   { transform: scale(.4); opacity: 0; }
+    60%  { transform: scale(1.06); opacity: 1; }
+    100% { transform: scale(1); }
+  }
+  .reveal-orb svg.agent-avatar {
+    width: 122px; height: 122px;
+    border-radius: 6px;
+  }
+  .reveal-orb-fallback {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 64px;
+    line-height: 1;
+    text-transform: lowercase;
+    letter-spacing: -0.05em;
+    color: var(--reveal-color, var(--gold));
+  }
+  .reveal-name {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 56px;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    color: var(--reveal-color, var(--gold));
+    margin: 0;
+    text-transform: lowercase;
+  }
+  @media (max-width: 480px) { .reveal-name { font-size: 42px; } }
+  .reveal-tagline {
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.55;
+    color: var(--ink-70);
+    max-width: 440px;
+    margin: 0;
+  }
+  .reveal-traits {
+    display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;
+  }
+  .reveal-trait {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--ink-15);
+    color: var(--ink-70);
+    background: var(--bg2);
+    letter-spacing: .04em;
+  }
+  .reveal-cta {
+    margin-top: 14px;
+    background: var(--reveal-color, var(--gold));
+    color: var(--bg);
+    border: none;
+    border-radius: 12px;
+    padding: 14px 32px;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 15px;
+    text-transform: lowercase;
+    letter-spacing: -0.01em;
+    cursor: pointer;
+    box-shadow: 0 6px 24px rgba(var(--reveal-rgb, 212,176,64), .35);
+    transition: transform .12s, box-shadow .12s, filter .12s;
+  }
+  .reveal-cta:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.08);
+    box-shadow: 0 10px 32px rgba(var(--reveal-rgb, 212,176,64), .45);
+  }
+  .reveal-skip {
+    margin-top: 4px;
+    background: none; border: none;
+    color: var(--ink-50);
+    font-family: var(--font-mono); font-size: 11px;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-style: dotted;
+  }
+  .reveal-skip:hover { color: var(--ink); }
 
 </style>
 </head>
@@ -737,6 +1096,11 @@
     </svg>
     <span>poppy</span>
   </span>
+  <span id="agent-name-badge" title="Your agent's name" style="display:none;
+        font-family:var(--font-mono);font-size:12px;
+        background:rgba(212,176,64,.14);color:var(--gold,#D4B040);
+        padding:4px 10px;border-radius:10px;letter-spacing:.02em;
+        border:1px solid rgba(212,176,64,.45);">🤖 <span id="agent-name-text"></span></span>
   <span class="skill-name" id="skill-label">Loading…</span>
   <span class="spacer"></span>
   <a href="opas-onboarding.html?return=opas-student.html" class="topbar-link" id="edit-profile-link" title="Edit profile preferences">&#9881; <span class="full">Edit profile</span></a>
@@ -800,6 +1164,7 @@
     <!-- Start screen (shown before session starts) -->
     <div id="start-screen">
       <h2 id="start-title">Demo class</h2>
+      <p class="start-subhead">Pick your preferences before we begin.</p>
 
       <div id="start-prefs">
         <div class="pref-group">
@@ -847,6 +1212,60 @@
             <button type="button" class="chip active" data-soul="minerva.soul.v1" role="radio" aria-checked="true" title="Empathetic, conversational interventions. Standard distress patterns ('I'm stupid', 'I can't do this'). 60s cooldown.">Standard care</button>
             <button type="button" class="chip" data-soul="minerva.soul.v1.accessible" role="radio" aria-checked="false" title="Plain language, short sentences, no idioms. Broader distress detection — covers neurodivergent expression and ESL phrasings. Longer cooldown gives processing time. Earlier struggle-tracker intervention.">Accessibility &amp; Neurodivergence</button>
           </div>
+        </div>
+
+        <div class="pref-group" id="pref-agent-name">
+          <div class="pref-label">Name your agent <span style="color:var(--ink-50);font-weight:normal">(optional — your tutor needs a name)</span></div>
+          <input type="text" id="agent-name-input" maxlength="20"
+            placeholder="Lumi · Nova · Sage · Atlas · or your own pick…"
+            autocomplete="off" spellcheck="false"
+            style="width:100%;background:var(--bg2);color:var(--ink);
+                   border:1px solid var(--ink-15);border-radius:10px;
+                   padding:10px 14px;font-size:14px;font-family:var(--font-body);
+                   outline:none;transition:border-color .15s;">
+          <div id="agent-name-suggestions" class="chip-row" style="margin-top:8px;">
+            <button type="button" class="chip" data-suggest-name="Lumi">Lumi</button>
+            <button type="button" class="chip" data-suggest-name="Nova">Nova</button>
+            <button type="button" class="chip" data-suggest-name="Sage">Sage</button>
+            <button type="button" class="chip" data-suggest-name="Atlas">Atlas</button>
+            <button type="button" class="chip" data-suggest-name="Echo">Echo</button>
+            <button type="button" class="chip" data-suggest-name="Iris">Iris</button>
+            <button type="button" class="chip" data-suggest-name="Kai">Kai</button>
+            <button type="button" class="chip" data-suggest-name="Mira">Mira</button>
+          </div>
+        </div>
+
+        <div class="pref-group" id="pref-avatar">
+          <div class="pref-label">Draw your agent's face <span style="color:var(--ink-50);font-weight:normal">(optional — pick a preset or design from scratch)</span></div>
+          <button type="button" class="av-toggle" id="av-toggle">
+            <span class="av-toggle-icon">🎨</span>
+            <span id="av-toggle-label">Open the avatar builder</span>
+          </button>
+          <div class="av-builder" id="av-builder">
+            <div class="av-builder-row">
+              <div class="av-grid" id="av-grid" role="grid" aria-label="8 by 8 pixel avatar canvas"></div>
+              <div class="av-tools">
+                <div class="av-hint">Pick a colour, click cells to paint. Drag to fill quickly. Use the eraser to remove.</div>
+                <div class="av-palette" id="av-palette"></div>
+                <div>
+                  <div class="av-hint" style="margin-bottom: 6px;">Start from a preset:</div>
+                  <div class="av-presets" id="av-presets"></div>
+                </div>
+                <div class="av-actions">
+                  <button type="button" class="av-action-btn" id="av-clear">⌫ Clear grid</button>
+                </div>
+              </div>
+            </div>
+            <div class="av-preview-row">
+              <span id="av-preview-svg-host"></span>
+              <span>This is how your agent will appear in the topbar.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pref-group" id="pref-voice">
+          <div class="pref-label">Pick your agent's voice <span style="color:var(--ink-50);font-weight:normal">(▶ to hear · click to choose)</span></div>
+          <div class="voice-grid" id="voice-grid"></div>
         </div>
       </div>
 
@@ -1006,6 +1425,7 @@ let selectedMode          = 'auto';
 const selectedInterests   = new Set();
 let selectedPedagogyId    = 'socratic';  // pre-selected to match the chip flagged active in loadPedagogyChips
 let selectedConstitutionId = 'minerva.soul.v1';  // matches the chip pre-selected with class="active"
+let selectedAgentName     = '';            // learner-chosen name; empty = use generic agent
 
 function wireChipGroup(container, onSelect) {
   if (!container) return;
@@ -1067,6 +1487,556 @@ const $soulChips = document.getElementById('soul-chips');
 wireChipGroup($soulChips, (btn) => {
   selectedConstitutionId = btn.dataset.soul || '';
 });
+
+// ─── Agent name field on the start screen ─────────────────────────────
+// Phase 1 of personalization: the learner names their agent. Persists to
+// profile_prefs.agent_name, which the prompt assembler injects into the
+// agent's identity block so the agent introduces itself with this name.
+const $agentNameInput  = document.getElementById('agent-name-input');
+const $agentNameSugg   = document.getElementById('agent-name-suggestions');
+const $agentNameBadge  = document.getElementById('agent-name-badge');
+const $agentNameText   = document.getElementById('agent-name-text');
+
+function setAgentName(name) {
+  selectedAgentName = (name || '').trim().slice(0, 20);
+  if ($agentNameInput && $agentNameInput.value !== selectedAgentName) {
+    $agentNameInput.value = selectedAgentName;
+  }
+  // Highlight the matching suggestion chip if any.
+  if ($agentNameSugg) {
+    const lower = selectedAgentName.toLowerCase();
+    $agentNameSugg.querySelectorAll('.chip').forEach((c) => {
+      c.classList.toggle('active', (c.dataset.suggestName || '').toLowerCase() === lower);
+    });
+  }
+}
+
+if ($agentNameInput) {
+  $agentNameInput.addEventListener('input', () => setAgentName($agentNameInput.value));
+  $agentNameInput.addEventListener('focus', () => {
+    $agentNameInput.style.borderColor = 'var(--gold)';
+  });
+  $agentNameInput.addEventListener('blur', () => {
+    $agentNameInput.style.borderColor = 'var(--ink-15)';
+  });
+}
+if ($agentNameSugg) {
+  $agentNameSugg.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-suggest-name]');
+    if (!btn) return;
+    setAgentName(btn.dataset.suggestName);
+  });
+}
+
+// ─── Avatar builder (Phase 2 of personalization) ────────────────────
+// 8×8 pixel grid the learner paints. Stored as a 64-character string of
+// digits 0-7 (0 = empty, 1-7 = palette index) under profile_prefs.agent_face.
+// Renders at any size as inline SVG via avatarSvg(grid, size).
+
+const AV_PALETTE = [
+  null,                         // 0 — empty / transparent
+  '#4070C0',                    // 1 — blue
+  '#CC4848',                    // 2 — red
+  '#48A060',                    // 3 — green
+  '#D4B040',                    // 4 — gold
+  '#D48040',                    // 5 — orange
+  '#F2EFE6',                    // 6 — white (cream highlight)
+  '#2A2A35',                    // 7 — dark (eyes, outlines)
+];
+const AV_PALETTE_LABELS = ['', 'Blue', 'Red', 'Green', 'Gold', 'Orange', 'White', 'Dark'];
+
+// Each preset is an 8×8 array of indices into AV_PALETTE. Rows top→bottom.
+const AV_PRESETS = {
+  'Poppy': [
+    [0,1,1,4,4,2,2,0],
+    [1,1,1,4,4,2,2,2],
+    [1,7,1,4,4,2,7,2],
+    [1,1,1,4,4,2,2,2],
+    [0,4,4,4,4,4,4,0],
+    [0,4,4,4,4,4,4,0],
+    [0,3,3,0,0,5,5,0],
+    [0,3,3,0,0,5,5,0],
+  ],
+  'Smiley': [
+    [0,0,4,4,4,4,0,0],
+    [0,4,4,4,4,4,4,0],
+    [4,4,7,4,4,7,4,4],
+    [4,4,4,4,4,4,4,4],
+    [4,4,4,4,4,4,4,4],
+    [4,7,4,4,4,4,7,4],
+    [0,4,4,7,7,4,4,0],
+    [0,0,4,4,4,4,0,0],
+  ],
+  'Heart': [
+    [0,2,2,0,0,2,2,0],
+    [2,2,2,2,2,2,2,2],
+    [2,2,2,2,2,2,2,2],
+    [2,2,2,2,2,2,2,2],
+    [0,2,2,2,2,2,2,0],
+    [0,0,2,2,2,2,0,0],
+    [0,0,0,2,2,0,0,0],
+    [0,0,0,0,0,0,0,0],
+  ],
+  'Star': [
+    [0,0,0,4,4,0,0,0],
+    [0,0,0,4,4,0,0,0],
+    [4,4,4,4,4,4,4,4],
+    [0,4,4,4,4,4,4,0],
+    [0,0,4,4,4,4,0,0],
+    [0,4,4,4,4,4,4,0],
+    [0,4,4,0,0,4,4,0],
+    [4,4,0,0,0,0,4,4],
+  ],
+};
+
+let AV_GRID = Array.from({length: 8}, () => Array(8).fill(0));
+let AV_SELECTED = 1;        // currently-active palette index
+let AV_ERASE = false;       // eraser mode toggle
+let AV_PAINTING = false;    // is mouse/touch currently down?
+
+function avatarSvg(grid, size) {
+  const cell = size / 8;
+  let rects = '';
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const idx = (grid[r] && grid[r][c]) || 0;
+      const fill = AV_PALETTE[idx];
+      if (!fill) continue;
+      rects += `<rect x="${c * cell}" y="${r * cell}" width="${cell}" height="${cell}" fill="${fill}"/>`;
+    }
+  }
+  return `<svg class="agent-avatar" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${rects}</svg>`;
+}
+
+function gridIsEmpty(grid) {
+  for (const row of grid) for (const v of row) if (v) return false;
+  return true;
+}
+
+function gridToString(grid) {
+  // 64-char digit string. Empty grid → empty string (so a blank doesn't
+  // overwrite a previously-saved face on PUT).
+  if (gridIsEmpty(grid)) return '';
+  return grid.map(row => row.join('')).join('');
+}
+
+function gridFromString(s) {
+  const fresh = Array.from({length: 8}, () => Array(8).fill(0));
+  if (!s || s.length < 64) return fresh;
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const ch = s[r * 8 + c];
+      const n = parseInt(ch, 10);
+      fresh[r][c] = (Number.isFinite(n) && n >= 0 && n <= 7) ? n : 0;
+    }
+  }
+  return fresh;
+}
+
+const $avToggle      = document.getElementById('av-toggle');
+const $avToggleLabel = document.getElementById('av-toggle-label');
+const $avBuilder     = document.getElementById('av-builder');
+const $avGrid        = document.getElementById('av-grid');
+const $avPalette     = document.getElementById('av-palette');
+const $avPresets     = document.getElementById('av-presets');
+const $avClear       = document.getElementById('av-clear');
+const $avPreviewHost = document.getElementById('av-preview-svg-host');
+
+function buildAvPalette() {
+  if (!$avPalette) return;
+  $avPalette.innerHTML = '';
+  // Eraser slot (index 0)
+  const eraserBtn = document.createElement('button');
+  eraserBtn.type = 'button';
+  eraserBtn.className = 'av-swatch eraser';
+  eraserBtn.title = 'Eraser';
+  eraserBtn.textContent = '🧹';
+  eraserBtn.addEventListener('click', () => {
+    AV_ERASE = true; AV_SELECTED = 0;
+    refreshAvPaletteActive();
+  });
+  eraserBtn.dataset.av = 'eraser';
+  $avPalette.appendChild(eraserBtn);
+  // Color swatches 1-7
+  for (let i = 1; i <= 7; i++) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'av-swatch';
+    btn.style.background = AV_PALETTE[i];
+    btn.title = AV_PALETTE_LABELS[i];
+    btn.dataset.av = String(i);
+    btn.addEventListener('click', () => {
+      AV_SELECTED = i; AV_ERASE = false;
+      refreshAvPaletteActive();
+    });
+    $avPalette.appendChild(btn);
+  }
+  refreshAvPaletteActive();
+}
+function refreshAvPaletteActive() {
+  if (!$avPalette) return;
+  $avPalette.querySelectorAll('.av-swatch').forEach((el) => el.classList.remove('active'));
+  if (AV_ERASE) {
+    const eraserEl = $avPalette.querySelector('[data-av="eraser"]');
+    if (eraserEl) eraserEl.classList.add('active');
+  } else {
+    const sel = $avPalette.querySelector(`[data-av="${AV_SELECTED}"]`);
+    if (sel) sel.classList.add('active');
+  }
+}
+
+function buildAvGrid() {
+  if (!$avGrid) return;
+  $avGrid.innerHTML = '';
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'av-cell';
+      cell.dataset.r = r;
+      cell.dataset.c = c;
+      cell.style.background = AV_PALETTE[AV_GRID[r][c]] || 'var(--bg2)';
+      cell.addEventListener('mousedown', (e) => { e.preventDefault(); AV_PAINTING = true; paintCell(cell); });
+      cell.addEventListener('mouseenter', () => { if (AV_PAINTING) paintCell(cell); });
+      // Touch support
+      cell.addEventListener('touchstart', (e) => { e.preventDefault(); AV_PAINTING = true; paintCell(cell); }, { passive: false });
+      $avGrid.appendChild(cell);
+    }
+  }
+  // Global mouse-up / touch-end so painting stops cleanly when leaving the grid
+  document.addEventListener('mouseup', () => { AV_PAINTING = false; });
+  document.addEventListener('touchend', () => { AV_PAINTING = false; });
+  $avGrid.addEventListener('touchmove', (e) => {
+    if (!AV_PAINTING) return;
+    const t = e.touches[0]; if (!t) return;
+    const target = document.elementFromPoint(t.clientX, t.clientY);
+    if (target && target.classList.contains('av-cell')) paintCell(target);
+    e.preventDefault();
+  }, { passive: false });
+}
+function paintCell(cell) {
+  const r = +cell.dataset.r, c = +cell.dataset.c;
+  const newVal = AV_ERASE ? 0 : AV_SELECTED;
+  if (AV_GRID[r][c] === newVal) return;
+  AV_GRID[r][c] = newVal;
+  cell.style.background = AV_PALETTE[newVal] || 'var(--bg2)';
+  refreshAvPreview();
+}
+
+function buildAvPresets() {
+  if (!$avPresets) return;
+  $avPresets.innerHTML = '';
+  for (const [label, grid] of Object.entries(AV_PRESETS)) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'av-preset';
+    btn.textContent = label;
+    btn.title = `Start from "${label}" — you can edit after`;
+    btn.addEventListener('click', () => {
+      AV_GRID = grid.map(row => row.slice());
+      // Re-render every cell
+      $avGrid.querySelectorAll('.av-cell').forEach((cell) => {
+        const r = +cell.dataset.r, c = +cell.dataset.c;
+        cell.style.background = AV_PALETTE[AV_GRID[r][c]] || 'var(--bg2)';
+      });
+      refreshAvPreview();
+    });
+    $avPresets.appendChild(btn);
+  }
+}
+
+function refreshAvPreview() {
+  if ($avPreviewHost) $avPreviewHost.innerHTML = avatarSvg(AV_GRID, 22);
+}
+
+if ($avToggle) {
+  $avToggle.addEventListener('click', () => {
+    const isOpen = $avBuilder.classList.toggle('show');
+    $avToggleLabel.textContent = isOpen ? 'Hide the avatar builder' : 'Open the avatar builder';
+  });
+}
+if ($avClear) {
+  $avClear.addEventListener('click', () => {
+    AV_GRID = Array.from({length: 8}, () => Array(8).fill(0));
+    $avGrid.querySelectorAll('.av-cell').forEach((cell) => {
+      cell.style.background = 'var(--bg2)';
+    });
+    refreshAvPreview();
+  });
+}
+buildAvPalette();
+buildAvGrid();
+buildAvPresets();
+refreshAvPreview();
+
+// ─── Voice picker (Phase 3 of personalization) ──────────────────────
+// Four ElevenLabs voices the learner can preview + pick before starting.
+// Selected voice writes to localStorage (so blackboard.js's getVoiceId
+// reader picks it up for /voice/tts) AND to profile_prefs.agent_voice_id
+// for cross-session continuity.
+
+const VOICE_CATALOG = [
+  { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Sarah',     emoji: '👩', desc: 'Warm · Clear · Friendly' },
+  { id: 'TX3LPaxmHKxFdv7VOQHJ', name: 'Liam',      emoji: '👨', desc: 'Calm · Patient · Supportive' },
+  { id: 'XB0fDUnXU5powFXDhCwa', name: 'Charlotte', emoji: '👩', desc: 'Bright · Energetic · Focused' },
+  { id: 'onwK4e9ZLuTAKqWW03F9', name: 'Daniel',    emoji: '👨', desc: 'Deep · Steady · Trustworthy' },
+];
+const DEFAULT_VOICE_ID = 'EXAVITQu4vr4xnSDxMaL';
+let selectedVoiceId = localStorage.getItem('opas_voice_id') || DEFAULT_VOICE_ID;
+
+let _voicePreviewAudio = null;   // single shared <audio> for previews
+let _voicePreviewBtn = null;     // button currently in 'playing' state, if any
+
+function setSelectedVoice(voiceId) {
+  if (!voiceId) return;
+  selectedVoiceId = voiceId;
+  localStorage.setItem('opas_voice_id', voiceId);
+  refreshVoiceCardsActive();
+}
+
+function refreshVoiceCardsActive() {
+  const grid = document.getElementById('voice-grid');
+  if (!grid) return;
+  grid.querySelectorAll('.voice-card').forEach((c) => {
+    c.classList.toggle('active', c.dataset.voiceId === selectedVoiceId);
+  });
+}
+
+async function playVoicePreview(voiceId, btn) {
+  if (!BEARER) return;
+  // Stop any currently-playing preview cleanly
+  if (_voicePreviewAudio) {
+    try { _voicePreviewAudio.pause(); } catch (_) {}
+    _voicePreviewAudio = null;
+  }
+  if (_voicePreviewBtn && _voicePreviewBtn !== btn) {
+    _voicePreviewBtn.classList.remove('playing');
+    _voicePreviewBtn.textContent = '▶';
+  }
+  btn.classList.add('loading');
+  btn.textContent = '…';
+  try {
+    const res = await fetch(`${RUNTIME_URL}/voice/preview?voice_id=${encodeURIComponent(voiceId)}`, {
+      headers: { Authorization: `Bearer ${BEARER}` },
+    });
+    if (!res.ok) throw new Error(`preview failed (${res.status})`);
+    const blob = await res.blob();
+    const audio = new Audio();
+    audio.src = URL.createObjectURL(blob);
+    _voicePreviewAudio = audio;
+    _voicePreviewBtn = btn;
+    btn.classList.remove('loading');
+    btn.classList.add('playing');
+    btn.textContent = '◼';
+    audio.addEventListener('ended', () => {
+      btn.classList.remove('playing');
+      btn.textContent = '▶';
+      if (_voicePreviewBtn === btn) _voicePreviewBtn = null;
+      if (_voicePreviewAudio === audio) _voicePreviewAudio = null;
+    }, { once: true });
+    audio.addEventListener('error', () => {
+      btn.classList.remove('playing', 'loading');
+      btn.textContent = '▶';
+    }, { once: true });
+    await audio.play().catch(() => {
+      btn.classList.remove('playing', 'loading');
+      btn.textContent = '▶';
+    });
+  } catch (err) {
+    console.warn('[voice preview] failed:', err);
+    btn.classList.remove('loading', 'playing');
+    btn.textContent = '▶';
+  }
+}
+
+// ─── Reveal screen (Phase 4 of personalization) ─────────────────────
+// Auto-advances after AUTO_MS, OR resolves immediately when the learner
+// clicks "Start learning →" / "skip the intro". Always resolves — never
+// blocks. The learner's interest-derived agent color drives the orb ring,
+// the name color, the CTA button, and the radial-gradient background.
+
+const REVEAL_AUTO_MS = 4500;
+
+// Map from interest → Poppy palette color. Keep limited to brand colors
+// so the agent's identity stays on-brand. First matching interest wins.
+const INTEREST_COLOR_MAP = {
+  sports:     { hex: '#48A060', rgb: '72,160,96'   },   // green
+  music:      { hex: '#7860B0', rgb: '120,96,176'  },   // purple — outside brand 5 but reads well
+  gaming:     { hex: '#4070C0', rgb: '64,112,192'  },   // blue
+  history:    { hex: '#B85838', rgb: '184,88,56'   },   // brown — earthy
+  science:    { hex: '#4070C0', rgb: '64,112,192'  },   // blue
+  business:   { hex: '#D4B040', rgb: '212,176,64'  },   // gold
+  art:        { hex: '#CC4848', rgb: '204,72,72'   },   // red
+  cooking:    { hex: '#D48040', rgb: '212,128,64'  },   // orange
+  travel:     { hex: '#48A060', rgb: '72,160,96'   },   // green
+  technology: { hex: '#4070C0', rgb: '64,112,192'  },   // blue
+};
+const DEFAULT_AGENT_COLOR = { hex: '#D4B040', rgb: '212,176,64' };  // gold (brand)
+
+function pickAgentColor(interestList) {
+  if (!Array.isArray(interestList)) return DEFAULT_AGENT_COLOR;
+  for (const i of interestList) {
+    const c = INTEREST_COLOR_MAP[String(i).toLowerCase()];
+    if (c) return c;
+  }
+  return DEFAULT_AGENT_COLOR;
+}
+
+function showReveal({ name, face, skillName, interests, pedagogyName }) {
+  const screen = document.getElementById('reveal-screen');
+  const orb = document.getElementById('reveal-orb');
+  const $name = document.getElementById('reveal-name');
+  const $tagline = document.getElementById('reveal-tagline');
+  const $traits = document.getElementById('reveal-traits');
+  const $cta = document.getElementById('reveal-cta');
+  const $skip = document.getElementById('reveal-skip');
+  if (!screen || !orb || !$name || !$tagline || !$traits || !$cta) {
+    // DOM missing — degrade silently
+    return Promise.resolve();
+  }
+
+  // Color theming
+  const color = pickAgentColor(interests || []);
+  screen.style.setProperty('--reveal-color', color.hex);
+  screen.style.setProperty('--reveal-rgb', color.rgb);
+
+  // Orb content — drawn avatar SVG, or first letter of name as fallback,
+  // or the Poppy 7-dot logo if neither is set.
+  if (face) {
+    orb.innerHTML = avatarSvg(gridFromString(face), 122);
+  } else if (name) {
+    orb.innerHTML = `<div class="reveal-orb-fallback">${(name[0] || '').toLowerCase()}</div>`;
+  } else {
+    orb.innerHTML = `<svg viewBox="0 0 60 50" width="86" height="72" aria-hidden="true">
+      <circle cx="14" cy="11" r="9"   fill="#4070C0"/>
+      <circle cx="30" cy="9"  r="9"   fill="#D4B040"/>
+      <circle cx="46" cy="11" r="9"   fill="#CC4848"/>
+      <circle cx="16" cy="11" r="2.6" fill="#1A1A1A"/>
+      <circle cx="44" cy="11" r="2.6" fill="#1A1A1A"/>
+      <circle cx="20" cy="30" r="6.5" fill="#48A060"/>
+      <circle cx="40" cy="30" r="6.5" fill="#D48040"/>
+    </svg>`;
+  }
+
+  // Name + tagline
+  $name.textContent = name || 'your agent';
+  const courseBit = skillName || 'this course';
+  $tagline.textContent = `Ready to guide you through ${courseBit}. Just for you.`;
+
+  // Trait pills — pedagogy + first 2 interests (keep the row short)
+  $traits.innerHTML = '';
+  const traitList = [];
+  if (pedagogyName) traitList.push(pedagogyName);
+  (interests || []).slice(0, 2).forEach(i => traitList.push(i));
+  traitList.forEach(t => {
+    const pill = document.createElement('span');
+    pill.className = 'reveal-trait';
+    pill.textContent = t;
+    $traits.appendChild(pill);
+  });
+
+  // CTA button label uses the agent's name when available
+  $cta.textContent = name ? `Start learning with ${name} →` : 'Start learning →';
+
+  // Show + return a promise that resolves on user click, skip, or timeout
+  screen.classList.add('show');
+
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      screen.classList.remove('show');
+      $cta.removeEventListener('click', finish);
+      $skip.removeEventListener('click', finish);
+      clearTimeout(timer);
+      resolve();
+    };
+    $cta.addEventListener('click', finish, { once: true });
+    $skip.addEventListener('click', finish, { once: true });
+    const timer = setTimeout(finish, REVEAL_AUTO_MS);
+  });
+}
+
+function buildVoiceCards() {
+  const grid = document.getElementById('voice-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  VOICE_CATALOG.forEach((v) => {
+    const card = document.createElement('div');
+    card.className = 'voice-card';
+    card.dataset.voiceId = v.id;
+    card.setAttribute('role', 'radio');
+    card.setAttribute('aria-checked', v.id === selectedVoiceId ? 'true' : 'false');
+    card.innerHTML = `
+      <div class="voice-emoji">${v.emoji}</div>
+      <div class="voice-info">
+        <div class="voice-name">${v.name}</div>
+        <div class="voice-meta">${v.desc}</div>
+      </div>
+      <button type="button" class="voice-play" data-action="preview"
+              aria-label="Preview ${v.name}'s voice">▶</button>
+    `;
+    card.addEventListener('click', (e) => {
+      // Don't select when the user clicked the play button
+      if (e.target.closest('[data-action="preview"]')) return;
+      setSelectedVoice(v.id);
+    });
+    const playBtn = card.querySelector('[data-action="preview"]');
+    playBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      // Clicking play also selects the voice — feels natural
+      setSelectedVoice(v.id);
+      playVoicePreview(v.id, playBtn);
+    });
+    grid.appendChild(card);
+  });
+  refreshVoiceCardsActive();
+}
+buildVoiceCards();
+
+// Pre-fill from existing profile_prefs on load — if the learner already
+// named their agent in a previous session, surface that name so the input
+// reflects continuity (and they can change it if they want). Same flow
+// also pre-fills the avatar from profile_prefs.agent_face and the voice
+// from profile_prefs.agent_voice_id.
+async function prefillAgentName() {
+  if (!BEARER) return;
+  try {
+    const res = await fetch(`${RUNTIME_URL}/me`, {
+      headers: { Authorization: `Bearer ${BEARER}` },
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const prefs = (data && data.profile_prefs) || {};
+    const storedName = prefs.agent_name || '';
+    if (storedName) setAgentName(storedName);
+    const storedFace = prefs.agent_face || '';
+    if (storedFace) {
+      AV_GRID = gridFromString(storedFace);
+      // Update grid cells if the builder DOM exists
+      if ($avGrid) {
+        $avGrid.querySelectorAll('.av-cell').forEach((cell) => {
+          const r = +cell.dataset.r, c = +cell.dataset.c;
+          cell.style.background = AV_PALETTE[AV_GRID[r][c]] || 'var(--bg2)';
+        });
+      }
+      refreshAvPreview();
+      // Open the builder by default if a saved face exists, so the learner
+      // sees it immediately rather than wondering where it went.
+      if ($avBuilder && !$avBuilder.classList.contains('show')) {
+        $avBuilder.classList.add('show');
+        if ($avToggleLabel) $avToggleLabel.textContent = 'Hide the avatar builder';
+      }
+    }
+    // Voice preference — profile_prefs.agent_voice_id wins over a stale
+    // localStorage value (covers the cross-device case where the learner
+    // picked a voice on phone and is now on laptop).
+    const storedVoice = prefs.agent_voice_id || '';
+    if (storedVoice && VOICE_CATALOG.some(v => v.id === storedVoice)) {
+      setSelectedVoice(storedVoice);
+    }
+  } catch (_) { /* non-fatal */ }
+}
 
 async function loadPedagogyChips() {
   try {
@@ -1777,22 +2747,61 @@ async function startSession() {
   $messages.style.display = 'flex';
   $inputArea.style.display = 'flex';
 
-  // If the learner picked any interests on the start screen, persist them to
-  // profile_prefs BEFORE starting the session, so the prompt assembler picks
-  // them up on the very first turn (it reads profile_prefs from the DB).
+  // Persist the learner's pre-session choices (interests + agent name) to
+  // profile_prefs BEFORE /session/start, so the prompt assembler picks them
+  // up on the very first turn. Only fire when there's something to save —
+  // saves a needless PUT when the learner skipped both fields.
+  const profileUpdates = {};
   if (selectedInterests.size > 0) {
+    profileUpdates.language = 'en';
+    profileUpdates.interests = Array.from(selectedInterests);
+    profileUpdates.bandwidth = 'high';
+    profileUpdates.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  }
+  if (selectedAgentName) {
+    profileUpdates.agent_name = selectedAgentName;
+  }
+  // Persist the drawn avatar (if any). gridToString returns '' for an empty
+  // grid so we don't accidentally overwrite a previously-saved face with a
+  // blank when the learner skips the builder this session.
+  const faceStr = gridToString(AV_GRID);
+  if (faceStr) profileUpdates.agent_face = faceStr;
+  // Persist the chosen voice if it differs from the default — saving the
+  // default on every session start would be noisy.
+  if (selectedVoiceId && selectedVoiceId !== DEFAULT_VOICE_ID) {
+    profileUpdates.agent_voice_id = selectedVoiceId;
+  }
+  if (Object.keys(profileUpdates).length > 0) {
     try {
       await fetch(`${RUNTIME_URL}/me/profile_prefs`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${BEARER}` },
-        body: JSON.stringify({
-          language: 'en',
-          interests: Array.from(selectedInterests),
-          bandwidth: 'high',
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-        }),
+        body: JSON.stringify(profileUpdates),
       });
     } catch (_) { /* non-fatal — agent will use whatever's in profile_prefs already */ }
+  }
+
+  // Surface the agent name + avatar in the topbar so the user gets immediate
+  // visual confirmation that their choices "stuck" — the agent's first turn
+  // will also introduce itself with this name (driven by the prompt
+  // assembler's agent_identity_block).
+  if ($agentNameBadge && $agentNameText) {
+    if (selectedAgentName || faceStr) {
+      $agentNameText.textContent = selectedAgentName || 'your agent';
+      // If the learner drew an avatar, replace the 🤖 emoji with their SVG.
+      // Otherwise the badge keeps the emoji prefix from the HTML.
+      if (faceStr) {
+        const badgeFirstChild = $agentNameBadge.firstChild;
+        if (badgeFirstChild && badgeFirstChild.nodeType === 3) {
+          // Replace the leading "🤖 " text node with the avatar SVG
+          const svgWrap = document.createElement('span');
+          svgWrap.style.cssText = 'display:inline-block;margin-right:4px;vertical-align:middle;';
+          svgWrap.innerHTML = avatarSvg(AV_GRID, 18);
+          $agentNameBadge.replaceChild(svgWrap, badgeFirstChild);
+        }
+      }
+      $agentNameBadge.style.display = '';
+    }
   }
 
   // Build session-start payload. Only include time_budget_minutes when the
@@ -1821,10 +2830,27 @@ async function startSession() {
   const interestsBit = interests.length
     ? ` with examples adapted to ${interests.join(', ')}`
     : '';
+  const agentBit = selectedAgentName ? ` Your agent's name is ${selectedAgentName}.` : '';
   const welcomeMsg =
-    `Welcome to Dan Levy's API-318 — ${skillName}. ` +
+    `Welcome to Dan Levy's API-318 — ${skillName}.${agentBit} ` +
     `You picked the ${pedagogyName} style${interestsBit}, ` +
     `and ${soulName} as the safety layer. Let's begin.`;
+
+  // Phase 4 — Reveal screen. Plays for ~3.5s if the learner personalised
+  // anything (name, face, or non-default voice). Otherwise skipped so
+  // unpersonalised users hit the chat immediately.
+  const personalised = !!(selectedAgentName || faceStr ||
+    (selectedVoiceId && selectedVoiceId !== DEFAULT_VOICE_ID));
+  if (personalised) {
+    await showReveal({
+      name: selectedAgentName,
+      face: faceStr,
+      skillName,
+      interests,
+      pedagogyName,
+    });
+  }
+
   addBubble('system', welcomeMsg);
 
   showTyping();
@@ -1916,6 +2942,7 @@ let cmCurrentPhaseIdx = 0;
 let cmCoveredSlos = new Set();
 let cmTouchedConcepts = new Map();   // SLO id → Set of concept names touched
 let cmRecentConcept = null;          // concept that should glow on next render
+let cmJustFlippedSlos = new Set();   // SLO ids that flipped to covered THIS turn — animate
 
 const $cmSkillName = document.getElementById('cm-skill-name');
 const $cmSloList   = document.getElementById('cm-slo-list');
@@ -1979,6 +3006,7 @@ function renderConceptMap() {
     if (cmCoveredSlos.has(slo.id))         li.classList.add('covered');
     else if (currentSet.has(slo.id))       li.classList.add('current');
     else                                   li.classList.add('upcoming');
+    if (cmJustFlippedSlos.has(slo.id))     li.classList.add('just-flipped');
 
     const head = document.createElement('div');
     head.className = 'cm-slo-head';
@@ -2012,7 +3040,8 @@ function renderConceptMap() {
   const total = cmGetPhases().length || 1;
   $cmPhase.textContent = `${cmCurrentPhaseIdx + 1} of ${total}`;
 
-  cmRecentConcept = null;   // glow only fires once
+  cmRecentConcept = null;        // glow only fires once
+  cmJustFlippedSlos = new Set(); // celebration animation only fires once per flip
 }
 
 function cmUpdateFromTurn(turnData) {
@@ -2020,9 +3049,13 @@ function cmUpdateFromTurn(turnData) {
   // Streak from turn response
   if ($cmStreak) $cmStreak.textContent = (turnData.streak ?? 0);
 
-  // If mastery_met fired, mark all current-phase SLOs as covered.
+  // If mastery_met fired, mark all current-phase SLOs as covered + queue
+  // a one-shot flip animation for whichever ones just transitioned.
   if (turnData.mastery_met) {
-    cmCurrentSlosForPhase().forEach(id => cmCoveredSlos.add(id));
+    cmCurrentSlosForPhase().forEach(id => {
+      if (!cmCoveredSlos.has(id)) cmJustFlippedSlos.add(id);
+      cmCoveredSlos.add(id);
+    });
   }
 
   // Try to detect "concept just touched" from the agent reply text.
@@ -2046,8 +3079,12 @@ function cmUpdateFromProgress(p) {
   if (!cmSkillYaml) return;
   const newIdx = p.current_phase_index ?? 0;
   if (newIdx !== cmCurrentPhaseIdx) {
-    // Phase advanced — mark previous phase's SLOs as covered (agent moved on).
-    cmCurrentSlosForPhase().forEach(id => cmCoveredSlos.add(id));
+    // Phase advanced — mark previous phase's SLOs as covered (agent moved on)
+    // and queue the celebration animation for whichever just transitioned.
+    cmCurrentSlosForPhase().forEach(id => {
+      if (!cmCoveredSlos.has(id)) cmJustFlippedSlos.add(id);
+      cmCoveredSlos.add(id);
+    });
     cmCurrentPhaseIdx = newIdx;
   }
   renderConceptMap();
@@ -2134,8 +3171,11 @@ async function loadSkillMeta() {
     const data = await res.json();
 
     $skillLabel.textContent = data.name;
-    // Start-screen H1 is now a static "Demo class" header — skill name still
-    // shows in the topbar (#skill-label) and the document title.
+    // Start-screen H1: in bare URL (production) the H1 dynamically takes the
+    // loaded skill's name so real students see their actual class title.
+    // In ?demo=1 mode the H1 stays the static "Demo class" framing for the
+    // showcase audience.
+    if (!DEMO) $startTitle.textContent = data.name;
     document.title = `OPAS — ${data.name}`;
 
     if (DEMO) {
@@ -2223,6 +3263,7 @@ $input.addEventListener('keydown', e => {
 // ─────────────────────────────────────────────────────────────────────────────
 if (BEARER) {
   loadSkillMeta();
+  prefillAgentName();   // surfaces previously-chosen agent name in the input field
   if (AUTOSTART) startSession();
 } else {
   showTokenGate();
@@ -2276,6 +3317,21 @@ if ($demoInfoModal) {
       <button id="demo-info-close" type="button"
               style="background:var(--blue);color:var(--ink);border:none;border-radius:8px;padding:9px 18px;font-family:var(--font-display);font-size:13px;font-weight:700;text-transform:lowercase;letter-spacing:.02em;cursor:pointer;">got it</button>
     </div>
+  </div>
+</div>
+
+<!-- ─── REVEAL SCREEN (Phase 4 of personalization) ───────────────────────
+     Plays after Start session click and before chat appears, IF the
+     learner personalised at least one thing (name, face, or non-default
+     voice). Skipped if they didn't — no penalty for skipping. ──────── -->
+<div id="reveal-screen" role="dialog" aria-modal="true" aria-labelledby="reveal-name">
+  <div class="reveal-content">
+    <div class="reveal-orb" id="reveal-orb"></div>
+    <h2 class="reveal-name" id="reveal-name"></h2>
+    <p class="reveal-tagline" id="reveal-tagline"></p>
+    <div class="reveal-traits" id="reveal-traits"></div>
+    <button type="button" class="reveal-cta" id="reveal-cta">Start learning →</button>
+    <button type="button" class="reveal-skip" id="reveal-skip">skip the intro</button>
   </div>
 </div>
 </body>

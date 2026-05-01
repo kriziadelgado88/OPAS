@@ -557,6 +557,8 @@
       'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   }
 </script>
+<!-- Mammoth.js for in-browser .docx text extraction (Create-agent modal upload). -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 </head>
 <body>
 
@@ -675,9 +677,11 @@
     <textarea id="create-materials" placeholder="Paste lecture notes, a chapter, a problem set&hellip; The more text, the better the agent."></textarea>
     <div style="display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap">
       <label for="create-pdf" class="btn btn-ghost" style="font-size:13px;padding:6px 12px;cursor:pointer;margin:0">
-        📄 Upload PDFs
+        📄 Upload files
       </label>
-      <input type="file" id="create-pdf" accept="application/pdf,text/plain" multiple style="display:none">
+      <input type="file" id="create-pdf"
+        accept="application/pdf,text/plain,text/markdown,.md,.markdown,.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/html,.htm,.html"
+        multiple style="display:none">
       <button type="button" id="create-drive" class="btn btn-ghost" disabled
         style="font-size:13px;padding:6px 12px;margin:0;opacity:0.5;cursor:not-allowed"
         title="Google Drive folder integration is the v2 connector. PDF upload above works today.">
@@ -686,6 +690,16 @@
       <span id="create-pdf-status" style="font-size:12px;color:var(--muted)"></span>
     </div>
     <div id="create-pdf-files" style="display:none;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
+
+    <label for="create-urls" style="margin-top:14px">Public URLs <span style="color:var(--ink-50);font-weight:normal;">(optional)</span></label>
+    <p style="font-size:11.5px;color:var(--muted);margin:-4px 0 8px 0;line-height:1.4">
+      One URL per line. Public Google Docs (share link), Wikipedia pages, hosted PDFs, course websites, GitHub READMEs.
+      Private files need OAuth — not yet supported.
+    </p>
+    <textarea id="create-urls" rows="3"
+      placeholder="https://en.wikipedia.org/wiki/Probability&#10;https://docs.google.com/document/d/.../edit?usp=sharing&#10;https://example.edu/syllabus.pdf"
+      style="font-family:var(--font-mono);font-size:12px;min-height:70px;line-height:1.5;"></textarea>
+    <div id="create-urls-results" style="display:none;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
 
     <div class="modal-error" id="create-error"></div>
 
@@ -1097,7 +1111,11 @@
   // separator string we inserted into the textarea, used as a removal anchor.
   const createPdfQueue = [];
 
-  // ── PDF upload — extracts text in-browser and appends to textarea ────
+  // ── File upload — multi-format text extraction ───────────────────────
+  // Supports: PDF (PDF.js), .docx (Mammoth), .txt / .md / .markdown / .htm /
+  // .html (native text). Each file shows a per-file chip with live status
+  // (queued → processing → done/failed) so a teacher uploading 5 files can
+  // see exactly which one failed and why.
   async function extractPdfText(file) {
     if (!window.pdfjsLib) throw new Error('PDF.js failed to load — check your network.');
     const buf = await file.arrayBuffer();
@@ -1111,6 +1129,42 @@
     return parts.join('\n\n');
   }
 
+  async function extractFileText(file) {
+    const name = (file.name || '').toLowerCase();
+    // Plain text + Markdown — read directly.
+    if (file.type === 'text/plain' || file.type === 'text/markdown'
+        || name.endsWith('.txt') || name.endsWith('.md') || name.endsWith('.markdown')) {
+      return await file.text();
+    }
+    // Microsoft Word (.docx) — Mammoth.js converts to plain text in-browser.
+    if (name.endsWith('.docx')
+        || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      if (!window.mammoth) throw new Error('Mammoth.js failed to load — check your network.');
+      const buf = await file.arrayBuffer();
+      const result = await window.mammoth.extractRawText({ arrayBuffer: buf });
+      return result.value || '';
+    }
+    // HTML — strip tags via the DOM parser.
+    if (file.type === 'text/html' || name.endsWith('.html') || name.endsWith('.htm')) {
+      const htmlText = await file.text();
+      const tmp = document.createElement('div');
+      tmp.innerHTML = htmlText;
+      return tmp.textContent || tmp.innerText || '';
+    }
+    // Default: assume PDF.
+    return await extractPdfText(file);
+  }
+
+  function fileTypeIcon(name) {
+    const n = (name || '').toLowerCase();
+    if (n.endsWith('.pdf')) return '📕';
+    if (n.endsWith('.docx')) return '📘';
+    if (n.endsWith('.md') || n.endsWith('.markdown')) return '📝';
+    if (n.endsWith('.txt')) return '📄';
+    if (n.endsWith('.html') || n.endsWith('.htm')) return '🌐';
+    return '📄';
+  }
+
   function renderPdfChips() {
     if (!createPdfQueue.length) {
       createPdfFiles.style.display = 'none';
@@ -1118,22 +1172,43 @@
       return;
     }
     createPdfFiles.style.display = 'flex';
-    const totalChars = createPdfQueue.reduce((n, q) => n + q.chars, 0);
-    createPdfFiles.innerHTML = createPdfQueue.map((q, idx) => `
-      <span style="
-        display:inline-flex; align-items:center; gap:6px;
-        padding:4px 8px; border-radius:14px;
-        background:var(--bg2); border:1px solid var(--ink-15);
-        font-size:11.5px; color:var(--text); font-family:var(--font);
-      ">
-        📄 <span>${escapeHtmlPdf(q.name)}</span>
-        <span style="color:var(--muted); font-size:10px;">${q.chars.toLocaleString()} chars</span>
-        <button type="button" data-pdf-remove="${idx}" style="
-          background:none; border:none; color:var(--muted); cursor:pointer;
-          padding:0 2px; font-size:14px; line-height:1;
-        " title="Remove this file's contents from the materials">×</button>
-      </span>
-    `).join('') + `
+    const totalChars = createPdfQueue.reduce((n, q) => n + (q.chars || 0), 0);
+    createPdfFiles.innerHTML = createPdfQueue.map((q, idx) => {
+      // Per-file status visual: a small text + dot on the right side of the chip.
+      let statusBit = '';
+      let borderColor = 'var(--ink-15)';
+      let bgColor = 'var(--bg2)';
+      if (q.status === 'queued') {
+        statusBit = '<span style="color:var(--muted); font-size:10px;">queued…</span>';
+      } else if (q.status === 'processing') {
+        statusBit = '<span style="color:var(--gold,#D4B040); font-size:10px;">reading…</span>';
+        borderColor = 'rgba(212,176,64,.55)';
+        bgColor = 'rgba(212,176,64,.06)';
+      } else if (q.status === 'failed') {
+        statusBit = `<span style="color:var(--error-fg,#CC4848); font-size:10px;" title="${escapeHtmlPdf(q.error || 'failed')}">✗ failed</span>`;
+        borderColor = 'rgba(204,72,72,.55)';
+        bgColor = 'rgba(204,72,72,.06)';
+      } else {
+        // done
+        statusBit = `<span style="color:var(--muted); font-size:10px;">${(q.chars || 0).toLocaleString()} chars</span>`;
+      }
+      return `
+        <span style="
+          display:inline-flex; align-items:center; gap:6px;
+          padding:4px 8px; border-radius:14px;
+          background:${bgColor}; border:1px solid ${borderColor};
+          font-size:11.5px; color:var(--text); font-family:var(--font);
+          transition: background .2s, border-color .2s;
+        ">
+          ${fileTypeIcon(q.name)} <span>${escapeHtmlPdf(q.name)}</span>
+          ${statusBit}
+          <button type="button" data-pdf-remove="${idx}" style="
+            background:none; border:none; color:var(--muted); cursor:pointer;
+            padding:0 2px; font-size:14px; line-height:1;
+          " title="Remove this file from the materials">×</button>
+        </span>
+      `;
+    }).join('') + `
       <span style="font-size:11px; color:var(--muted); align-self:center; margin-left:4px;">
         ${createPdfQueue.length} file${createPdfQueue.length !== 1 ? 's' : ''} · ${totalChars.toLocaleString()} chars total
       </span>
@@ -1143,8 +1218,6 @@
         const i = +btn.dataset.pdfRemove;
         const removed = createPdfQueue.splice(i, 1)[0];
         if (removed && removed.marker) {
-          // Strip the file's block from the textarea: the marker line plus everything
-          // until the next marker (or end of string).
           const text = createMaterials.value || '';
           const startIdx = text.indexOf(removed.marker);
           if (startIdx !== -1) {
@@ -1168,43 +1241,63 @@
   createPdfInput.addEventListener('change', async (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
+
+    // Add every selected file to the queue immediately as 'queued' so the
+    // teacher sees all chips up-front, then update each one as it processes.
+    // Track each new entry's index so we can flip its status accurately even
+    // if the queue mutates (user removed an earlier chip mid-batch).
+    const newEntries = files.map((file) => {
+      const entry = {
+        name: file.name, size: file.size, chars: 0,
+        marker: null, status: 'queued', error: null,
+      };
+      createPdfQueue.push(entry);
+      return { entry, file };
+    });
+    renderPdfChips();
+
     let processed = 0;
     let failed = 0;
-    for (const file of files) {
-      createPdfStatus.textContent = `Reading ${file.name} (${processed + 1}/${files.length})…`;
-      createPdfStatus.style.color = 'var(--muted)';
+    for (const { entry, file } of newEntries) {
+      // The entry may have been removed by the user mid-batch. If so, skip.
+      if (!createPdfQueue.includes(entry)) continue;
+      entry.status = 'processing';
+      renderPdfChips();
       try {
-        let text;
-        if (file.type === 'text/plain' || file.name.toLowerCase().endsWith('.txt')) {
-          text = await file.text();
-        } else {
-          text = await extractPdfText(file);
-        }
+        const text = await extractFileText(file);
         const trimmed = (text || '').trim();
-        if (!trimmed) throw new Error('No text extracted');
-        // Insert with a unique marker so we can strip it back out on remove.
+        if (!trimmed) throw new Error('No text extracted (image-only PDF or empty file)');
         const marker = `\n\n--- ${file.name} ---\n`;
         const existing = (createMaterials.value || '').trim();
-        createMaterials.value = existing ? `${existing}${marker}${trimmed}` : `${marker.trim()}\n${trimmed}`.trim();
-        createPdfQueue.push({ name: file.name, size: file.size, chars: trimmed.length, marker });
+        createMaterials.value = existing
+          ? `${existing}${marker}${trimmed}`
+          : `${marker.trim()}\n${trimmed}`.trim();
+        entry.chars = trimmed.length;
+        entry.marker = marker;
+        entry.status = 'done';
         processed++;
       } catch (err) {
+        console.warn(`File ${file.name} failed:`, err);
+        entry.status = 'failed';
+        entry.error = (err && err.message) ? err.message : String(err);
         failed++;
-        console.warn(`PDF ${file.name} failed:`, err);
       }
+      renderPdfChips();
     }
-    renderPdfChips();
+
     if (failed === 0) {
       createPdfStatus.textContent = `✓ Added ${processed} file${processed !== 1 ? 's' : ''}.`;
       createPdfStatus.style.color = 'var(--success-fg)';
     } else if (processed === 0) {
-      createPdfStatus.textContent = `✗ Couldn't read any of those files. Scanned PDFs need OCR — paste manually.`;
+      createPdfStatus.textContent =
+        `✗ Couldn't read any files. Scanned PDFs need OCR — paste manually. Other formats: try .pdf, .docx, .txt, .md, .html.`;
       createPdfStatus.style.color = 'var(--error-fg)';
     } else {
-      createPdfStatus.textContent = `✓ Added ${processed} of ${files.length} (${failed} failed — scanned PDFs need OCR).`;
+      createPdfStatus.textContent =
+        `✓ Added ${processed} of ${files.length} (${failed} failed — see chip tooltips).`;
       createPdfStatus.style.color = 'var(--success-fg)';
     }
-    // Reset so re-uploading the same file (or another batch) fires the change event again.
+    // Reset so re-uploading the same file (or another batch) fires change again.
     createPdfInput.value = '';
   });
 
@@ -1246,6 +1339,49 @@
   });
   document.getElementById('create-cancel').addEventListener('click', () => closeModal('create-modal'));
 
+  const createUrls        = document.getElementById('create-urls');
+  const createUrlsResults = document.getElementById('create-urls-results');
+
+  function parseUrlList() {
+    const raw = (createUrls.value || '').trim();
+    if (!raw) return [];
+    return raw.split('\n')
+      .map(s => s.trim())
+      .filter(s => s && /^https?:\/\//i.test(s));
+  }
+
+  function renderUrlResults(results) {
+    if (!results || !results.length) {
+      createUrlsResults.style.display = 'none';
+      createUrlsResults.innerHTML = '';
+      return;
+    }
+    createUrlsResults.style.display = 'flex';
+    createUrlsResults.innerHTML = results.map((r) => {
+      const host = (() => {
+        try { return new URL(r.url).host.replace(/^www\./, ''); }
+        catch (_) { return r.url.slice(0, 40); }
+      })();
+      const ok = r.ok;
+      const borderColor = ok ? 'rgba(72,160,96,.55)' : 'rgba(204,72,72,.55)';
+      const bgColor     = ok ? 'rgba(72,160,96,.06)' : 'rgba(204,72,72,.06)';
+      const statusBit   = ok
+        ? `<span style="color:var(--success-fg,#48A060); font-size:10px;">\u2713 ${r.chunks_added} chunk${r.chunks_added === 1 ? '' : 's'}</span>`
+        : `<span style="color:var(--error-fg,#CC4848); font-size:10px;" title="${escapeHtmlPdf(r.error || 'failed')}">\u2717 ${escapeHtmlPdf((r.error || 'failed').slice(0, 36))}</span>`;
+      return `
+        <span style="
+          display:inline-flex; align-items:center; gap:6px;
+          padding:4px 8px; border-radius:14px;
+          background:${bgColor}; border:1px solid ${borderColor};
+          font-size:11.5px; color:var(--text); font-family:var(--font);
+        ">
+          \ud83c\udf10 <span title="${escapeHtmlPdf(r.url)}">${escapeHtmlPdf(host)}</span>
+          ${statusBit}
+        </span>
+      `;
+    }).join('');
+  }
+
   createSubmit.addEventListener('click', async () => {
     createError.classList.remove('show');
     const title = createName.value.trim();
@@ -1253,10 +1389,14 @@
     const pedagogy_id = createPedagogy.value;
     const visibility = document.querySelector('input[name="create-visibility"]:checked').value;
     const group_id = visibility === 'group' ? createGroup.value : null;
+    const urls = parseUrlList();
 
     if (!title) { showCreateErr('Give your agent a title.'); return; }
-    if (!materials || materials.length < 40) {
-      showCreateErr('Paste a bit more material \u2014 at least a paragraph or two.');
+    // Loosen the materials minimum if URLs are provided \u2014 URLs will fill the
+    // corpus on their own. Still require *something* (text or URLs) so the
+    // skill isn't created with an empty corpus.
+    if ((!materials || materials.length < 40) && urls.length === 0) {
+      showCreateErr('Paste a bit more material \u2014 at least a paragraph or two, or add a public URL.');
       return;
     }
     if (!pedagogy_id) { showCreateErr('Pick a teaching style.'); return; }
@@ -1269,16 +1409,49 @@
     createSubmit.textContent = 'Generating\u2026';
 
     try {
+      // 1. Generate the skill from text materials. URLs are ingested in step 2
+      //    so even URL-only creations work (we send a placeholder if needed).
+      const seedText = materials || `# ${title}\n\nMaterials sourced from the URLs below.`;
       const res = await fetch(RUNTIME + '/skills/generate', {
         method: 'POST',
         headers: authHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({ title, materials_text: materials, pedagogy_id, visibility, group_id }),
+        body: JSON.stringify({ title, materials_text: seedText, pedagogy_id, visibility, group_id }),
       });
       if (res.status === 401) { handleAuthFail(); return; }
       if (!res.ok) throw new Error(await safeDetail(res));
       const out = await res.json();
       if (!out || !out.skill_id) throw new Error('No skill_id returned.');
-      // Land on a session with the new skill running
+
+      // 2. If URLs were provided, ingest them now. Show per-URL status chips.
+      //    A failure of one URL doesn't block the redirect \u2014 the skill is
+      //    already created and the failed URL is reported so the user can
+      //    retry it later from the per-skill 'Add materials' drawer.
+      if (urls.length) {
+        createSubmit.textContent = `Fetching ${urls.length} URL${urls.length === 1 ? '' : 's'}\u2026`;
+        try {
+          const ingestRes = await fetch(
+            RUNTIME + '/skills/' + encodeURIComponent(out.skill_id) + '/ingest_urls',
+            {
+              method: 'POST',
+              headers: authHeaders({ 'Content-Type': 'application/json' }),
+              body: JSON.stringify({ urls }),
+            }
+          );
+          if (ingestRes.ok) {
+            const ingestOut = await ingestRes.json();
+            renderUrlResults(ingestOut.results || []);
+            // Brief moment for the user to see the chips before redirect
+            await new Promise(r => setTimeout(r, 1200));
+          } else {
+            console.warn('URL ingest failed:', ingestRes.status, await safeDetail(ingestRes));
+            // Don't block \u2014 skill is created, user can re-add URLs later.
+          }
+        } catch (urlErr) {
+          console.warn('URL ingest error:', urlErr);
+        }
+      }
+
+      // 3. Land on a session with the new skill running.
       window.location.href = 'opas-student.html?skill_id=' + encodeURIComponent(out.skill_id);
     } catch (err) {
       showCreateErr(err.message || String(err));

@@ -78,8 +78,17 @@ export function initBlackboard(opts = {}) {
     <div class="bb-stage" data-bb="stage">
       <div class="bb-stage-content" data-bb="stage-content">
         <div class="bb-empty" data-bb="empty">
-          <div>blackboard ready</div>
-          <div class="bb-empty-sub">key terms, diagrams &amp; wins land here</div>
+          <svg class="bb-empty-logo" viewBox="0 0 60 50" width="48" height="40" aria-hidden="true">
+            <circle cx="14" cy="11"  r="9"     fill="#4070C0"/>
+            <circle cx="30" cy="9"   r="9"     fill="#D4B040"/>
+            <circle cx="46" cy="11"  r="9"     fill="#CC4848"/>
+            <circle cx="16" cy="11"  r="2.6" fill="#1A1A1A"/>
+            <circle cx="44" cy="11"  r="2.6" fill="#1A1A1A"/>
+            <circle cx="20" cy="30" r="6.5"   fill="#48A060"/>
+            <circle cx="40" cy="30" r="6.5"   fill="#D48040"/>
+          </svg>
+          <div class="bb-empty-headline">Ready when you are.</div>
+          <div class="bb-empty-sub">Concepts, diagrams &amp; wins will land here as you learn.</div>
         </div>
       </div>
       <div class="bb-hero-win" data-bb="hero-win"><div class="bb-hero-win-card" data-bb="hero-win-text">★</div></div>
@@ -583,12 +592,30 @@ export function initBlackboard(opts = {}) {
     }
   }
 
+  // Voice TTS — serialized through a Promise chain so successive agent replies
+  // don't race on the shared <audio> element. Previous behavior: speak() was
+  // fire-and-forget; if reply 2 arrived before reply 1's blob finished
+  // downloading, reply 2 overwrote audioEl.src and reply 1's voice silently
+  // never played. Krizia reported "voice stops mid-conversation, only reads
+  // some" — that was the race. Now each call awaits the previous one's
+  // 'ended' event before starting, with logging on every failure path so the
+  // next time something goes wrong it's diagnosable in DevTools.
   let _audioEl = null;
+  let _voiceQueue = Promise.resolve();
+  const _voiceSafetyMs = 60000;   // queue can't block longer than 60s per turn
+
   async function speak(text) {
     if (!cfg.voiceEnabled() || !text || !cfg.runtimeUrl) return;
-    if (!_audioEl) _audioEl = new Audio();
+    _voiceQueue = _voiceQueue.then(() => _doSpeak(text)).catch((err) => {
+      console.error('[voice] queue entry failed:', err);
+    });
+    return _voiceQueue;
+  }
+
+  async function _doSpeak(text) {
+    let res;
     try {
-      const res = await fetch(`${cfg.runtimeUrl}/voice/tts`, {
+      res = await fetch(`${cfg.runtimeUrl}/voice/tts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -596,11 +623,61 @@ export function initBlackboard(opts = {}) {
         },
         body: JSON.stringify({ text, voice_id: cfg.getVoiceId() }),
       });
-      if (!res.ok) return;
-      const blob = await res.blob();
+    } catch (err) {
+      console.error('[voice] fetch failed:', err);
+      return;
+    }
+    if (!res.ok) {
+      console.error(`[voice] /voice/tts returned ${res.status} ${res.statusText}`);
+      return;
+    }
+    let blob;
+    try {
+      blob = await res.blob();
+    } catch (err) {
+      console.error('[voice] reading blob failed:', err);
+      return;
+    }
+    if (!_audioEl) _audioEl = new Audio();
+    // Re-check voice state after the (potentially long) fetch — if the user
+    // toggled voice off while the TTS was loading, don't surprise them with
+    // audio after the fact.
+    if (!cfg.voiceEnabled()) return;
+    try {
       _audioEl.src = URL.createObjectURL(blob);
-      _audioEl.play().catch(() => {});
-    } catch (_) {}
+    } catch (err) {
+      console.error('[voice] setting src failed:', err);
+      return;
+    }
+    // Wait for audio to finish playing (or fail / time out) before letting
+    // the next queued call proceed. Safety timeout prevents an unfired
+    // 'ended' event from blocking the queue forever.
+    return new Promise((resolve) => {
+      const cleanup = () => {
+        _audioEl.removeEventListener('ended', onEnd);
+        _audioEl.removeEventListener('error', onError);
+        clearTimeout(safety);
+      };
+      const onEnd = () => { cleanup(); resolve(); };
+      const onError = (e) => {
+        console.error('[voice] audio element error:', e);
+        cleanup();
+        resolve();
+      };
+      _audioEl.addEventListener('ended', onEnd);
+      _audioEl.addEventListener('error', onError);
+      const safety = setTimeout(() => {
+        console.warn('[voice] safety timeout — releasing queue');
+        cleanup();
+        resolve();
+      }, _voiceSafetyMs);
+
+      _audioEl.play().catch((err) => {
+        console.error('[voice] play() rejected:', err);
+        cleanup();
+        resolve();
+      });
+    });
   }
 
   let _busy = Promise.resolve();

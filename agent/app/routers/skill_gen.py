@@ -12,16 +12,21 @@ All routes sit behind require_learner_token (applied at router level in main.py)
 """
 from __future__ import annotations
 
+import html as _html
+import hashlib
 import re
 import time
 from io import BytesIO
+from typing import Optional
+from urllib.parse import urlparse
 
 import anthropic
+import httpx
 import tiktoken
 import yaml
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from openai import OpenAI
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from pypdf import PdfReader
 
 from ..auth import LearnerContext, require_learner_token
@@ -428,3 +433,235 @@ def delete_skill(
     sb.table("skills").update({"status": "archived"}).eq("id", skill_id).execute()
 
     return {"deleted": True, "sessions_archived": len(session_ids)}
+
+
+# ---------------------------------------------------------------------------
+# URL ingestion — POST /skills/{skill_id}/ingest_urls
+# ---------------------------------------------------------------------------
+# Lets a teacher paste a list of public URLs (Google Doc share links,
+# Wikipedia pages, hosted PDFs, course websites, GitHub READMEs, etc.) and
+# have each one fetched, content-type-extracted, and chunked into the
+# existing corpus_chunks pipeline. No OAuth, no Drive integration — just
+# whatever the public web returns.
+#
+# Coverage:
+#   - PDFs (any URL ending .pdf or returning application/pdf)
+#   - Public Google Docs (auto-rewrites to ?format=txt export endpoint)
+#   - Plain text / markdown URLs (raw GitHub, course .txt files)
+#   - HTML pages (strip tags, extract main text)
+# Out of scope (need OAuth):
+#   - Private Google Drive files
+#   - Authenticated Notion pages
+#   - Paywalled content
+
+URL_FETCH_TIMEOUT_S = 30.0
+URL_MAX_BYTES = 8 * 1024 * 1024   # 8 MB — safety cap per URL
+URL_USER_AGENT = "Poppy/1.0 (+OPAS — public material ingestion; respects robots.txt)"
+
+
+def _is_google_doc_url(url: str) -> bool:
+    return "docs.google.com/document/" in url
+
+
+def _gdoc_export_url(url: str) -> str:
+    """Convert a public Google Doc share link → plain-text export endpoint.
+
+    Patterns handled:
+      https://docs.google.com/document/d/<DOC_ID>/edit?usp=sharing
+      https://docs.google.com/document/d/<DOC_ID>/view
+      https://docs.google.com/document/d/<DOC_ID>/
+    All become:
+      https://docs.google.com/document/d/<DOC_ID>/export?format=txt
+    Any URL not matching the pattern is returned unchanged.
+    """
+    m = re.search(r"docs\.google\.com/document/d/([a-zA-Z0-9_-]+)", url)
+    if not m:
+        return url
+    doc_id = m.group(1)
+    return f"https://docs.google.com/document/d/{doc_id}/export?format=txt"
+
+
+def _strip_html_to_text(html_text: str) -> str:
+    """Light HTML → text. Removes <script>/<style> blocks, unwraps tags,
+    decodes HTML entities, collapses whitespace. Stdlib-only — no new dep."""
+    # Drop scripts and styles entirely (including inner content)
+    cleaned = re.sub(r"<(script|style)[^>]*>.*?</\1>", " ", html_text,
+                     flags=re.IGNORECASE | re.DOTALL)
+    # Replace block-level closers with newlines so paragraphs survive
+    cleaned = re.sub(r"</(p|div|li|h[1-6]|br|tr|section|article)>", "\n", cleaned,
+                     flags=re.IGNORECASE)
+    cleaned = re.sub(r"<br\s*/?>", "\n", cleaned, flags=re.IGNORECASE)
+    # Strip remaining tags
+    cleaned = re.sub(r"<[^>]+>", " ", cleaned)
+    # Decode entities (&amp;, &nbsp;, etc.)
+    cleaned = _html.unescape(cleaned)
+    # Normalize whitespace
+    cleaned = re.sub(r"[ \t]+", " ", cleaned)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+    return cleaned.strip()
+
+
+def _slugify_url(url: str) -> str:
+    """Stable, human-recognisable source_id from a URL: domain + short hash."""
+    parsed = urlparse(url)
+    host = (parsed.netloc or "url").replace("www.", "")
+    # Keep first path segment so two docs from same host don't collide visually
+    first_seg = parsed.path.strip("/").split("/")[0] if parsed.path else ""
+    short_hash = hashlib.sha1(url.encode("utf-8")).hexdigest()[:8]
+    base = f"{host}-{first_seg}" if first_seg else host
+    base = re.sub(r"[^a-z0-9]+", "-", base.lower()).strip("-")[:40]
+    return f"url-{base}-{short_hash}"
+
+
+def _fetch_and_extract_url(url: str) -> tuple[str, str]:
+    """Fetch a public URL, extract text, return (text, source_id).
+
+    Raises ValueError on any failure with a human-readable reason that the
+    frontend can surface to the teacher (these messages end up in the
+    per-URL result chip).
+    """
+    fetch_url = _gdoc_export_url(url) if _is_google_doc_url(url) else url
+
+    try:
+        with httpx.Client(
+            timeout=URL_FETCH_TIMEOUT_S,
+            follow_redirects=True,
+            headers={"User-Agent": URL_USER_AGENT},
+        ) as client:
+            resp = client.get(fetch_url)
+    except httpx.TimeoutException:
+        raise ValueError(f"timeout after {URL_FETCH_TIMEOUT_S:.0f}s")
+    except httpx.HTTPError as exc:
+        raise ValueError(f"network error: {exc}")
+
+    if resp.status_code >= 400:
+        raise ValueError(f"server returned {resp.status_code}")
+
+    body = resp.content
+    if len(body) > URL_MAX_BYTES:
+        raise ValueError(f"too large ({len(body)//(1024*1024)} MB > {URL_MAX_BYTES//(1024*1024)} MB cap)")
+
+    ctype = (resp.headers.get("content-type") or "").lower().split(";")[0].strip()
+    name_lower = url.lower()
+
+    # PDF — by content-type or by extension
+    if "application/pdf" in ctype or name_lower.endswith(".pdf"):
+        try:
+            reader = PdfReader(BytesIO(body))
+            text = "\n".join((page.extract_text() or "") for page in reader.pages)
+        except Exception as exc:
+            raise ValueError(f"PDF parse failed: {exc}")
+        if not text.strip():
+            raise ValueError("PDF has no extractable text (image-only / scanned)")
+        return text, _slugify_url(url)
+
+    # Plain text or markdown — direct
+    if (ctype.startswith("text/plain") or ctype.startswith("text/markdown")
+            or name_lower.endswith(".txt") or name_lower.endswith(".md")
+            or name_lower.endswith(".markdown")):
+        text = resp.text
+        if not text.strip():
+            raise ValueError("file is empty")
+        return text, _slugify_url(url)
+
+    # HTML — strip tags
+    if "text/html" in ctype or "application/xhtml" in ctype:
+        text = _strip_html_to_text(resp.text)
+        if not text.strip() or len(text) < 80:
+            raise ValueError("page had little or no extractable text")
+        return text, _slugify_url(url)
+
+    # Unknown content type — best-effort decode as text
+    try:
+        text = body.decode("utf-8", errors="replace")
+    except Exception:
+        raise ValueError(f"unsupported content-type: {ctype or 'unknown'}")
+    if not text.strip():
+        raise ValueError(f"unsupported content-type: {ctype or 'unknown'}")
+    return text, _slugify_url(url)
+
+
+class IngestUrlsRequest(BaseModel):
+    urls: list[str] = Field(..., min_length=1, max_length=20)
+
+    @field_validator("urls")
+    @classmethod
+    def _strip_and_validate(cls, v: list[str]) -> list[str]:
+        cleaned: list[str] = []
+        for u in v:
+            u = (u or "").strip()
+            if not u:
+                continue
+            if not (u.startswith("http://") or u.startswith("https://")):
+                raise ValueError(f"URLs must start with http:// or https:// (got '{u[:40]}')")
+            if len(u) > 2000:
+                raise ValueError("URL too long (>2000 chars)")
+            cleaned.append(u)
+        if not cleaned:
+            raise ValueError("at least one valid URL required")
+        return cleaned
+
+
+@router.post("/{skill_id}/ingest_urls")
+def ingest_urls(
+    skill_id: str,
+    body: IngestUrlsRequest,
+    learner: LearnerContext = Depends(require_learner_token),
+) -> dict:
+    """Fetch each URL, extract text, chunk + embed into corpus_chunks.
+
+    Returns per-URL results so the frontend can render a chip showing
+    which URLs succeeded and which failed (and why).
+    """
+    settings = get_settings()
+    sb = get_supabase()
+
+    _check_skill_write_access(skill_id, learner.learner_id, sb)
+
+    results: list[dict] = []
+    total_chunks_added = 0
+
+    for url in body.urls:
+        try:
+            text, source_id = _fetch_and_extract_url(url)
+            chunks_added = _chunk_and_embed(skill_id, source_id, text, sb, settings)
+            total_chunks_added += chunks_added
+            results.append({
+                "url": url,
+                "ok": True,
+                "source_id": source_id,
+                "chunks_added": chunks_added,
+                "chars": len(text),
+            })
+
+            sb.table("events").insert({
+                "verb": "materials.appended",
+                "actor_id": learner.learner_id,
+                "session_id": None,
+                "skill_id": skill_id,
+                "object_type": "skill",
+                "object_id": skill_id,
+                "context": {"source_id": source_id, "chunks_added": chunks_added,
+                            "ingest_method": "url", "url": url},
+                "result": {},
+            }).execute()
+        except ValueError as exc:
+            results.append({
+                "url": url, "ok": False, "error": str(exc),
+                "source_id": None, "chunks_added": 0, "chars": 0,
+            })
+        except Exception as exc:
+            # Catch-all so one bad URL doesn't kill the whole batch.
+            results.append({
+                "url": url, "ok": False,
+                "error": f"unexpected error: {type(exc).__name__}: {exc}"[:300],
+                "source_id": None, "chunks_added": 0, "chars": 0,
+            })
+
+    return {
+        "results": results,
+        "ok_count": sum(1 for r in results if r["ok"]),
+        "fail_count": sum(1 for r in results if not r["ok"]),
+        "total_chunks_added": total_chunks_added,
+        "total_chunks": _get_total_chunks(skill_id, sb),
+    }

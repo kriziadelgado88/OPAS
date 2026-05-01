@@ -105,8 +105,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  color: var(--ink-30, rgba(242,239,230,.3));
+  gap: 12px;
+  color: var(--ink-50, rgba(242,239,230,.5));
   font-family: var(--font-mono, ui-monospace, monospace);
   font-size: 12px;
   letter-spacing: .08em;
@@ -114,7 +114,26 @@
   padding: 40px;
   text-align: center;
 }
-.bb-empty-sub { font-size: 10px; opacity: .6; text-transform: none; letter-spacing: .04em; }
+.bb-empty-logo { margin-bottom: 4px; opacity: .85; }
+.bb-empty-headline {
+  font-family: var(--font-display, ui-monospace, sans-serif);
+  font-weight: 700;
+  font-size: 18px;
+  text-transform: none;
+  letter-spacing: -0.01em;
+  color: var(--ink, #F2EFE6);
+  padding: 0;
+  text-align: center;
+}
+.bb-empty-sub {
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: 12.5px;
+  opacity: .7;
+  text-transform: none;
+  letter-spacing: 0;
+  text-align: center;
+  max-width: 280px;
+}
 
 .bb-beat-label {
   font-family: var(--font-mono, ui-monospace, monospace);
