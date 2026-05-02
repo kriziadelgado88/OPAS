@@ -186,8 +186,11 @@ Generate 1-3 phases appropriate for the materials complexity. Keep it tight.\
         f"Materials (first 3000 chars):\n{materials_text[:3000]}"
     )
 
+    # Use the fast model (Haiku) instead of Sonnet — this is a structured
+    # template fill, not a reasoning task. Cuts ~10-20s of latency from
+    # "Create new agent" with no quality drop.
     resp = client.messages.create(
-        model=settings.claude_model,
+        model=settings.claude_fast_model,
         max_tokens=2048,
         system=system,
         messages=[{"role": "user", "content": user_msg}],

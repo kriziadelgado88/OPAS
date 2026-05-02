@@ -48,6 +48,7 @@ class Settings:
     env: str
     dev_bearer_token: str
     claude_model: str
+    claude_fast_model: str
     openai_chat_model: str
     gemini_model: str
     embedding_model: str
@@ -66,6 +67,12 @@ def get_settings() -> Settings:
         env=_optional("OPAS_ENV", "dev"),
         dev_bearer_token=_optional("OPAS_DEV_BEARER_TOKEN", "dev-token-change-me"),
         claude_model=_optional("CLAUDE_MODEL", "claude-sonnet-4-6"),
+        # Fast model for non-tutoring tasks (skill YAML generation, memory
+        # extraction). Skill creation was using Sonnet to fill in a structured
+        # YAML template — overkill, added 10-20s of latency. Haiku does the
+        # templated job in 3-5s with no quality drop. Override via env if
+        # Anthropic renames the model.
+        claude_fast_model=_optional("CLAUDE_FAST_MODEL", "claude-haiku-4-5"),
         openai_chat_model=_optional("OPENAI_CHAT_MODEL", "gpt-4o"),
         gemini_model=_optional("GEMINI_MODEL", "gemini-2.5-flash"),
         embedding_model=_optional("EMBEDDING_MODEL", "text-embedding-3-small"),

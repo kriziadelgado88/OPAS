@@ -2818,7 +2818,11 @@ async function startSession() {
   // Static welcome bubble — sets the stage before the agent's first reply.
   // Confirms the learner's choices so the demo viewer sees the platform
   // honouring their selections.
-  const skillName = ($skillLabel.textContent || '').trim() || 'Thinking Analytically in an Uncertain World';
+  // Fall back to a neutral label when the skill hasn't loaded yet — the
+  // earlier hardcode of "Thinking Analytically in an Uncertain World"
+  // leaked into welcome bubbles for newly-created skills with different
+  // names. Per-skill name comes from data.name in loadSkillMeta.
+  const skillName = ($skillLabel.textContent || '').trim() || 'this course';
   const activePedChip = $pedagogyChips?.querySelector('.chip.active');
   const pedagogyName = activePedChip ? activePedChip.textContent.trim() : 'Socratic Method';
   const soulMap = {
@@ -2831,8 +2835,11 @@ async function startSession() {
     ? ` with examples adapted to ${interests.join(', ')}`
     : '';
   const agentBit = selectedAgentName ? ` Your agent's name is ${selectedAgentName}.` : '';
+  // Use the actual loaded skill name — was previously hardcoded to
+  // "Welcome to Dan Levy's API-318 — ${skillName}", which leaked the
+  // reference-skill framing into every newly-created agent.
   const welcomeMsg =
-    `Welcome to Dan Levy's API-318 — ${skillName}.${agentBit} ` +
+    `Welcome to ${skillName}.${agentBit} ` +
     `You picked the ${pedagogyName} style${interestsBit}, ` +
     `and ${soulName} as the safety layer. Let's begin.`;
 

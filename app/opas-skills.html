@@ -1406,7 +1406,21 @@
     }
 
     createSubmit.disabled = true;
-    createSubmit.textContent = 'Generating\u2026';
+    // Step-through status so a 5-15s wait doesn't feel hung. The button
+    // text rotates while the request is in flight.
+    createSubmit.textContent = 'Designing your agent\u2026';
+    let progressTimer = null;
+    const progressMessages = [
+      'Designing your agent\u2026',
+      'Building the pedagogy plan\u2026',
+      'Embedding your materials\u2026',
+      'Almost ready\u2026',
+    ];
+    let progressIdx = 0;
+    progressTimer = setInterval(() => {
+      progressIdx = (progressIdx + 1) % progressMessages.length;
+      createSubmit.textContent = progressMessages[progressIdx];
+    }, 2500);
 
     try {
       // 1. Generate the skill from text materials. URLs are ingested in step 2
@@ -1452,8 +1466,11 @@
       }
 
       // 3. Land on a session with the new skill running.
+      if (progressTimer) clearInterval(progressTimer);
+      createSubmit.textContent = 'Opening your agent…';
       window.location.href = 'opas-student.html?skill_id=' + encodeURIComponent(out.skill_id);
     } catch (err) {
+      if (progressTimer) clearInterval(progressTimer);
       showCreateErr(err.message || String(err));
       createSubmit.disabled = false;
       createSubmit.textContent = 'Create agent';
