@@ -704,5 +704,11 @@ export function initBlackboard(opts = {}) {
     cfg.container.querySelector('[data-bb="mastery-pct"]').textContent = '0%';
   }
 
-  return { handleAgentReply, sessionLog, setSpeed, setRhythm, reset };
+  // Public 'speak' method — lets the host page push arbitrary text into the
+  // voice queue without going through handleAgentReply (which would also
+  // add a chat bubble + parse signals). Used for the session-start greeting:
+  //   bb.speak("Hello, my name is Nova and today we'll learn about ...")
+  // Joins the same _voiceQueue, so it serialises naturally with subsequent
+  // agent turns — no race on the audio element.
+  return { handleAgentReply, speak, sessionLog, setSpeed, setRhythm, reset };
 }

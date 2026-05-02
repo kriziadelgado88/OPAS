@@ -43,7 +43,7 @@ def agent_identity_block(profile_prefs: dict | None) -> str:
         return ""
     parts = [
         f"## Agent identity",
-        f"Your name is **{name}** — chosen by this learner. Introduce yourself in your opening turn (\"Hi! I'm {name}.\") and self-reference by this name when natural in conversation. Don't overuse it — once at the start is enough; only reuse it when it adds warmth or clarity (e.g., \"I'll be honest with you here — \" not \"As {name}, I'll be honest with you\").",
+        f"Your name is **{name}** — chosen by this learner. They have already heard a short voice greeting introducing you by name and the course title — so do NOT re-introduce yourself in your opening turn. Skip 'Hi! I'm {name}' and skip the course-title preamble; both are redundant. Open with a brief warm acknowledgement (e.g. 'OK, ready when you are.' or 'Alright,') and then go straight into your first Socratic question targeting the current phase objectives. Self-reference by your name during conversation only when it adds warmth or clarity (e.g., 'I'll be honest with you here — ' not 'As {name}, I'll be honest with you'). Don't overuse the name; once or twice per session is enough.",
     ]
     return "\n".join(parts)
 
@@ -468,9 +468,12 @@ def build_system_prompt(
     if is_session_start and not mode:
         sections.append(
             "## Session opening instruction\n"
-            "Open with a warm one-sentence greeting (use the learner's name if you have it from the profile), "
-            "then ask your first Socratic question targeting the current phase objectives. "
-            "Do not lecture. Do not give an overview. Greeting + one question, nothing more."
+            "The learner has already heard a short voice greeting introducing you (or seen "
+            "a brief welcome bubble if their voice is off). Do NOT repeat the greeting. Do NOT "
+            "name the course or restate setup. Open directly with one warm word or short clause "
+            "of acknowledgement (e.g. 'OK,' or 'Alright — ' or 'Right, so:'), then ask your "
+            "first Socratic question targeting the current phase objectives. "
+            "Do not lecture. Do not give an overview. One brief opener + one question, nothing more."
         )
 
     # 8.1. Reply brevity rule — tighter than before. Push detail to the

@@ -2916,15 +2916,6 @@ async function startSession() {
   const interestsBit = interests.length
     ? ` with examples adapted to ${interests.join(', ')}`
     : '';
-  const agentBit = selectedAgentName ? ` Your agent's name is ${selectedAgentName}.` : '';
-  // Use the actual loaded skill name — was previously hardcoded to
-  // "Welcome to Dan Levy's API-318 — ${skillName}", which leaked the
-  // reference-skill framing into every newly-created agent.
-  const welcomeMsg =
-    `Welcome to ${skillName}.${agentBit} ` +
-    `You picked the ${pedagogyName} style${interestsBit}, ` +
-    `and ${soulName} as the safety layer. Let's begin.`;
-
   // Phase 4 — Reveal screen. Plays for ~3.5s if the learner personalised
   // anything (name, face, or non-default voice). Otherwise skipped so
   // unpersonalised users hit the chat immediately.
@@ -2940,7 +2931,28 @@ async function startSession() {
     });
   }
 
-  addBubble('system', welcomeMsg);
+  // Welcome moment — voice OR yellow bubble, never both.
+  // When voice is on we say a short, deterministic greeting via TTS
+  // ("Hello, my name is Nova and today we'll learn about Probability.")
+  // and skip the bubble entirely. The greeting plays *during* the
+  // /session/start API wait, hiding latency. The agent's first turn
+  // will queue behind it via the shared voice queue.
+  // When voice is off we fall back to a clean text bubble — shorter
+  // than the previous "you picked X, Y, Z" recap which read as
+  // setup-debug-output rather than student-friendly framing.
+  const speakName  = selectedAgentName || 'your tutor';
+  const speakCourse = (skillName && skillName !== 'this course') ? skillName : 'today’s topic';
+  const greetingText = selectedAgentName
+    ? `Hello, my name is ${selectedAgentName}, and today we'll learn about ${speakCourse}.`
+    : `Welcome to ${speakCourse}. Let's begin.`;
+  if (voiceOn) {
+    // Fire and forget — bb.speak queues through the voice Promise chain,
+    // so the agent's first reply will play right after the greeting ends.
+    try { bb.speak(greetingText); } catch (_) { /* non-fatal */ }
+  } else {
+    const agentBit = selectedAgentName ? ` Your tutor today is ${selectedAgentName}.` : '';
+    addBubble('system', `Welcome to ${skillName}.${agentBit} Let's begin.`);
+  }
 
   showTyping();
   try {
