@@ -600,6 +600,7 @@
     <div class="toolbar">
       <button type="button" class="btn btn-primary"   id="btn-new-skill">+ Create new agent</button>
       <button type="button" class="btn btn-secondary" id="btn-join-group">+ Join a group</button>
+      <button type="button" class="btn btn-secondary" id="btn-find-classmates">+ Find classmates' agents</button>
     </div>
   </div>
 
@@ -724,6 +725,34 @@
     <div class="modal-actions">
       <button type="button" class="btn btn-ghost"   id="join-cancel">Cancel</button>
       <button type="button" class="btn btn-primary" id="join-submit">Join</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── FIND-CLASSMATES MODAL (V1 of A2A connections) ────────── -->
+<div class="modal-backdrop" id="connect-modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="connect-title" style="max-width:560px">
+    <h3 id="connect-title">Find classmates' agents</h3>
+    <p class="modal-sub">
+      Connect your agent with classmates' agents in the same group. Connections are mutual —
+      you request, they accept (or vice-versa). Once connected, your tutors can reference
+      each other in conversation. Knowledge sharing comes next.
+    </p>
+
+    <div id="connect-empty" style="display:none;padding:20px;text-align:center;color:var(--muted);font-size:13px;line-height:1.5;">
+      No discoverable classmates yet. <strong>Join a group</strong> first, then come back here.
+    </div>
+
+    <div id="connect-list" style="display:none;max-height:380px;overflow-y:auto;margin-top:12px;display:flex;flex-direction:column;gap:8px;"></div>
+
+    <div id="connect-loading" style="padding:20px;text-align:center;color:var(--muted);font-size:13px;">
+      Looking for classmates&hellip;
+    </div>
+
+    <div class="modal-error" id="connect-error"></div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" id="connect-close">Close</button>
     </div>
   </div>
 </div>
@@ -1532,6 +1561,166 @@
       joinSubmit.textContent = 'Join';
     }
   });
+
+  // ── Find-classmates modal (V1 of A2A connections) ───────────
+  // Hits /connections/discoverable for the agents in your shared group(s),
+  // shows them as cards with a Connect button, and POSTs to
+  // /connections/request when clicked. Existing connections show their
+  // current state (pending request you sent / pending request to accept /
+  // accepted / declined) and offer the right action button.
+  const connectModal   = document.getElementById('connect-modal');
+  const connectList    = document.getElementById('connect-list');
+  const connectEmpty   = document.getElementById('connect-empty');
+  const connectLoading = document.getElementById('connect-loading');
+  const connectError   = document.getElementById('connect-error');
+
+  function pixelAvatarFromString(faceStr, size) {
+    // Mirror of avatarSvg() in opas-student.html — keeps this page stand-alone.
+    if (!faceStr || faceStr.length < 64) return '';
+    const palette = [null, '#4070C0', '#CC4848', '#48A060', '#D4B040',
+                     '#D48040', '#F2EFE6', '#2A2A35'];
+    const cell = size / 8;
+    let rects = '';
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const ch = faceStr[r * 8 + c];
+        const idx = parseInt(ch, 10);
+        const fill = palette[idx];
+        if (!fill) continue;
+        rects += `<rect x="${c*cell}" y="${r*cell}" width="${cell}" height="${cell}" fill="${fill}"/>`;
+      }
+    }
+    return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg" style="border-radius:4px;background:var(--bg2);">${rects}</svg>`;
+  }
+
+  function renderConnectionEntry(agent) {
+    const avatar = agent.their_agent_face
+      ? pixelAvatarFromString(agent.their_agent_face, 36)
+      : `<div style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:var(--bg2);border:1px solid var(--ink-15);border-radius:50%;font-size:18px;">🤖</div>`;
+    const agentLabel = agent.their_agent_name || '(unnamed agent)';
+    const ownerLabel = agent.their_display_name || 'Anonymous';
+    const skillLabel = agent.skill_name || '';
+
+    let actionHtml = '';
+    if (agent.connection_status === 'accepted') {
+      actionHtml = `<span style="font-size:11px;color:var(--success-fg);font-weight:600;font-family:var(--font-mono);">✓ connected</span>
+        <button class="btn btn-ghost" data-conn-action="revoke" data-conn-id="${agent.connection_id}" style="font-size:11px;padding:4px 8px;">disconnect</button>`;
+    } else if (agent.connection_status === 'pending' && agent.i_requested) {
+      actionHtml = `<span style="font-size:11px;color:var(--muted);font-family:var(--font-mono);">⏳ pending</span>
+        <button class="btn btn-ghost" data-conn-action="revoke" data-conn-id="${agent.connection_id}" style="font-size:11px;padding:4px 8px;">cancel</button>`;
+    } else if (agent.connection_status === 'pending' && !agent.i_requested) {
+      actionHtml = `<button class="btn btn-primary" data-conn-action="accept" data-conn-id="${agent.connection_id}" style="font-size:12px;padding:6px 10px;">accept</button>
+        <button class="btn btn-ghost" data-conn-action="decline" data-conn-id="${agent.connection_id}" style="font-size:12px;padding:6px 10px;">decline</button>`;
+    } else if (agent.connection_status === 'declined') {
+      actionHtml = `<span style="font-size:11px;color:var(--muted);font-family:var(--font-mono);">declined</span>`;
+    } else {
+      actionHtml = `<button class="btn btn-secondary" data-conn-action="request"
+        data-their-skill="${escapeHtml(agent.skill_id)}"
+        data-group-id="${escapeHtml(agent.group_id || '')}"
+        style="font-size:12px;padding:6px 10px;">connect</button>`;
+    }
+
+    return `
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--ink-15);border-radius:10px;background:var(--bg);">
+        ${avatar}
+        <div style="flex:1;min-width:0;">
+          <div style="font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--ink);">${escapeHtml(agentLabel)}</div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);letter-spacing:.04em;">${escapeHtml(ownerLabel)}'s tutor on ${escapeHtml(skillLabel)}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">${actionHtml}</div>
+      </div>
+    `;
+  }
+
+  async function loadDiscoverableAgents() {
+    connectLoading.style.display = 'block';
+    connectList.style.display = 'none';
+    connectEmpty.style.display = 'none';
+    connectError.classList.remove('show');
+    try {
+      const res = await fetch(RUNTIME + '/connections/discoverable', {
+        headers: authHeaders(),
+      });
+      if (res.status === 401) { handleAuthFail(); return; }
+      if (!res.ok) throw new Error(await safeDetail(res));
+      const out = await res.json();
+      const agents = out.agents || [];
+      connectLoading.style.display = 'none';
+      if (!agents.length) {
+        connectEmpty.style.display = 'block';
+        return;
+      }
+      connectList.style.display = 'flex';
+      connectList.innerHTML = agents.map(renderConnectionEntry).join('');
+      // Wire action buttons (event delegation)
+      connectList.querySelectorAll('[data-conn-action]').forEach((btn) => {
+        btn.addEventListener('click', () => handleConnectionAction(btn));
+      });
+    } catch (err) {
+      connectLoading.style.display = 'none';
+      connectError.textContent = err.message || String(err);
+      connectError.classList.add('show');
+    }
+  }
+
+  async function handleConnectionAction(btn) {
+    const action = btn.dataset.connAction;
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = '…';
+    try {
+      let url, opts;
+      if (action === 'request') {
+        // Need to send my_skill_id — pick the first of my own skills in
+        // the same group as the target. For V1 we keep this simple:
+        // ask the server which of my skills should be used (any in the
+        // same group works; default to the most-recently-created).
+        const mySkill = (skills || [])
+          .filter(s => s.group_id === btn.dataset.groupId || !btn.dataset.groupId)
+          .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))[0];
+        if (!mySkill) throw new Error('You need an agent in the same group first.');
+        url = RUNTIME + '/connections/request';
+        opts = {
+          method: 'POST',
+          headers: authHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({
+            my_skill_id: mySkill.skill_id,
+            their_skill_id: btn.dataset.theirSkill,
+            group_id: btn.dataset.groupId || null,
+          }),
+        };
+      } else if (action === 'accept') {
+        url = RUNTIME + '/connections/' + btn.dataset.connId + '/accept';
+        opts = { method: 'POST', headers: authHeaders() };
+      } else if (action === 'decline') {
+        url = RUNTIME + '/connections/' + btn.dataset.connId + '/decline';
+        opts = { method: 'POST', headers: authHeaders() };
+      } else if (action === 'revoke') {
+        url = RUNTIME + '/connections/' + btn.dataset.connId;
+        opts = { method: 'DELETE', headers: authHeaders() };
+      } else {
+        return;
+      }
+      const res = await fetch(url, opts);
+      if (res.status === 401) { handleAuthFail(); return; }
+      if (!res.ok) throw new Error(await safeDetail(res));
+      // Refresh the list to reflect the new state
+      await loadDiscoverableAgents();
+      // Also refresh skills so connection-count badges update
+      await loadSkills();
+    } catch (err) {
+      connectError.textContent = err.message || String(err);
+      connectError.classList.add('show');
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  }
+
+  document.getElementById('btn-find-classmates').addEventListener('click', () => {
+    openModal('connect-modal');
+    loadDiscoverableAgents();
+  });
+  document.getElementById('connect-close').addEventListener('click', () => closeModal('connect-modal'));
 
   // ── Delete-confirm modal ─────────────────────────────────────
   const deleteCancel  = document.getElementById('delete-cancel');

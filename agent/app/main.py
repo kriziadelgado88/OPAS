@@ -12,9 +12,12 @@ from .routers import compare as compare_router
 from .routers import dashboard as dashboard_router
 from .routers import auth as auth_router
 from .routers import groups as groups_router
+from .routers import connections as connections_router
 from .routers import pedagogies as pedagogies_router
 from .routers import skill_gen as skill_gen_router
 from .routers import me as me_router
+from .routers import voice as voice_router
+from .routers import agentfacts as agentfacts_router
 
 app = FastAPI(
     title="OPAS Agent Runtime",
@@ -25,10 +28,20 @@ app = FastAPI(
     ),
 )
 
-# CORS: allow local dev + the wizard/student frontends.
+# CORS: allow local dev + the deployed Vercel frontends.
+#   - Static origins cover localhost dev and the production Vercel project.
+#   - allow_origin_regex matches Vercel preview deploys (opas-git-<branch>-<org>.vercel.app)
+#     so any preview branch the team pushes can hit the backend without manual config.
+#   - When you change the Vercel project name, update the static "https://opas.vercel.app"
+#     entry to match. The regex covers all *.vercel.app preview deploys regardless.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080", "http://127.0.0.1:8080"],
+    allow_origins=[
+        "http://localhost:8080",
+        "http://127.0.0.1:8080",
+        "https://opas.vercel.app",
+    ],
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -39,7 +52,7 @@ app.add_middleware(
 # Routes
 # ----------------------------------------------------------------------------
 
-@app.get("/health", response_model=HealthResponse, tags=["system"])
+@app.api_route("/health", methods=["GET", "HEAD"], response_model=HealthResponse, tags=["system"])
 def health() -> HealthResponse:
     s = get_settings()
     return HealthResponse(
@@ -86,6 +99,16 @@ app.include_router(
     dependencies=[Depends(require_learner_token)],
 )
 
+# /connections/* — agent-to-agent connections within a shared group (V1).
+# Learner token required. See deployment/supabase/migrations/2026_05_03_agent_connections.sql
+# for the underlying table.
+app.include_router(
+    connections_router.router,
+    prefix="/connections",
+    tags=["connections"],
+    dependencies=[Depends(require_learner_token)],
+)
+
 # /pedagogies — public catalogue, no auth.
 app.include_router(pedagogies_router.router, tags=["pedagogies"])
 
@@ -103,4 +126,23 @@ app.include_router(
     prefix="/skills",
     tags=["skills"],
     dependencies=[Depends(require_learner_token)],
+)
+
+# /voice/* — ElevenLabs TTS proxy (learner token required for live sessions;
+# preview endpoint also gated to keep API costs scoped to authenticated users).
+app.include_router(
+    voice_router.router,
+    prefix="/voice",
+    tags=["voice"],
+    dependencies=[Depends(require_learner_token)],
+)
+
+# /agentfacts/* — NANDA-compliant AgentFacts generator (FactsAboutMe, embedded).
+# Public endpoints: any agent can call these without auth, mirroring how the
+# original Flask app was deployed. The /from-opas-skill/{skill_id} bridge
+# lets external NANDA clients fetch a card for any pilot/published OPAS skill.
+app.include_router(
+    agentfacts_router.router,
+    prefix="/agentfacts",
+    tags=["agentfacts"],
 )
