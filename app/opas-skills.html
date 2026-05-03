@@ -732,11 +732,12 @@
 <!-- ─── FIND-CLASSMATES MODAL (V1 of A2A connections) ────────── -->
 <div class="modal-backdrop" id="connect-modal">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="connect-title" style="max-width:560px">
-    <h3 id="connect-title">Find classmates' agents</h3>
+    <h3 id="connect-title">Find classmates' agents <span style="font-size:11px;color:var(--gold);font-weight:normal;letter-spacing:.06em;text-transform:uppercase;font-family:var(--font-mono);background:rgba(212,176,64,.14);padding:2px 8px;border-radius:6px;margin-left:8px;vertical-align:middle;">preview · coming soon</span></h3>
     <p class="modal-sub">
-      Connect your agent with classmates' agents in the same group. Connections are mutual —
-      you request, they accept (or vice-versa). Once connected, your tutors can reference
-      each other in conversation. Knowledge sharing comes next.
+      Soon, you'll be able to connect your agent with classmates' agents in the same group.
+      Mutual handshake — you request, they accept. Once connected, your tutors can reference
+      each other in conversation, share what's been mastered, and collaborate on projects.
+      Below is a preview of the experience.
     </p>
 
     <div id="connect-empty" style="display:none;padding:20px;text-align:center;color:var(--muted);font-size:13px;line-height:1.5;">
@@ -1562,20 +1563,13 @@
     }
   });
 
-  // ── Find-classmates modal (V1 of A2A connections) ───────────
-  // Hits /connections/discoverable for the agents in your shared group(s),
-  // shows them as cards with a Connect button, and POSTs to
-  // /connections/request when clicked. Existing connections show their
-  // current state (pending request you sent / pending request to accept /
-  // accepted / declined) and offer the right action button.
-  const connectModal   = document.getElementById('connect-modal');
-  const connectList    = document.getElementById('connect-list');
-  const connectEmpty   = document.getElementById('connect-empty');
-  const connectLoading = document.getElementById('connect-loading');
-  const connectError   = document.getElementById('connect-error');
-
+  // ── Find-classmates modal (V1 PREVIEW — UI only) ────────────
+  // The modal opens with a hardcoded showcase of what cross-agent
+  // connections will look like. Clicking any "connect" shows a friendly
+  // "coming soon" toast — no backend, no database, no real connection
+  // is created. The full A2A protocol (mutual handshake, knowledge
+  // sharing) is on the post-demo roadmap.
   function pixelAvatarFromString(faceStr, size) {
-    // Mirror of avatarSvg() in opas-student.html — keeps this page stand-alone.
     if (!faceStr || faceStr.length < 64) return '';
     const palette = [null, '#4070C0', '#CC4848', '#48A060', '#D4B040',
                      '#D48040', '#F2EFE6', '#2A2A35'];
@@ -1593,132 +1587,60 @@
     return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg" style="border-radius:4px;background:var(--bg2);">${rects}</svg>`;
   }
 
-  function renderConnectionEntry(agent) {
-    const avatar = agent.their_agent_face
-      ? pixelAvatarFromString(agent.their_agent_face, 36)
-      : `<div style="width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:var(--bg2);border:1px solid var(--ink-15);border-radius:50%;font-size:18px;">🤖</div>`;
-    const agentLabel = agent.their_agent_name || '(unnamed agent)';
-    const ownerLabel = agent.their_display_name || 'Anonymous';
-    const skillLabel = agent.skill_name || '';
+  // Hand-painted 8x8 grids for three example classmates — uses the same
+  // palette + render path as the real avatar builder so they read on-brand.
+  const PREVIEW_CLASSMATES = [
+    {
+      agent_name: 'Lumi',
+      owner_name: 'Maya',
+      skill: 'Thinking Probabilistically',
+      face: '00440000' + '04444400' + '44744744' + '44444444' +
+            '44444444' + '47444474' + '04477440' + '00444400',
+    },
+    {
+      agent_name: 'Atlas',
+      owner_name: 'Jordan',
+      skill: 'Thinking Probabilistically',
+      face: '07777770' + '76177167' + '77777777' + '76777767' +
+            '07755770' + '07777770' + '03300330' + '03300330',
+    },
+    {
+      agent_name: 'Nova',
+      owner_name: 'Sam',
+      skill: 'Thinking Probabilistically',
+      face: '02200000' + '02200220' + '22666622' + '62766276' +
+            '66677666' + '66766766' + '06666660' + '00666600',
+    },
+  ];
 
-    let actionHtml = '';
-    if (agent.connection_status === 'accepted') {
-      actionHtml = `<span style="font-size:11px;color:var(--success-fg);font-weight:600;font-family:var(--font-mono);">✓ connected</span>
-        <button class="btn btn-ghost" data-conn-action="revoke" data-conn-id="${agent.connection_id}" style="font-size:11px;padding:4px 8px;">disconnect</button>`;
-    } else if (agent.connection_status === 'pending' && agent.i_requested) {
-      actionHtml = `<span style="font-size:11px;color:var(--muted);font-family:var(--font-mono);">⏳ pending</span>
-        <button class="btn btn-ghost" data-conn-action="revoke" data-conn-id="${agent.connection_id}" style="font-size:11px;padding:4px 8px;">cancel</button>`;
-    } else if (agent.connection_status === 'pending' && !agent.i_requested) {
-      actionHtml = `<button class="btn btn-primary" data-conn-action="accept" data-conn-id="${agent.connection_id}" style="font-size:12px;padding:6px 10px;">accept</button>
-        <button class="btn btn-ghost" data-conn-action="decline" data-conn-id="${agent.connection_id}" style="font-size:12px;padding:6px 10px;">decline</button>`;
-    } else if (agent.connection_status === 'declined') {
-      actionHtml = `<span style="font-size:11px;color:var(--muted);font-family:var(--font-mono);">declined</span>`;
-    } else {
-      actionHtml = `<button class="btn btn-secondary" data-conn-action="request"
-        data-their-skill="${escapeHtml(agent.skill_id)}"
-        data-group-id="${escapeHtml(agent.group_id || '')}"
-        style="font-size:12px;padding:6px 10px;">connect</button>`;
-    }
-
-    return `
+  function renderPreviewClassmates() {
+    const list = document.getElementById('connect-list');
+    if (!list) return;
+    list.style.display = 'flex';
+    list.innerHTML = PREVIEW_CLASSMATES.map((m) => `
       <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--ink-15);border-radius:10px;background:var(--bg);">
-        ${avatar}
+        ${pixelAvatarFromString(m.face, 36)}
         <div style="flex:1;min-width:0;">
-          <div style="font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--ink);">${escapeHtml(agentLabel)}</div>
-          <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);letter-spacing:.04em;">${escapeHtml(ownerLabel)}'s tutor on ${escapeHtml(skillLabel)}</div>
+          <div style="font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--ink);">${escapeHtml(m.agent_name)}</div>
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);letter-spacing:.04em;">${escapeHtml(m.owner_name)}'s tutor on ${escapeHtml(m.skill)}</div>
         </div>
-        <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">${actionHtml}</div>
+        <button type="button" class="btn btn-secondary" data-preview-connect="${escapeHtml(m.agent_name)}"
+                style="font-size:12px;padding:6px 10px;">connect</button>
       </div>
-    `;
-  }
-
-  async function loadDiscoverableAgents() {
-    connectLoading.style.display = 'block';
-    connectList.style.display = 'none';
-    connectEmpty.style.display = 'none';
-    connectError.classList.remove('show');
-    try {
-      const res = await fetch(RUNTIME + '/connections/discoverable', {
-        headers: authHeaders(),
+    `).join('');
+    list.querySelectorAll('[data-preview-connect]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        toast(`Connecting to ${btn.dataset.previewConnect} — coming in V2`, 'ok');
       });
-      if (res.status === 401) { handleAuthFail(); return; }
-      if (!res.ok) throw new Error(await safeDetail(res));
-      const out = await res.json();
-      const agents = out.agents || [];
-      connectLoading.style.display = 'none';
-      if (!agents.length) {
-        connectEmpty.style.display = 'block';
-        return;
-      }
-      connectList.style.display = 'flex';
-      connectList.innerHTML = agents.map(renderConnectionEntry).join('');
-      // Wire action buttons (event delegation)
-      connectList.querySelectorAll('[data-conn-action]').forEach((btn) => {
-        btn.addEventListener('click', () => handleConnectionAction(btn));
-      });
-    } catch (err) {
-      connectLoading.style.display = 'none';
-      connectError.textContent = err.message || String(err);
-      connectError.classList.add('show');
-    }
-  }
-
-  async function handleConnectionAction(btn) {
-    const action = btn.dataset.connAction;
-    btn.disabled = true;
-    const original = btn.textContent;
-    btn.textContent = '…';
-    try {
-      let url, opts;
-      if (action === 'request') {
-        // Need to send my_skill_id — pick the first of my own skills in
-        // the same group as the target. For V1 we keep this simple:
-        // ask the server which of my skills should be used (any in the
-        // same group works; default to the most-recently-created).
-        const mySkill = (skills || [])
-          .filter(s => s.group_id === btn.dataset.groupId || !btn.dataset.groupId)
-          .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))[0];
-        if (!mySkill) throw new Error('You need an agent in the same group first.');
-        url = RUNTIME + '/connections/request';
-        opts = {
-          method: 'POST',
-          headers: authHeaders({ 'Content-Type': 'application/json' }),
-          body: JSON.stringify({
-            my_skill_id: mySkill.skill_id,
-            their_skill_id: btn.dataset.theirSkill,
-            group_id: btn.dataset.groupId || null,
-          }),
-        };
-      } else if (action === 'accept') {
-        url = RUNTIME + '/connections/' + btn.dataset.connId + '/accept';
-        opts = { method: 'POST', headers: authHeaders() };
-      } else if (action === 'decline') {
-        url = RUNTIME + '/connections/' + btn.dataset.connId + '/decline';
-        opts = { method: 'POST', headers: authHeaders() };
-      } else if (action === 'revoke') {
-        url = RUNTIME + '/connections/' + btn.dataset.connId;
-        opts = { method: 'DELETE', headers: authHeaders() };
-      } else {
-        return;
-      }
-      const res = await fetch(url, opts);
-      if (res.status === 401) { handleAuthFail(); return; }
-      if (!res.ok) throw new Error(await safeDetail(res));
-      // Refresh the list to reflect the new state
-      await loadDiscoverableAgents();
-      // Also refresh skills so connection-count badges update
-      await loadSkills();
-    } catch (err) {
-      connectError.textContent = err.message || String(err);
-      connectError.classList.add('show');
-      btn.disabled = false;
-      btn.textContent = original;
-    }
+    });
   }
 
   document.getElementById('btn-find-classmates').addEventListener('click', () => {
     openModal('connect-modal');
-    loadDiscoverableAgents();
+    document.getElementById('connect-loading').style.display = 'none';
+    document.getElementById('connect-empty').style.display = 'none';
+    document.getElementById('connect-error').classList.remove('show');
+    renderPreviewClassmates();
   });
   document.getElementById('connect-close').addEventListener('click', () => closeModal('connect-modal'));
 

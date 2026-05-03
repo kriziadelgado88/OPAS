@@ -12,7 +12,6 @@ from .routers import compare as compare_router
 from .routers import dashboard as dashboard_router
 from .routers import auth as auth_router
 from .routers import groups as groups_router
-from .routers import connections as connections_router
 from .routers import pedagogies as pedagogies_router
 from .routers import skill_gen as skill_gen_router
 from .routers import me as me_router
@@ -96,16 +95,6 @@ app.include_router(
     groups_router.router,
     prefix="/groups",
     tags=["groups"],
-    dependencies=[Depends(require_learner_token)],
-)
-
-# /connections/* — agent-to-agent connections within a shared group (V1).
-# Learner token required. See deployment/supabase/migrations/2026_05_03_agent_connections.sql
-# for the underlying table.
-app.include_router(
-    connections_router.router,
-    prefix="/connections",
-    tags=["connections"],
     dependencies=[Depends(require_learner_token)],
 )
 
