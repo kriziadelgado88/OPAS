@@ -1,4 +1,4 @@
-# 🌼 OPAS · The Soul
+# 🌼 OPAS & The Soul
 
 > **Democratizing agentic AI tutoring for all.**
 >
